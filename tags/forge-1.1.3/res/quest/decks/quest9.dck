@@ -1,0 +1,38 @@
+[metadata]
+ID=9
+Name=quest9
+DisplayName=Bushwhacked!
+Difficulty=Hard
+Description=You find yourself surrounded by carnivorous plants and poisonous vines. Cut your way out of this foresty mess and make it home safe.
+Repeatable=false
+NumberWinsRequired=40
+CardReward=4 green rares
+CreditsReward=225
+Icon=Bushwhacked.jpg
+AILife=30
+Deck Type=constructed
+Comment=
+[main]
+2 Avenger of Zendikar
+1 Sapling of Colfenor
+1 Mox Emerald
+4 Tropical Island
+1 Mox Sapphire
+3 Khalni Garden
+4 Utopia Tree
+2 Wall of Wood
+7 Island
+4 Carnivorous Plant
+1 Lichenthrope
+10 Forest
+3 Jace, the Mind Sculptor
+4 Jungle Barrier
+4 Wistful Selkie
+4 Wall of Blossoms
+4 Vine Trellis
+1 Overbeing of Myth
+[sideboard]
+[human_extra_cards]
+Trusty Machete
+[ai_extra_cards]
+3 Wall of Wood

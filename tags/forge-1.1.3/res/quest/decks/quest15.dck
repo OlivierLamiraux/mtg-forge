@@ -1,0 +1,42 @@
+[metadata]
+ID=15
+Name=quest15
+DisplayName=Don't Play With Matches
+Difficulty=Hard
+Description=The goblins are battling the elves. Those pesky elves, will they ever learn. Do not play with fire!
+Repeatable=false
+NumberWinsRequired=52
+CardReward=4 red rares
+CreditsReward=200
+Icon=Dont Play With Matches.jpg
+AILife=30
+Deck Type=constructed
+Comment=
+[main]
+4 Plateau
+4 Druid of the Anima
+4 Taiga
+1 Mox Emerald
+3 Temple Garden
+3 Glorious Anthem
+3 Stomping Ground
+4 Elvish Champion
+4 Lightning Bolt
+1 Mox Ruby
+1 Mox Pearl
+3 Gaea's Anthem
+4 Blaze
+3 Fireball
+4 Savannah
+3 Beastmaster Ascension
+3 Keen-Eyed Archers
+4 Elvish Harbinger
+4 Llanowar Elves
+[sideboard]
+[human_extra_cards]
+1 Mudbutton Torchrunner
+1 Scuzzback Scrapper
+[ai_extra_cards]
+1 Heedless One
+1 Norwood Archers
+1 Wildslayer Elves

@@ -1,0 +1,44 @@
+[metadata]
+ID=2
+Name=quest2
+DisplayName=Dungeon Crawling (Blue)
+Difficulty=Medium
+Description=This realm holds knowledge so vast it can overburden the unwary.
+Repeatable=true
+NumberWinsRequired=20
+CardReward=3 blue rares
+CreditsReward=100
+Icon=Dungeon Crawling Blue.jpg
+AILife=25
+Deck Type=constructed
+Comment=
+[main]
+20 Island
+4 Wasteland
+1 Cognivore
+4 Visions of Beyond
+1 Bonehoard
+1 Conversion Chamber
+4 Veil of Birds
+1 Veiled Apparition
+1 Veiled Serpent
+1 Straw Golem
+1 Isolation Cell
+1 Chimeric Egg
+1 Soul Barrier
+4 Aven Fogbringer
+4 Glowing Anemone
+2 Cloud Pirates
+2 Cloud Sprite
+1 Cosi's Trickster
+1 Water Wurm
+1 Wandering Ones
+1 Slippery Bogle
+1 Merfolk of the Pearl Trident
+1 Fugitive Wizard
+1 Grayscaled Gharial
+[sideboard]
+[human_extra_cards]
+1 Quest for Ancient Secrets
+[ai_extra_cards]
+1 Forced Fruition

@@ -1,0 +1,41 @@
+
+# /
+/*.idea
+/*.iml
+/*.tmp
+/build
+/forge.log
+/forge.preferences
+/release.properties
+/target
+/test-output
+/.DS_Store
+
+# /.settings/
+/.settings/org.eclipse.core.resources.prefs
+
+# /res/
+/res/cardsfolder/.DS_Store
+/res/setInfoScript.log
+/res/reprintSetInfo.log
+/res/PerSetTrackingResults
+/res/.DS_Store
+/res/oracleScript.log
+
+# /res/cardsfolder/
+/res/cardsfolder/cardsfolder.zip
+
+# /res/gui/
+/res/gui/display_new_layout.xml
+
+# /res/quest/
+/res/quest/questData.dat
+
+# /src/main/java/forge/card/cost/
+
+# /src/
+/src/.DS_Store
+/src/main/java/.DS_Store
+/src/main/java/forge/.DS_Store
+/src/main/java/forge/gui/.DS_Store
+/src/main/.DS_Store

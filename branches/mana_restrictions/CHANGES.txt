@@ -1,0 +1,89 @@
+Forge Beta: 0#-##-2012 ver 1.2.8
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+
+10### cards in total.
+
+
+Some people have noticed special quests do not have the start in play cards appearing. And some people have noticed that a match can start without any cards appearing in the players hands or in their libraries.
+
+A possible fix was submitted to the SVN for forge version 1.2.7. We have received several reports that the above bugs are still occuring. We hope to have this problem fixed at some point in the future.
+
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove usefull. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+We have changed the archival format used for the Forge distributions from ".zip" to ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to decompress these ".tar.bz2" archives. We recommend that you decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+Fixes/Features:
+
+- Cleared out the changes.txt file, now ready for new material.
+- Minor edit to Seachrome Coast to remove the extra copy of the etb text.
+- Update site and buildnumber plugin
+- Prophetic Prism now using Any
+- Fixed tokenDoTriggerAINoCost not setting targets and XCosts.
+- Added SVar:BuffedBy:Creature to Cathars' Crusade.
+- Added Shadow to isUsefulPumpKeyword.
+- Removed the second "SVar:BuffedBy:Creature" from Kruin Striker.
+- Added targeting to AF Effect with Fog AILogic.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Added a fluff piece to the changes.txt file.
+- Fixed a possible IndexOutOfBoundsException in dealDamageResolve.
+- Fixed SuspendCast never being set to false;
+- Fixed a little bug in decideAIPayment of CostSacrifice.
+- Fixed a little bug in chooseSacrificeType.
+- Added a little more safety code to prevent AI freezing.
+- A little AI tweak to support Awe Strike.
+- Removed Words of War (it was not completely right).
+- Improved changeZoneAllTriggerAINoCost.
+- Improved the AILogic "MostProminentHumanControls".
+- Fixed AF Fight not checking for fighters on battlefield.
+- Fixed AI payment of non-mana costs of static abilities (for example morph).
+- Fixed isCardInPlay.
+- Converted Academy Rector and Lost Auramancers to script.
+- Cleanup.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Added the precon Angelic Might.
+- Added the precon Solitary Fiends.
+- Added 7ED setinfo to Infernal Contract.
+- added support for random sacrifice choice
+- added support for ForgetOtherRemembered and Optional to changeKnownOriginResolve
+- Adding Repeat AF.
+- added default value for RepeatSVarCompare
+- Fixed Drake Familiar.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Fixed Curse of Thirst.
+- Converted Spectral Bears and Spectral Force to script.
+- The AI can now use Tyrant of Discord.
+- Fixed changeKnownOriginResolve.
+- Removed SVar:RemAIDeck:True from Primal Surge.
+- Fixed Slithermuse.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+
+
+Many people helped with this version. A special thank you goes out to them. (Attempted to list names alphabetically):
+
+
+
+
+Added many cards, including:
+
+Words of Waste
+Words of Wilding
+Words of Wind
+Words of Worship
+Words of War
+Return of the Nightstalkers
+Eunuchs' Intrigues
+Goblin War Cry
+Advice from the Fae
+Consign to Dream
+Prismwake Merrow
+Ad Nauseam
+Primal Surge
+Tyrant of Discord
+
+
+end

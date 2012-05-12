@@ -1,0 +1,25 @@
+[duel]
+[metadata]
+Name=Hermione Granger 3
+Title=Hermione Granger
+Difficulty=hard
+Description=UR deck with Riverfall Mimic and Mindwrack Liege
+Icon=Hermione Granger.jpg
+Deck Type=constructed
+[main]
+4 Prophetic Bolt|APC
+8 Mountain|MBS
+4 Razorfin Hunter|APC
+4 Electrolyze|GPT
+1 Niv-Mizzet, the Firemind|GPT
+4 Scalding Tarn|ZEN
+4 Sulfur Falls
+4 Riverfall Mimic|EVE
+8 Island|MBS
+4 Crag Puca|EVE
+4 Clout of the Dominus|EVE
+2 Quicksilver Dagger|APC
+1 Stitch in Time|GPT
+4 Dominus of Fealty|EVE
+4 Mindwrack Liege|EVE
+[sideboard]

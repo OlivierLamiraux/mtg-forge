@@ -4054,6 +4054,12 @@ public class CardFactoryUtil {
         if(from.getSubAbility() != null) {
             to.setSubAbility(from.getSubAbility().getCopy());
         }
+        if(from.getRestrictions() != null) {
+            to.setRestrictions(from.getRestrictions());
+        }
+        if(from.getConditions() != null) {
+            to.setConditions(from.getConditions());
+        }
         
         for(String sVar : from.getSVars()) {
             to.setSVar(sVar, from.getSVar(sVar));

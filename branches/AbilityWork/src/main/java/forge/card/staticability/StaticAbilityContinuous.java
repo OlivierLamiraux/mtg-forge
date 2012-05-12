@@ -25,7 +25,6 @@ import forge.AllZone;
 import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardList;
-import forge.CardListFilter;
 import forge.CardUtil;
 import forge.StaticEffect;
 import forge.card.abilityfactory.AbilityFactory;
@@ -226,12 +225,7 @@ public class StaticAbilityContinuous {
             }
             
             CardList cardsIGainedAbilitiesFrom = AllZoneUtil.getCardsIn(validZones);
-            for(int i=0 ;i< cardsIGainedAbilitiesFrom.size();i++) {
-                if(!cardsIGainedAbilitiesFrom.get(i).isValid(valids, hostCard.getController(), hostCard)) {
-                    cardsIGainedAbilitiesFrom.remove(i);
-                    i--;
-                }
-            }
+            cardsIGainedAbilitiesFrom = cardsIGainedAbilitiesFrom.getValidCards(valids, hostCard.getController(), hostCard);
             
             for(Card c : cardsIGainedAbilitiesFrom) {
                 for(SpellAbility sa : c.getSpellAbilities()) {

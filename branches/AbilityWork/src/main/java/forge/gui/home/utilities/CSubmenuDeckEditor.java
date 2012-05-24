@@ -1,10 +1,10 @@
 package forge.gui.home.utilities;
 
 import forge.Command;
-import forge.Singletons;
-import forge.deck.DeckBase;
-import forge.gui.deckeditor.DeckEditorBase;
-import forge.gui.deckeditor.DeckEditorConstructed;
+import forge.control.FControl;
+import forge.gui.deckeditor.CDeckEditorUI;
+import forge.gui.deckeditor.controllers.CEditorConstructed;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 
 /** 
@@ -13,7 +13,7 @@ import forge.gui.home.ICSubmenu;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuDeckEditor implements ICSubmenu {
+public enum CSubmenuDeckEditor implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -22,8 +22,6 @@ public enum CSubmenuDeckEditor implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        VSubmenuDeckEditor.SINGLETON_INSTANCE.populate();
-
     }
 
     /* (non-Javadoc)
@@ -44,13 +42,17 @@ public enum CSubmenuDeckEditor implements ICSubmenu {
 
     /**
      * Shows constructed mode editor.
-     * @param <T> extends DeckBase
      */
-    @SuppressWarnings("unchecked")
-    private <T extends DeckBase> void showDeckEditor() {
-        DeckEditorBase<?, T> editor =
-                (DeckEditorBase<?, T>) new DeckEditorConstructed(Singletons.getView().getFrame());
-        editor.show(null);
-        editor.setVisible(true);
+    private void showDeckEditor() {
+        CDeckEditorUI.SINGLETON_INSTANCE.setCurrentEditorController(new CEditorConstructed());
+        FControl.SINGLETON_INSTANCE.changeState(FControl.DECK_EDITOR_CONSTRUCTED);
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

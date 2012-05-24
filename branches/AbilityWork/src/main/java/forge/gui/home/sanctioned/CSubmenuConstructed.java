@@ -35,6 +35,7 @@ import forge.deck.generate.GenerateThemeDeck;
 import forge.game.GameNew;
 import forge.game.player.PlayerType;
 import forge.gui.SOverlayUtils;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 import forge.gui.toolbox.FLabel;
 import forge.item.CardPrinted;
@@ -52,7 +53,7 @@ import forge.util.IStorage;
  *
  */
 @SuppressWarnings("serial")
-public enum CSubmenuConstructed implements ICSubmenu {
+public enum CSubmenuConstructed implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -109,9 +110,6 @@ public enum CSubmenuConstructed implements ICSubmenu {
     public void initialize() {
         final ForgePreferences prefs = Singletons.getModel().getPreferences();
         final VSubmenuConstructed view = VSubmenuConstructed.SINGLETON_INSTANCE;
-
-        VSubmenuConstructed.SINGLETON_INSTANCE.populate();
-        CSubmenuConstructed.SINGLETON_INSTANCE.update();
 
         // Radio button event handling
         view.getRadColorsAI().addActionListener(new ActionListener() { @Override
@@ -527,5 +525,13 @@ public enum CSubmenuConstructed implements ICSubmenu {
             lst0.setSelectedIndex(i);
             lst0.ensureIndexIsVisible(lst0.getSelectedIndex());
         }
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

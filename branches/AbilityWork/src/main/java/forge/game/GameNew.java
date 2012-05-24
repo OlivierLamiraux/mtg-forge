@@ -20,7 +20,6 @@ import forge.card.trigger.TriggerType;
 import forge.control.FControl;
 import forge.control.input.InputMulligan;
 import forge.deck.Deck;
-import forge.game.phase.PhaseHandler;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.match.CMatchUI;
@@ -491,14 +490,12 @@ public class GameNew {
             sb.append(ForgeProps.getLocalized(GameActionText.COMPUTER_CUT) + ga.getComputerCut().getName() + " ("
                     + ga.getComputerCut().getManaCost() + ")" + "\r\n");
             sb.append("\r\n" + "Number of times the deck has been cut: " + cutCount + "\r\n");
-            if (CardUtil.getConvertedManaCost(ga.getComputerCut().getManaCost()) > CardUtil.getConvertedManaCost(
-                    ga.getHumanCut().getManaCost())) {
+            if (ga.getComputerCut().getManaCost().getCMC() > ga.getHumanCut().getManaCost().getCMC()) {
                 GameNew.computerStartsGame();
                 JOptionPane.showMessageDialog(null, sb + ForgeProps.getLocalized(GameActionText.COMPUTER_STARTS), "",
                         JOptionPane.INFORMATION_MESSAGE);
                 return;
-            } else if (CardUtil.getConvertedManaCost(ga.getComputerCut().getManaCost()) < CardUtil
-                    .getConvertedManaCost(ga.getHumanCut().getManaCost())) {
+            } else if (ga.getComputerCut().getManaCost().getCMC() < ga.getHumanCut().getManaCost().getCMC()) {
                 JOptionPane.showMessageDialog(null, sb + ForgeProps.getLocalized(GameActionText.HUMAN_STARTS), "",
                         JOptionPane.INFORMATION_MESSAGE);
                 return;

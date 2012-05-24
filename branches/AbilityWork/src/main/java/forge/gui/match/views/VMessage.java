@@ -53,7 +53,7 @@ public enum VMessage implements IVDoc {
     private final JButton btnOK = new FButton("OK");
     private final JButton btnCancel = new FButton("Cancel");
     private final JTextArea tarMessage = new JTextArea();
-    private final JLabel lblGames = new FLabel.Builder().fontScaleAuto(false)
+    private final JLabel lblGames = new FLabel.Builder()
             .fontSize(12).fontStyle(Font.BOLD).fontAlign(SwingConstants.CENTER).build();
 
     //========= Constructor
@@ -109,10 +109,10 @@ public enum VMessage implements IVDoc {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#getControl()
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getControl() {
+    public ICDoc getLayoutControl() {
         return CMessage.SINGLETON_INSTANCE;
     }
 

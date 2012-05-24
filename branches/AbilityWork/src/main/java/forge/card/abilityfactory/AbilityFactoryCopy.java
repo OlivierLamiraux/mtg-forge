@@ -366,7 +366,7 @@ public final class AbilityFactoryCopy {
      */
     private static void copyPermanentResolve(final AbilityFactory af, final SpellAbility sa) {
         final HashMap<String, String> params = af.getMapParams();
-        final Card hostCard = af.getHostCard();
+        final Card hostCard = sa.getSourceCard();
         final ArrayList<String> keywords = new ArrayList<String>();
         if (params.containsKey("Keywords")) {
             keywords.addAll(Arrays.asList(params.get("Keywords").split(" & ")));
@@ -693,7 +693,7 @@ public final class AbilityFactoryCopy {
         }
         int amount = 1;
         if (params.containsKey("Amount")) {
-            amount = AbilityFactory.calculateAmount(af.getHostCard(), params.get("Amount"), sa);
+            amount = AbilityFactory.calculateAmount(sa.getSourceCard(), params.get("Amount"), sa);
         }
         if (amount > 1) {
             sb.append(amount).append(" times");
@@ -762,7 +762,7 @@ public final class AbilityFactoryCopy {
      */
     private static void copySpellResolve(final AbilityFactory af, final SpellAbility sa) {
         final HashMap<String, String> params = af.getMapParams();
-        final Card card = af.getHostCard();
+        final Card card = sa.getSourceCard();
         Player controller = sa.getActivatingPlayer();
 
         int amount = 1;

@@ -2,6 +2,7 @@ package forge.gui.home.quest;
 
 import forge.Command;
 import forge.Singletons;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.quest.VSubmenuQuestPrefs.PrefInput;
 import forge.quest.data.QuestPreferences;
@@ -13,7 +14,7 @@ import forge.quest.data.QuestPreferences.QPref;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuQuestPrefs implements ICSubmenu {
+public enum CSubmenuQuestPrefs implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -22,8 +23,6 @@ public enum CSubmenuQuestPrefs implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        VSubmenuQuestPrefs.SINGLETON_INSTANCE.populate();
-        CSubmenuQuestPrefs.SINGLETON_INSTANCE.update();
     }
 
     /* (non-Javadoc)
@@ -163,5 +162,13 @@ public enum CSubmenuQuestPrefs implements ICSubmenu {
         view.getLblErrDifficulty().setVisible(false);
         view.getLblErrRewards().setVisible(false);
         view.getLblErrShop().setVisible(false);
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

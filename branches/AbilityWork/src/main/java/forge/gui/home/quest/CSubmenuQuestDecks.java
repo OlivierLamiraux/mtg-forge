@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import forge.AllZone;
 import forge.Command;
 import forge.Singletons;
+import forge.control.FControl;
 import forge.deck.Deck;
-import forge.gui.SOverlayUtils;
-import forge.gui.deckeditor.DeckEditorQuest;
-import forge.gui.home.EMenuItem;
+import forge.gui.deckeditor.CDeckEditorUI;
+import forge.gui.deckeditor.controllers.CEditorQuest;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.home.CMainMenu;
 import forge.gui.home.ICSubmenu;
-import forge.gui.home.VHomeUI;
 import forge.quest.QuestController;
 import forge.quest.data.QuestPreferences.QPref;
 
@@ -20,20 +22,11 @@ import forge.quest.data.QuestPreferences.QPref;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  */
 @SuppressWarnings("serial")
-public enum CSubmenuQuestDecks implements ICSubmenu {
+public enum CSubmenuQuestDecks implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
     private Deck currentDeck;
-
-    private final Command cmdDeckExit = new Command() {
-        @Override
-        public void execute() {
-            AllZone.getQuest().save();
-            SOverlayUtils.hideOverlay();
-            update();
-        }
-    };
 
     private final Command cmdDeckSelect = new Command() {
         @Override
@@ -59,7 +52,7 @@ public enum CSubmenuQuestDecks implements ICSubmenu {
             @Override
             public void execute() {
                 if (qc.getAchievements() == null) {
-                    VHomeUI.SINGLETON_INSTANCE.itemClick(EMenuItem.QUEST_DATA);
+                    CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDATA);
                 }
             }
         };
@@ -70,17 +63,11 @@ public enum CSubmenuQuestDecks implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        VSubmenuQuestDecks.SINGLETON_INSTANCE.populate();
-        CSubmenuQuestDecks.SINGLETON_INSTANCE.update();
-
         VSubmenuQuestDecks.SINGLETON_INSTANCE.getBtnNewDeck().setCommand(new Command() {
             @Override
             public void execute() {
-                final DeckEditorQuest editor =
-                        new DeckEditorQuest(Singletons.getView().getFrame(), AllZone.getQuest());
-                editor.show(cmdDeckExit);
-                SOverlayUtils.showOverlay();
-                editor.setVisible(true);
+                CDeckEditorUI.SINGLETON_INSTANCE.setCurrentEditorController(new CEditorQuest(AllZone.getQuest()));
+                FControl.SINGLETON_INSTANCE.changeState(FControl.DECK_EDITOR_QUEST);
             }
         });
     }
@@ -116,7 +103,6 @@ public enum CSubmenuQuestDecks implements ICSubmenu {
 
         view.getLstDecks().setSelectCommand(cmdDeckSelect);
         view.getLstDecks().setDeleteCommand(cmdDeckDelete);
-        view.getLstDecks().setExitCommand(cmdDeckExit);
 
         if (view.getLstDecks().getSelectedDeck() != null) {
             Singletons.getModel().getQuestPreferences().setPreference(QPref.CURRENT_DECK, view.getLstDecks().getSelectedDeck().getName());
@@ -132,5 +118,13 @@ public enum CSubmenuQuestDecks implements ICSubmenu {
     /** @return forge.deck.Deck */
     public Deck getCurrentDeck() {
         return this.currentDeck;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

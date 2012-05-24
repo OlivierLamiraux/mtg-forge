@@ -10,10 +10,11 @@ import javax.swing.border.EmptyBorder;
 
 import forge.AllZone;
 import forge.Command;
-import forge.gui.home.EMenuItem;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.home.CMainMenu;
 import forge.gui.home.ICSubmenu;
-import forge.gui.home.VHomeUI;
-import forge.gui.home.quest.SubmenuQuestUtil.SelectablePanel;
+import forge.gui.home.quest.SSubmenuQuestUtil.SelectablePanel;
 import forge.gui.toolbox.FLabel;
 import forge.quest.QuestController;
 import forge.quest.QuestEventChallenge;
@@ -26,7 +27,7 @@ import forge.quest.bazaar.QuestPetController;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuChallenges implements ICSubmenu {
+public enum CSubmenuChallenges implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -41,7 +42,7 @@ public enum CSubmenuChallenges implements ICSubmenu {
             @Override
             public void execute() {
                 if (qc.getAchievements() == null) {
-                    VHomeUI.SINGLETON_INSTANCE.itemClick(EMenuItem.QUEST_DATA);
+                    CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDATA);
                 }
             }
         };
@@ -54,20 +55,18 @@ public enum CSubmenuChallenges implements ICSubmenu {
     @Override
     public void initialize() {
         final VSubmenuChallenges view = VSubmenuChallenges.SINGLETON_INSTANCE;
-        view.populate();
-        CSubmenuChallenges.SINGLETON_INSTANCE.update();
 
         view.getBtnSpellShop().setCommand(
                 new Command() { @Override
-                    public void execute() { SubmenuQuestUtil.showSpellShop(); } });
+                    public void execute() { SSubmenuQuestUtil.showSpellShop(); } });
 
         view.getBtnBazaar().setCommand(
                 new Command() { @Override
-                    public void execute() { SubmenuQuestUtil.showBazaar(); } });
+                    public void execute() { SSubmenuQuestUtil.showBazaar(); } });
 
         view.getBtnStart().addActionListener(
                 new ActionListener() { @Override
-            public void actionPerformed(final ActionEvent e) { SubmenuQuestUtil.startGame(); } });
+            public void actionPerformed(final ActionEvent e) { SSubmenuQuestUtil.startGame(); } });
 
         ((FLabel) view.getLblZep()).setCommand(
                 new Command() {
@@ -82,7 +81,7 @@ public enum CSubmenuChallenges implements ICSubmenu {
         view.getBtnCurrentDeck().setCommand(
                 new Command() { @Override
                     public void execute() {
-                        VHomeUI.SINGLETON_INSTANCE.itemClick(EMenuItem.QUEST_DECKS);
+                        CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDECKS);
                     }
                 });
 
@@ -111,7 +110,7 @@ public enum CSubmenuChallenges implements ICSubmenu {
      */
     @Override
     public void update() {
-        SubmenuQuestUtil.updateStatsAndPet();
+        SSubmenuQuestUtil.updateStatsAndPet();
 
         final VSubmenuChallenges view = VSubmenuChallenges.SINGLETON_INSTANCE;
         final QuestController qCtrl = AllZone.getQuest();
@@ -137,5 +136,13 @@ public enum CSubmenuChallenges implements ICSubmenu {
                 view.getPnlChallenges().add(lbl, "w 50%!, h 30px!, gap 25% 0 50px 0");
             }
         }
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

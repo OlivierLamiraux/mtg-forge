@@ -16,8 +16,12 @@ import javax.swing.text.StyledDocument;
 import net.miginfocom.swing.MigLayout;
 import forge.game.GameType;
 import forge.gui.SOverlayUtils;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.home.StartButton;
@@ -33,19 +37,23 @@ import forge.gui.toolbox.FSkin;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VSubmenuSealed implements IVSubmenu {
+public enum VSubmenuSealed implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Sealed Mode");
 
     /** */
     private final JPanel pnl            = new JPanel();
     private final StartButton btnStart  = new StartButton();
     private final DeckLister lstDecks   = new DeckLister(GameType.Sealed);
     private final JLabel btnBuildDeck   = new FLabel.Builder()
-        .fontScaleAuto(false).fontSize(16)
+        .fontSize(16)
         .opaque(true).hoverable(true).text("Build a Sealed Deck").build();
     private final JLabel btnDirections = new FLabel.Builder()
-        .fontScaleAuto(false).fontSize(16)
+        .fontSize(16)
         .text("Click For Directions").fontAlign(SwingConstants.CENTER).build();
 
     /* (non-Javadoc)
@@ -70,6 +78,9 @@ public enum VSubmenuSealed implements IVSubmenu {
         pnl.add(new FScrollPane(lstDecks), "w 90%!, h 35%!, gap 5% 0 2% 2%");
         pnl.add(btnBuildDeck, "w 50%!, h 5%!, gap 25% 0 0 0");
         pnl.add(btnStart, "ax center, gaptop 5%");
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
     }
 
     /* (non-Javadoc)
@@ -89,18 +100,18 @@ public enum VSubmenuSealed implements IVSubmenu {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getMenuName()
+     * @see forge.gui.home.IVSubmenu#getItemEnum()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.LIMITED_SEALED.toString();
+    public EDocID getItemEnum() {
+        return EDocID.HOME_SEALED;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuSealed.SINGLETON_INSTANCE;
     }
 
@@ -179,5 +190,45 @@ public enum VSubmenuSealed implements IVSubmenu {
         overlay.add(btnCloseBig);
         overlay.add(pnl);
         SOverlayUtils.showOverlay();
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_SEALED;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuSealed.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

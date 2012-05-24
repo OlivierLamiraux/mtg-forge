@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import forge.Command;
 import forge.Constant;
 import forge.Singletons;
+import forge.control.FControl;
 import forge.deck.Deck;
 import forge.deck.DeckBase;
 import forge.deck.DeckGroup;
@@ -23,8 +24,10 @@ import forge.game.GameNew;
 import forge.game.limited.SealedDeck;
 import forge.gui.GuiUtils;
 import forge.gui.SOverlayUtils;
-import forge.gui.deckeditor.DeckEditorBase;
-import forge.gui.deckeditor.DeckEditorLimited;
+import forge.gui.deckeditor.CDeckEditorUI;
+import forge.gui.deckeditor.controllers.ACEditorBase;
+import forge.gui.deckeditor.controllers.CEditorLimited;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 import forge.gui.toolbox.FSkin;
 import forge.item.CardPrinted;
@@ -40,19 +43,11 @@ import forge.util.TextUtil;
  *
  */
 @SuppressWarnings("serial")
-public enum CSubmenuSealed implements ICSubmenu {
+public enum CSubmenuSealed implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
     private Map<String, Deck> aiDecks;
-
-    private final Command cmdExit = new Command() {
-        @Override
-        public void execute() {
-            update();
-            SOverlayUtils.hideOverlay();
-        }
-    };
 
     private final Command cmdDeckSelect = new Command() {
         @Override
@@ -66,12 +61,6 @@ public enum CSubmenuSealed implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        final VSubmenuSealed view = VSubmenuSealed.SINGLETON_INSTANCE;
-
-        view.populate();
-        CSubmenuSealed.SINGLETON_INSTANCE.update();
-
-        VSubmenuSealed.SINGLETON_INSTANCE.getLstDecks().setExitCommand(cmdExit);
         VSubmenuSealed.SINGLETON_INSTANCE.getLstDecks().setSelectCommand(cmdDeckSelect);
 
         VSubmenuSealed.SINGLETON_INSTANCE.getBtnBuildDeck().addMouseListener(
@@ -225,15 +214,21 @@ public enum CSubmenuSealed implements ICSubmenu {
         final DeckGroup sealed = new DeckGroup(sDeckName);
         sealed.setHumanDeck(deck);
         sealed.addAiDeck(sd.buildAIDeck(sDeck.toForgeCardList()));
-        Singletons.getModel().getDecks().getSealed().add(sealed);
+            Singletons.getModel().getDecks().getSealed().add(sealed);
 
-        final DeckEditorBase<?, T> editor = (DeckEditorBase<?, T>) new DeckEditorLimited(
-                Singletons.getView().getFrame(),
+        final ACEditorBase<?, T> editor = (ACEditorBase<?, T>) new CEditorLimited(
                 Singletons.getModel().getDecks().getSealed());
 
-        editor.show(cmdExit);
-        editor.getController().setModel((T) sealed);
-        editor.setAlwaysOnTop(true);
-        editor.setVisible(true);
+        CDeckEditorUI.SINGLETON_INSTANCE.setCurrentEditorController(editor);
+        FControl.SINGLETON_INSTANCE.changeState(FControl.DECK_EDITOR_LIMITED);
+        editor.getDeckController().setModel((T) sealed);
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

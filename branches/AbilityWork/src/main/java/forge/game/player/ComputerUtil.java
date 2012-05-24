@@ -602,7 +602,7 @@ public class ComputerUtil {
             } else {
                 // For Count$xPaid set PayX in the AFs then use that here
                 // Else calculate it as appropriate.
-                final String xSvar = card.getSVar("X").equals("Count$xPaid") ? "PayX" : "X";
+                final String xSvar = card.getSVar("X").startsWith("Count$xPaid") ? "PayX" : "X";
                 if (!card.getSVar(xSvar).equals("")) {
                     if (xSvar.equals("PayX")) {
                         manaToAdd = Integer.parseInt(card.getSVar(xSvar)) * cost.getXcounter(); // X
@@ -635,17 +635,16 @@ public class ComputerUtil {
             }
             cost.setManaNeededToAvoidNegativeEffect(negEffects);
             // TODO: should it be an error condition if amountAdded is greater
-            // than the colorless
-            // in the original cost? (ArsenalNut - 120102)
+            // than the colorless in the original cost? (ArsenalNut - 120102)
             // adjust colorless amount to account for added mana
             cost.decreaseColorlessMana(amountAdded);
         }
 
-        cost = manapool.subtractMana(sa, cost);
+        cost = manapool.payManaFromPool(sa, cost);
 
         if (cost.isPaid()) {
             // refund any mana taken from mana pool when test
-            manapool.clearPay(sa, test);
+            manapool.clearManaPaid(sa, test);
             return true;
         }
 
@@ -732,7 +731,7 @@ public class ComputerUtil {
                 throw new RuntimeException("ComputerUtil : payManaCost() cost was not paid for "
                         + sa.getSourceCard().getName());
             }
-            manapool.clearPay(sa, test); // refund any mana taken from mana pool
+            manapool.clearManaPaid(sa, test); // refund any mana taken from mana pool
             return false;
         }
 
@@ -766,6 +765,11 @@ public class ComputerUtil {
                         continue;
                     }
                 } else if (sourceCard.isTapped()) {
+                    continue;
+                }
+
+                // Check for mana restrictions
+                if (!m.meetsManaRestrictions(sa)) {
                     continue;
                 }
 
@@ -833,7 +837,7 @@ public class ComputerUtil {
                     // resolve mana ability
                     m.resolve();
                     // subtract mana from mana pool
-                    cost = manapool.subtractMana(sa, cost, m);
+                    cost = manapool.payManaFromAbility(sa, cost, m);
                 } else {
                     cost.payMana(color);
                 }
@@ -850,7 +854,7 @@ public class ComputerUtil {
 
         } // end of cost parts loop
 
-        manapool.clearPay(sa, test);
+        manapool.clearManaPaid(sa, test);
         // check if paid
         if (cost.isPaid()) {
             // if (sa instanceof Spell_Permanent) // should probably add this
@@ -1886,5 +1890,75 @@ public class ComputerUtil {
             }
         }
         return prevented;
+    }
+
+    /**
+     * <p>
+     * castPermanentInMain1.
+     * </p>
+     * 
+     * @param sa
+     *            a SpellAbility object.
+     * @return a boolean.
+     */
+    public static boolean castPermanentInMain1(final SpellAbility sa) {
+        final Card card = sa.getSourceCard();
+        if (card.getSVar("PlayMain1").equals("TRUE")) {
+            return true;
+        }
+        if ((card.isCreature() && (ComputerAIGeneral.hasACardGivingHaste()
+                || card.hasKeyword("Haste"))) || card.hasKeyword("Exalted")) {
+            return true;
+        }
+
+        // get all cards the computer controls with BuffedBy
+        final CardList buffed = AllZone.getComputerPlayer().getCardsIn(ZoneType.Battlefield);
+        for (int j = 0; j < buffed.size(); j++) {
+            final Card buffedcard = buffed.get(j);
+            if (buffedcard.getSVar("BuffedBy").length() > 0) {
+                final String buffedby = buffedcard.getSVar("BuffedBy");
+                final String[] bffdby = buffedby.split(",");
+                if (card.isValid(bffdby, buffedcard.getController(), buffedcard)) {
+                    return true;
+                }
+            }
+            if (card.isEquipment() && buffedcard.isCreature() && CombatUtil.canAttack(buffedcard)) {
+                return true;
+            }
+            if (card.isCreature() && buffedcard.hasKeyword("Soulbond") && !buffedcard.isPaired()) {
+                return true;
+            }
+            if (card.hasKeyword("Soulbond") && buffedcard.isCreature() && !buffedcard.isPaired()) {
+                return true;
+            }
+        } // BuffedBy
+
+        // get all cards the human controls with AntiBuffedBy
+        final CardList antibuffed = AllZone.getHumanPlayer().getCardsIn(ZoneType.Battlefield);
+        for (int k = 0; k < antibuffed.size(); k++) {
+            final Card buffedcard = antibuffed.get(k);
+            if (buffedcard.getSVar("AntiBuffedBy").length() > 0) {
+                final String buffedby = buffedcard.getSVar("AntiBuffedBy");
+                final String[] bffdby = buffedby.split(",");
+                if (card.isValid(bffdby, buffedcard.getController(), buffedcard)) {
+                    return true;
+                }
+            }
+        } // AntiBuffedBy
+        final CardList vengevines = AllZone.getComputerPlayer().getCardsIn(ZoneType.Graveyard, "Vengevine");
+        if (vengevines.size() > 0) {
+            final CardList creatures = AllZone.getComputerPlayer().getCardsIn(ZoneType.Hand);
+            final CardList creatures2 = new CardList();
+            for (int i = 0; i < creatures.size(); i++) {
+                if (creatures.get(i).isCreature() && creatures.get(i).getManaCost().getCMC() <= 3) {
+                    creatures2.add(creatures.get(i));
+                }
+            }
+            if (((creatures2.size() + CardUtil.getThisTurnCast("Creature.YouCtrl", vengevines.get(0)).size()) > 1)
+                    && card.isCreature() && card.getManaCost().getCMC() <= 3) {
+                return true;
+            }
+        }
+        return false;
     }
 }

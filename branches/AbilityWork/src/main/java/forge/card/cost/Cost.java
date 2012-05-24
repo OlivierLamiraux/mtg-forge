@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import forge.Card;
 import forge.Counters;
 import forge.Singletons;
+import forge.card.CardManaCost;
 import forge.card.mana.ManaCost;
 import forge.card.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
@@ -150,9 +151,9 @@ public class Cost {
     private static final String RETURN_STR = "Return<";
     private static final String REVEAL_STR = "Reveal<";
 
-    public Cost(SpellAbility sa) {
-        assocSA = sa;
-        name = sa.getSourceCard().getName();
+    
+    public Cost(final Card card, CardManaCost cost, final boolean bAbility) {
+        this(card, cost.toString(), bAbility);
     }
     
     /**

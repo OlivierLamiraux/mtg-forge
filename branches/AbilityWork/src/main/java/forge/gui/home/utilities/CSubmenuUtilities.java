@@ -7,6 +7,7 @@ import forge.gui.download.GuiDownloadPicturesLQ;
 import forge.gui.download.GuiDownloadPrices;
 import forge.gui.download.GuiDownloadQuestImages;
 import forge.gui.download.GuiDownloadSetPicturesLQ;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 
 /** 
@@ -16,7 +17,7 @@ import forge.gui.home.ICSubmenu;
  *
  */
 @SuppressWarnings("serial")
-public enum CSubmenuUtilities implements ICSubmenu {
+public enum CSubmenuUtilities implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -59,9 +60,6 @@ public enum CSubmenuUtilities implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        VSubmenuUtilities.SINGLETON_INSTANCE.populate();
-        CSubmenuUtilities.SINGLETON_INSTANCE.update();
-
         final VSubmenuUtilities view = VSubmenuUtilities.SINGLETON_INSTANCE;
         view.getBtnDownloadPics().setCommand(cmdPicDownload);
         view.getBtnDownloadSetPics().setCommand(cmdSetDownload);
@@ -86,4 +84,12 @@ public enum CSubmenuUtilities implements ICSubmenu {
      */
     @Override
     public void update() { }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
+    }
 }

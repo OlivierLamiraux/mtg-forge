@@ -262,7 +262,7 @@ public class AbilityFactoryCounterMagic {
         if (tgt != null) {
 
             final SpellAbility topSA = AllZone.getStack().peekAbility();
-            if (!CardFactoryUtil.isCounterable(topSA.getSourceCard()) || topSA.getActivatingPlayer().isComputer()) {
+            if (!CardFactoryUtil.isCounterableBy(topSA.getSourceCard(), sa) || topSA.getActivatingPlayer().isComputer()) {
                 return false;
             }
             if (params.containsKey("AITgts") && (topSA.getSourceCard() == null
@@ -344,7 +344,7 @@ public class AbilityFactoryCounterMagic {
         final Target tgt = sa.getTarget();
         if (tgt != null) {
             final SpellAbility topSA = AllZone.getStack().peekAbility();
-            if (!CardFactoryUtil.isCounterable(topSA.getSourceCard()) || topSA.getActivatingPlayer().isComputer()) {
+            if (!CardFactoryUtil.isCounterableBy(topSA.getSourceCard(), sa) || topSA.getActivatingPlayer().isComputer()) {
                 return false;
             }
 
@@ -426,14 +426,14 @@ public class AbilityFactoryCounterMagic {
 
         if (this.params.containsKey("ForgetOtherTargets")) {
             if (this.params.get("ForgetOtherTargets").equals("True")) {
-                af.getHostCard().clearRemembered();
+                sa.getSourceCard().clearRemembered();
             }
         }
 
         for (final SpellAbility tgtSA : sas) {
             final Card tgtSACard = tgtSA.getSourceCard();
 
-            if (tgtSA.isSpell() && !CardFactoryUtil.isCounterable(tgtSACard)) {
+            if (tgtSA.isSpell() && !CardFactoryUtil.isCounterableBy(tgtSACard, sa)) {
                 continue;
             }
 
@@ -451,7 +451,7 @@ public class AbilityFactoryCounterMagic {
 
             if (this.params.containsKey("RememberTargets")) {
                 if (this.params.get("RememberTargets").equals("True")) {
-                    af.getHostCard().addRemembered(tgtSACard);
+                    sa.getSourceCard().addRemembered(tgtSACard);
                 }
             }
         }
@@ -542,6 +542,9 @@ public class AbilityFactoryCounterMagic {
             Singletons.getModel().getGameAction().moveToLibrary(tgtSA.getSourceCard());
         } else if (this.destination.equals("Hand")) {
             Singletons.getModel().getGameAction().moveToHand(tgtSA.getSourceCard());
+        } else if (this.destination.equals("Battlefield")) {
+            Card c = Singletons.getModel().getGameAction().moveToPlay(tgtSA.getSourceCard(), srcSA.getActivatingPlayer());
+            c.addController(srcSA.getActivatingPlayer());
         } else if (this.destination.equals("BottomOfLibrary")) {
             Singletons.getModel().getGameAction().moveToBottomOfLibrary(tgtSA.getSourceCard());
         } else if (this.destination.equals("ShuffleIntoLibrary")) {

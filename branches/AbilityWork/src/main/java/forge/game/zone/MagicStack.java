@@ -31,7 +31,6 @@ import forge.CardList;
 import forge.CardListFilter;
 import forge.Command;
 import forge.GameActionUtil;
-import forge.MyObservable;
 import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
@@ -60,6 +59,7 @@ import forge.gui.GuiUtils;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.SDisplayUtil;
 import forge.gui.match.CMatchUI;
+import forge.util.MyObservable;
 import forge.view.ButtonUtil;
 
 /**
@@ -235,6 +235,21 @@ public class MagicStack extends MyObservable {
         // consequences
         this.frozen = false;
         this.getFrozenStack().clear();
+    }
+
+    /**
+     * <p>
+     * removeFromFrozenStack.
+     * </p>
+     * @param sa
+     *            a SpellAbility.
+     */
+    public final void removeFromFrozenStack(SpellAbility sa) {
+        SpellAbilityStackInstance si = this.getInstanceFromSpellAbility(sa);
+        this.getFrozenStack().remove(si);
+        if (this.getFrozenStack().isEmpty()) {
+            clearFrozen();
+        }
     }
 
     /**
@@ -1142,6 +1157,7 @@ public class MagicStack extends MyObservable {
         // hostCard in AF is not the same object that's on the battlefield
         // verified by System.identityHashCode(card);
         final Card tmp = sa.getSourceCard();
+        tmp.setCanCounter(true); // reset mana pumped counter magic flag
         if (tmp.getClones().size() > 0) {
             for (final Card c : AllZoneUtil.getCardsIn(ZoneType.Battlefield)) {
                 if (c.equals(tmp)) {
@@ -1357,6 +1373,10 @@ public class MagicStack extends MyObservable {
         return this.getSimultaneousStackEntryList().size() > 0;
     }
 
+    public final void clearSimultaneousStack() {
+        this.simultaneousStackEntryList.clear();
+    }
+    
     /**
      * <p>
      * addSimultaneousStackEntry.

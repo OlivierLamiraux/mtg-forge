@@ -18,8 +18,12 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.text.WordUtils;
 
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.toolbox.FLabel;
@@ -36,9 +40,13 @@ import forge.util.IStorageView;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VSubmenuQuestData implements IVSubmenu {
+public enum VSubmenuQuestData implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Quest Data");
 
     /** */
     private final JPanel pnl = new JPanel();
@@ -74,7 +82,7 @@ public enum VSubmenuQuestData implements IVSubmenu {
         pnlTitleLoad.setLayout(new MigLayout("insets 0, align center"));
         pnlTitleLoad.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleLoad.add(new FLabel.Builder().text("Load a previous Quest")
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
 
         final FScrollPane scr = new FScrollPane(lstQuests);
         scr.setBorder(null);
@@ -85,7 +93,7 @@ public enum VSubmenuQuestData implements IVSubmenu {
         pnlTitleNew.setLayout(new MigLayout("insets 0, align center"));
         pnlTitleNew.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleNew.add(new FLabel.Builder().text("Start a new Quest")
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
 
         final ButtonGroup group1 = new ButtonGroup();
         group1.add(radEasy);
@@ -171,7 +179,7 @@ public enum VSubmenuQuestData implements IVSubmenu {
 
         pnlViewport.add(new FLabel.Builder().text("Old quest data? Put into "
                 + "res/quest/data, and restart Forge.")
-                .fontAlign(SwingConstants.CENTER).fontScaleAuto(false).fontSize(12)
+                .fontAlign(SwingConstants.CENTER).fontSize(12)
                 .build(), "w 96%!, h 18px!, gap 2% 0 0 4px");
 
         pnlViewport.add(scr, "w 96%!, pushy, growy, gap 2% 0 0 30px");
@@ -180,6 +188,9 @@ public enum VSubmenuQuestData implements IVSubmenu {
         pnlViewport.add(pnlOptions, "w 96%!, h 250px!, gap 2% 0 0 20px");
 
         pnl.add(new FScrollPane(pnlViewport), "w 100%!, h 100%!");
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
     }
 
     /* (non-Javadoc)
@@ -211,15 +222,15 @@ public enum VSubmenuQuestData implements IVSubmenu {
      * @see forge.gui.home.IVSubmenu#getMenuName()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.QUEST_DATA.toString();
+    public EDocID getItemEnum() {
+        return EDocID.HOME_QUESTDATA;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuQuestData.SINGLETON_INSTANCE;
     }
 
@@ -265,28 +276,27 @@ public enum VSubmenuQuestData implements IVSubmenu {
         return radFantasy;
     }
 
-    /**
-     * @return {@link javax.swing.JRadioButton}
-     */
+    /** @return {@link javax.swing.JRadioButton} */
     public JRadioButton getRadClassic() {
         return radClassic;
     }
 
+    /** @return {@link javax.swing.JRadioButton} */
     public JRadioButton getRadCompleteStart() {
         return radCompleteStart;
     }
 
-    /**
-     * @return {@link javax.swing.JCheckBox}
-     */
+    /** @return {@link javax.swing.JCheckBox} */
     public JRadioButton getRadStandardStart() {
         return radStandardStart;
     }
 
+    /** @return {@link javax.swing.JRadioButton} */
     public JRadioButton getRadPreconStart() {
         return radPreconStart;
     }
 
+    /** @return {@link java.lang.String} */
     public String getPrecon() {
         return (String) cbxPrecon.getSelectedItem();
     }
@@ -296,5 +306,47 @@ public enum VSubmenuQuestData implements IVSubmenu {
      */
     public FLabel getBtnEmbark() {
         return btnEmbark;
+    }
+
+    //========== Overridden from IVDoc
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_QUESTDATA;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuQuestData.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

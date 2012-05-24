@@ -12,8 +12,12 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
 import net.miginfocom.swing.MigLayout;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.home.StartButton;
@@ -29,9 +33,13 @@ import forge.gui.toolbox.FScrollPane;
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  *
  */
-public enum VSubmenuConstructed implements IVSubmenu {
+public enum VSubmenuConstructed implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Constructed Mode");
 
     /** */
     private final JPanel pnl            = new JPanel();
@@ -60,10 +68,10 @@ public enum VSubmenuConstructed implements IVSubmenu {
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
     private final FLabel btnHumanRandom = new FLabel.Builder().text("Random").fontSize(14).opaque(true)
-            .hoverable(true).fontScaleAuto(false).build();
+            .hoverable(true).build();
 
     private final FLabel btnAIRandom = new FLabel.Builder().text("Random").fontSize(14).opaque(true)
-            .hoverable(true).fontScaleAuto(false).build();
+            .hoverable(true).build();
 
     private VSubmenuConstructed() {
         // Radio button group: Human
@@ -90,10 +98,10 @@ public enum VSubmenuConstructed implements IVSubmenu {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuConstructed.SINGLETON_INSTANCE;
     }
 
@@ -117,8 +125,8 @@ public enum VSubmenuConstructed implements IVSubmenu {
      * @see forge.gui.home.IVSubmenu#getItemEnum()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.CONSTRUCTED.toString();
+    public EDocID getItemEnum() {
+        return EDocID.HOME_CONSTRUCTED;
     }
 
     /* (non-Javadoc)
@@ -147,7 +155,7 @@ public enum VSubmenuConstructed implements IVSubmenu {
         // Add radio buttons: Human
         pnlRadiosHuman.setOpaque(false);
         pnlRadiosHuman.add(new FLabel.Builder().text("Select your deck:")
-                .fontStyle(Font.BOLD).fontScaleAuto(false).fontSize(16)
+                .fontStyle(Font.BOLD).fontSize(16)
                 .fontAlign(SwingConstants.LEFT).build(), strRadioConstraints);
         pnlRadiosHuman.add(radColorsHuman, strRadioConstraints);
         pnlRadiosHuman.add(radThemesHuman, strRadioConstraints);
@@ -157,7 +165,7 @@ public enum VSubmenuConstructed implements IVSubmenu {
         // Add radio buttons: AI
         pnlRadiosAI.setOpaque(false);
         pnlRadiosAI.add(new FLabel.Builder().text("Select an AI deck:")
-                .fontStyle(Font.BOLD).fontScaleAuto(false).fontSize(16)
+                .fontStyle(Font.BOLD).fontSize(16)
                 .fontAlign(SwingConstants.LEFT).build(), strRadioConstraints);
         pnlRadiosAI.add(radColorsAI, strRadioConstraints);
         pnlRadiosAI.add(radThemesAI, strRadioConstraints);
@@ -185,6 +193,9 @@ public enum VSubmenuConstructed implements IVSubmenu {
         pnl.add(pnlDecksHuman, strRightConstraints);
 
         pnl.add(pnlStart, "w 220px + 30%, span 2 1, gap 0 0 0 50px");
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
     }
 
     /** @return {@link javax.swing.JList} */
@@ -265,5 +276,47 @@ public enum VSubmenuConstructed implements IVSubmenu {
     /** @return {@link javax.swing.JCheckBox} */
     public JCheckBox getCbRemoveSmall() {
         return cbRemoveSmall;
+    }
+
+    //========== Overridden from IVDoc
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_CONSTRUCTED;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuConstructed.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

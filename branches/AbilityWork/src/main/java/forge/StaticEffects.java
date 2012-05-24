@@ -23,7 +23,6 @@ import java.util.HashMap;
 
 import com.esotericsoftware.minlog.Log;
 
-import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.replacement.ReplacementEffect;
 import forge.card.spellability.SpellAbility;
 import forge.card.staticability.StaticAbility;
@@ -329,11 +328,6 @@ public class StaticEffects {
                     this.addStateBasedEffect(effect);
                     Log.debug("Added " + effect);
                 }
-            }
-            if (c.isEmblem() && !CardFactoryUtil.checkEmblemKeyword(c).equals("")) {
-                final String s = CardFactoryUtil.checkEmblemKeyword(c);
-                this.addStateBasedEffect(s);
-                Log.debug("Added " + s);
             }
         }
         Log.debug("== End add state effects ==");

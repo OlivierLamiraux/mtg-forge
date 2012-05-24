@@ -11,6 +11,7 @@ import forge.Command;
 import forge.Constant;
 import forge.Singletons;
 import forge.control.RestartUtil;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 import forge.gui.toolbox.FSkin;
 import forge.properties.ForgePreferences;
@@ -22,7 +23,7 @@ import forge.properties.ForgePreferences.FPref;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuPreferences implements ICSubmenu {
+public enum CSubmenuPreferences implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -32,9 +33,6 @@ public enum CSubmenuPreferences implements ICSubmenu {
     @SuppressWarnings("serial")
     @Override
     public void initialize() {
-        VSubmenuPreferences.SINGLETON_INSTANCE.populate();
-        CSubmenuPreferences.SINGLETON_INSTANCE.update();
-
         final VSubmenuPreferences view = VSubmenuPreferences.SINGLETON_INSTANCE;
         final ForgePreferences prefs = Singletons.getModel().getPreferences();
 
@@ -220,5 +218,13 @@ public enum CSubmenuPreferences implements ICSubmenu {
 
         prefs.setPref(FPref.UI_SKIN, name);
         prefs.save();
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

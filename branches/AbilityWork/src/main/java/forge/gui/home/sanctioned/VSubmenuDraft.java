@@ -18,8 +18,12 @@ import javax.swing.text.StyledDocument;
 import net.miginfocom.swing.MigLayout;
 import forge.game.GameType;
 import forge.gui.SOverlayUtils;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.home.StartButton;
@@ -36,9 +40,13 @@ import forge.gui.toolbox.FSkin;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VSubmenuDraft implements IVSubmenu {
+public enum VSubmenuDraft implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Draft Mode");
 
     /** */
     private final JPanel pnl            = new JPanel();
@@ -46,47 +54,11 @@ public enum VSubmenuDraft implements IVSubmenu {
     private final DeckLister lstHumanDecks = new DeckLister(GameType.Draft);
     private final JList lstAI           = new FList();
     private final JLabel btnBuildDeck   = new FLabel.Builder()
-        .fontScaleAuto(false).fontSize(16)
+        .fontSize(16)
         .opaque(true).hoverable(true).text("Start A New Draft").build();
     private final JLabel btnDirections = new FLabel.Builder()
-        .fontScaleAuto(false).fontSize(16)
+        .fontSize(16)
         .text("Click For Directions").fontAlign(SwingConstants.CENTER).build();
-
-    /* (non-Javadoc)
-     * @see forge.view.home.IViewSubmenu#populate()
-     */
-    @Override
-    public void populate() {
-        pnl.removeAll();
-        pnl.setOpaque(false);
-        pnl.setLayout(new MigLayout("insets 0, gap 0, hidemode 2"));
-
-        lstAI.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        btnStart.setEnabled(false);
-
-        // Layout
-        final JLabel lblHuman = new JLabel("Select your deck: ");
-        lblHuman.setFont(FSkin.getBoldFont(16));
-        lblHuman.setHorizontalAlignment(SwingConstants.CENTER);
-        lblHuman.setForeground(FSkin.getColor(FSkin.Colors.CLR_TEXT));
-        pnl.add(lblHuman, "w 60%!, gap 5% 5% 2% 2%");
-
-        final JLabel lblAI = new JLabel("Who will you play?");
-        lblAI.setFont(FSkin.getBoldFont(16));
-        lblAI.setHorizontalAlignment(SwingConstants.CENTER);
-        lblAI.setForeground(FSkin.getColor(FSkin.Colors.CLR_TEXT));
-        pnl.add(lblAI, "w 25%!, gap 0 0 2% 2%, wrap");
-
-        pnl.add(new FScrollPane(lstHumanDecks), "w 60%!, h 30%!, gap 5% 5% 2% 2%");
-
-        pnl.add(new FScrollPane(lstAI), "w 25%!, h 37%!, gap 0 0 2% 0, span 1 2, wrap");
-
-        pnl.add(btnBuildDeck, "w 60%!, h 5%!, gap 5% 5% 0 0, wrap");
-
-        pnl.add(btnDirections, "alignx center, span 2 1, gap 5% 5% 5% 2%, wrap");
-
-        pnl.add(btnStart, "gap 5% 5% 0 0, ax center, span 2 1, wrap");
-    }
 
     /* (non-Javadoc)
      * @see forge.view.home.IViewSubmenu#getGroup()
@@ -113,19 +85,11 @@ public enum VSubmenuDraft implements IVSubmenu {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getMenuName()
+     * @see forge.gui.home.IVSubmenu#getItemEnum()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.LIMITED_DRAFT.toString();
-    }
-
-    /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
-     */
-    @Override
-    public ICSubmenu getControl() {
-        return CSubmenuDraft.SINGLETON_INSTANCE;
+    public EDocID getItemEnum() {
+        return EDocID.HOME_DRAFT;
     }
 
     /** @return {@link javax.swing.JLabel} */
@@ -187,14 +151,14 @@ public enum VSubmenuDraft implements IVSubmenu {
         tpnDirections.setText(instructions);
 
         final StyledDocument doc = tpnDirections.getStyledDocument();
-        SimpleAttributeSet center = new SimpleAttributeSet();
+        final SimpleAttributeSet center = new SimpleAttributeSet();
         StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
         doc.setParagraphAttributes(0, doc.getLength(), center, false);
 
         final JButton btnCloseBig = new FButton("OK");
         btnCloseBig.setBounds(new Rectangle((w / 2 - 100), 510, 200, 30));
         btnCloseBig.addActionListener(new ActionListener() { @Override
-            public void actionPerformed(ActionEvent arg0) { SOverlayUtils.hideOverlay(); } });
+            public void actionPerformed(final ActionEvent arg0) { SOverlayUtils.hideOverlay(); } });
 
         final FPanel pnl = new FPanel();
         pnl.setCornerDiameter(0);
@@ -207,5 +171,94 @@ public enum VSubmenuDraft implements IVSubmenu {
         overlay.add(btnCloseBig);
         overlay.add(pnl);
         SOverlayUtils.showOverlay();
+    }
+
+    //========== Overridden from IVDoc
+
+    /* (non-Javadoc)
+     * @see forge.view.home.IViewSubmenu#populate()
+     */
+    @Override
+    public void populate() {
+        pnl.removeAll();
+        pnl.setOpaque(false);
+        pnl.setLayout(new MigLayout("insets 0, gap 0, hidemode 2"));
+
+        lstAI.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        btnStart.setEnabled(false);
+
+        // Layout
+        final JLabel lblHuman = new JLabel("Select your deck: ");
+        lblHuman.setFont(FSkin.getBoldFont(16));
+        lblHuman.setHorizontalAlignment(SwingConstants.CENTER);
+        lblHuman.setForeground(FSkin.getColor(FSkin.Colors.CLR_TEXT));
+        pnl.add(lblHuman, "w 60%!, gap 5% 5% 2% 2%");
+
+        final JLabel lblAI = new JLabel("Who will you play?");
+        lblAI.setFont(FSkin.getBoldFont(16));
+        lblAI.setHorizontalAlignment(SwingConstants.CENTER);
+        lblAI.setForeground(FSkin.getColor(FSkin.Colors.CLR_TEXT));
+        pnl.add(lblAI, "w 25%!, gap 0 0 2% 2%, wrap");
+
+        pnl.add(new FScrollPane(lstHumanDecks), "w 60%!, h 30%!, gap 5% 5% 2% 2%");
+
+        pnl.add(new FScrollPane(lstAI), "w 25%!, h 37%!, gap 0 0 2% 0, span 1 2, wrap");
+
+        pnl.add(btnBuildDeck, "w 60%!, h 5%!, gap 5% 5% 0 0, wrap");
+
+        pnl.add(btnDirections, "alignx center, span 2 1, gap 5% 5% 5% 2%, wrap");
+
+        pnl.add(btnStart, "gap 5% 5% 0 0, ax center, span 2 1, wrap");
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_DRAFT;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(final DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
+     */
+    @Override
+    public ICSubmenu getSubmenuControl() {
+        return CSubmenuDraft.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuDraft.SINGLETON_INSTANCE;
     }
 }

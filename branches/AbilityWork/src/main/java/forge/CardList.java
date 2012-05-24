@@ -716,6 +716,20 @@ public class CardList implements Iterable<Card> {
 
     /**
      * <p>
+     * removeAll.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.Card} object.
+     */
+    public final void removeAll(final CardList list) {
+        for (Card c : list) {
+            this.list.remove(c);
+        }
+    }
+
+    /**
+     * <p>
      * clear.
      * </p>
      */
@@ -761,7 +775,7 @@ public class CardList implements Iterable<Card> {
         return this.filter(new CardListFilter() {
             @Override
             public boolean addCard(final Card c) {
-                return c.canBeTargetedBy(source);
+                return source.canTarget(c);
             }
         });
     }

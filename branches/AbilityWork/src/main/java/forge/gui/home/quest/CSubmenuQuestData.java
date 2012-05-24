@@ -16,6 +16,7 @@ import forge.AllZone;
 import forge.Command;
 import forge.Singletons;
 import forge.gui.GuiUtils;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.ICSubmenu;
 import forge.properties.ForgeProps;
 import forge.properties.NewConstants;
@@ -33,7 +34,7 @@ import forge.quest.io.QuestDataIO;
  *
  */
 @SuppressWarnings("serial")
-public enum CSubmenuQuestData implements ICSubmenu {
+public enum CSubmenuQuestData implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -50,9 +51,6 @@ public enum CSubmenuQuestData implements ICSubmenu {
      */
     @Override
     public void initialize() {
-        VSubmenuQuestData.SINGLETON_INSTANCE.populate();
-        CSubmenuQuestData.SINGLETON_INSTANCE.update();
-
         VSubmenuQuestData.SINGLETON_INSTANCE.getBtnEmbark().setCommand(
                 new Command() { @Override public void execute() { newQuest(); } });
     }
@@ -189,7 +187,7 @@ public enum CSubmenuQuestData implements ICSubmenu {
                 AllZone.getQuest().getName() + ".dat");
         Singletons.getModel().getQuestPreferences().save();
 
-        SubmenuQuestUtil.updateStatsAndPet();
+        SSubmenuQuestUtil.updateStatsAndPet();
 
         CSubmenuDuels.SINGLETON_INSTANCE.update();
         CSubmenuChallenges.SINGLETON_INSTANCE.update();
@@ -199,5 +197,13 @@ public enum CSubmenuQuestData implements ICSubmenu {
     /** @return  */
     private Map<String, QuestData> getAllQuests() {
         return arrQuests;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

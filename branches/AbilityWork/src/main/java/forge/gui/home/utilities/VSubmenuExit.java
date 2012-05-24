@@ -3,8 +3,8 @@ package forge.gui.home.utilities;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import forge.gui.framework.EDocID;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.toolbox.FLabel;
@@ -32,7 +32,7 @@ public enum VSubmenuExit implements IVSubmenu {
 
         pnl.add(new FLabel.Builder().text("Open Deck Editor").opaque(true)
                 .hoverable(true).cmdClick(CSubmenuDeckEditor.SINGLETON_INSTANCE.getMenuCommand())
-                .fontScaleAuto(false).fontSize(16).build(), "w 200px!, h 40px!");
+                .fontSize(16).build(), "w 200px!, h 40px!");
     }
 
     /* (non-Javadoc)
@@ -60,18 +60,18 @@ public enum VSubmenuExit implements IVSubmenu {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getMenuName()
+     * @see forge.gui.home.IVSubmenu#getItemEnum()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.UTILITIES_EXIT.toString();
+    public EDocID getItemEnum() {
+        return null;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuExit.SINGLETON_INSTANCE;
     }
 }

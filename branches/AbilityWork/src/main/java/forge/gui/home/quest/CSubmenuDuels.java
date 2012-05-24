@@ -6,10 +6,11 @@ import java.util.List;
 
 import forge.AllZone;
 import forge.Command;
-import forge.gui.home.EMenuItem;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.home.CMainMenu;
 import forge.gui.home.ICSubmenu;
-import forge.gui.home.VHomeUI;
-import forge.gui.home.quest.SubmenuQuestUtil.SelectablePanel;
+import forge.gui.home.quest.SSubmenuQuestUtil.SelectablePanel;
 import forge.quest.QuestController;
 import forge.quest.QuestEventDuel;
 import forge.quest.bazaar.QuestPetController;
@@ -20,7 +21,7 @@ import forge.quest.bazaar.QuestPetController;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuDuels implements ICSubmenu {
+public enum CSubmenuDuels implements ICSubmenu, ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -34,7 +35,7 @@ public enum CSubmenuDuels implements ICSubmenu {
         return new Command() {
             public void execute() {
                 if (qc.getAchievements() == null) {
-                    VHomeUI.SINGLETON_INSTANCE.itemClick(EMenuItem.QUEST_DATA);
+                    CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDATA);
                 }
             }
         };
@@ -47,25 +48,23 @@ public enum CSubmenuDuels implements ICSubmenu {
     @Override
     public void initialize() {
         final VSubmenuDuels view = VSubmenuDuels.SINGLETON_INSTANCE;
-        view.populate();
-        CSubmenuDuels.SINGLETON_INSTANCE.update();
 
         view.getBtnSpellShop().setCommand(
                 new Command() { @Override
-                    public void execute() { SubmenuQuestUtil.showSpellShop(); } });
+                    public void execute() { SSubmenuQuestUtil.showSpellShop(); } });
 
         view.getBtnBazaar().setCommand(
                 new Command() { @Override
-                    public void execute() { SubmenuQuestUtil.showBazaar(); } });
+                    public void execute() { SSubmenuQuestUtil.showBazaar(); } });
 
         view.getBtnStart().addActionListener(
                 new ActionListener() { @Override
-            public void actionPerformed(final ActionEvent e) { SubmenuQuestUtil.startGame(); } });
+            public void actionPerformed(final ActionEvent e) { SSubmenuQuestUtil.startGame(); } });
 
         view.getBtnCurrentDeck().setCommand(
                 new Command() { @Override
                     public void execute() {
-                        VHomeUI.SINGLETON_INSTANCE.itemClick(EMenuItem.QUEST_DECKS);
+                        CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDECKS);
                     }
                 });
 
@@ -94,7 +93,7 @@ public enum CSubmenuDuels implements ICSubmenu {
      */
     @Override
     public void update() {
-        SubmenuQuestUtil.updateStatsAndPet();
+        SSubmenuQuestUtil.updateStatsAndPet();
 
         final VSubmenuDuels view = VSubmenuDuels.SINGLETON_INSTANCE;
 
@@ -109,5 +108,13 @@ public enum CSubmenuDuels implements ICSubmenu {
                 view.getPnlDuels().add(temp, "w 96%!, h 86px!, gap 2% 0 5px 5px");
             }
         }
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
+    @Override
+    public Command getCommandOnSelect() {
+        return null;
     }
 }

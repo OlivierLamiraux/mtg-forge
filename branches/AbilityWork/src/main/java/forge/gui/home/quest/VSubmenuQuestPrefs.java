@@ -15,8 +15,12 @@ import javax.swing.SwingConstants;
 
 import net.miginfocom.swing.MigLayout;
 import forge.Singletons;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.toolbox.FLabel;
@@ -32,9 +36,13 @@ import forge.quest.data.QuestPreferences.QPref;
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  *
  */
-public enum VSubmenuQuestPrefs implements IVSubmenu {
+public enum VSubmenuQuestPrefs implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Quest Preferences");
 
     /** */
     private final JPanel pnl = new JPanel();
@@ -78,7 +86,7 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         pnlTitleRewards.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleRewards.add(new FLabel.Builder().text("Rewards")
                 .icon(FSkin.getIcon(FSkin.QuestIcons.ICO_COIN))
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
 
         pnlContent.add(pnlTitleRewards, "w 96%!, h 36px!, gap 2% 0 10px 20px");
         pnlContent.add(pnlRewards, "w 96%!, gap 2% 0 10px 20px");
@@ -90,7 +98,7 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         pnlTitleBooster.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleBooster.add(new FLabel.Builder().text("Booster Pack Ratios")
                 .icon(FSkin.getIcon(FSkin.QuestIcons.ICO_BOOK))
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
         pnlContent.add(pnlTitleBooster, "w 96%!, h 36px!, gap 2% 0 10px 10px");
         pnlContent.add(pnlBooster, "w 96%!, gap 2% 0 10px 20px");
         populateBooster();
@@ -101,7 +109,7 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         pnlTitleDifficulty.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleDifficulty.add(new FLabel.Builder().text("Difficulty Adjustments")
                 .icon(FSkin.getIcon(FSkin.QuestIcons.ICO_NOTES))
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
         pnlContent.add(pnlTitleDifficulty, "w 96%!, h 36px!, gap 2% 0 10px 10px");
         pnlContent.add(pnlDifficulty, "w 96%!, gap 2% 0 10px 20px");
         populateDifficulty();
@@ -112,7 +120,7 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         pnlTitleShop.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
         pnlTitleShop.add(new FLabel.Builder().text("Shop Preferences")
                 .icon(FSkin.getIcon(FSkin.QuestIcons.ICO_COIN))
-                .fontScaleAuto(false).fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
+                .fontSize(16).build(), "h 95%!, gap 0 0 2.5% 0");
         pnlContent.add(pnlTitleShop, "w 96%!, h 36px!, gap 2% 0 10px 10px");
         pnlContent.add(pnlShop, "w 96%!, gap 2% 0 10px 20px");
         populateShop();
@@ -127,6 +135,9 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         pnl.add(scrContent, "w 100%!, growy, pushy, gap 0 0 10px 10px");
 
         CSubmenuQuestPrefs.resetErrors();
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
     }
 
     /* (non-Javadoc)
@@ -157,15 +168,15 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
      * @see forge.gui.home.IVSubmenu#getMenuName()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.QUEST_PREFS.toString();
+    public EDocID getItemEnum() {
+        return EDocID.HOME_QUESTPREFS;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuQuestPrefs.SINGLETON_INSTANCE;
     }
 
@@ -444,5 +455,47 @@ public enum VSubmenuQuestPrefs implements IVSubmenu {
         public void setPreviousText(String s0) {
             this.previousText = s0;
         }
+    }
+
+    //========== Overridden from IVDoc
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_QUESTPREFS;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuQuestPrefs.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

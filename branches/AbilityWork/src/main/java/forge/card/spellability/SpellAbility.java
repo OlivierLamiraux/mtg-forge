@@ -26,11 +26,11 @@ import forge.CardList;
 import forge.Command;
 import forge.CommandArgs;
 import forge.GameEntity;
+import forge.card.CardManaCost;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cost.Cost;
 import forge.card.mana.Mana;
 import forge.control.input.Input;
-import forge.game.player.ComputerUtil;
 import forge.game.player.Player;
 
 //only SpellAbility can go on the stack
@@ -175,29 +175,6 @@ public abstract class SpellAbility {
      */
     public abstract boolean canPlay();
 
-    /**
-     * Can afford.
-     * 
-     * @return boolean
-     */
-    public boolean canAfford() {
-        Player activator = this.getActivatingPlayer();
-        if (activator == null) {
-            activator = this.getSourceCard().getController();
-        }
-
-        return ComputerUtil.canPayCost(this, activator);
-    }
-
-    /**
-     * Can play and afford.
-     * 
-     * @return true, if successful
-     */
-    public final boolean canPlayAndAfford() {
-        return this.canPlay() && this.canAfford();
-    }
-
     // all Spell's and Abilities must override this method
     /**
      * <p>
@@ -282,10 +259,14 @@ public abstract class SpellAbility {
      * @param cost
      *            a {@link java.lang.String} object.
      */
-    public void setManaCost(final String cost) {
-        this.manaCost = cost;
+    public void setManaCost(final CardManaCost cost) {
+        this.manaCost = cost.toString();
     }
 
+    public void setManaCost(final String cost) {
+        this.manaCost = cost;
+    }    
+    
     /**
      * <p>
      * Getter for the field <code>additionalManaCost</code>.
@@ -1656,6 +1637,8 @@ public abstract class SpellAbility {
      */
     public final boolean canTarget(final GameEntity entity) {
         if (entity.isValid(this.getTarget().getValidTgts(), this.getActivatingPlayer(), this.getSourceCard())
+                && (this.getTarget() == null || !this.getTarget().isUniqueTargets()
+                    || !TargetSelection.getUniqueTargets(this).contains(entity))
                 && entity.canBeTargetedBy(this)) {
             return true;
         }

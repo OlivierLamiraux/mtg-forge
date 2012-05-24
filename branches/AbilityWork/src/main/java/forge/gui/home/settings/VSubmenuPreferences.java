@@ -28,8 +28,12 @@ import org.apache.commons.lang3.StringUtils;
 import forge.Singletons;
 import forge.control.KeyboardShortcuts;
 import forge.control.KeyboardShortcuts.Shortcut;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
+import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.EMenuItem;
 import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.toolbox.FLabel;
@@ -44,9 +48,13 @@ import forge.properties.NewConstants.Lang.OldGuiNewGame.NewGameText;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VSubmenuPreferences implements IVSubmenu {
+public enum VSubmenuPreferences implements IVSubmenu, IVDoc {
     /** */
     SINGLETON_INSTANCE;
+
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Preferences");
 
     /** */
     private final JPanel pnl = new JPanel();
@@ -55,7 +63,7 @@ public enum VSubmenuPreferences implements IVSubmenu {
             .hoverable(true).text("Reset to defaults").build();
 
     private final FLabel lblTitleSkin = new FLabel.Builder()
-        .text("Choose Skin").fontScaleAuto(false).fontStyle(Font.BOLD).fontSize(14).build();
+        .text("Choose Skin").fontStyle(Font.BOLD).fontSize(14).build();
 
     private final JList lstChooseSkin = new FList();
     private final FLabel lblChooseSkin = new FLabel.Builder().fontSize(12).fontStyle(Font.ITALIC)
@@ -157,6 +165,9 @@ public enum VSubmenuPreferences implements IVSubmenu {
         pnl.add(new FScrollPane(pnlPrefs,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), "w 100%!, h 100%!");
+
+        parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0"));
+        parentCell.getBody().add(pnl, "w 98%!, h 98%!, gap 1% 0 1% 0");
     }
 
     /* (non-Javadoc)
@@ -184,18 +195,18 @@ public enum VSubmenuPreferences implements IVSubmenu {
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getMenuName()
+     * @see forge.gui.home.IVSubmenu#getItemEnum()
      */
     @Override
-    public String getItemEnum() {
-        return EMenuItem.SETTINGS_PREFS.toString();
+    public EDocID getItemEnum() {
+        return EDocID.HOME_PREFERENCES;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getControl()
+     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
      */
     @Override
-    public ICSubmenu getControl() {
+    public ICSubmenu getSubmenuControl() {
         return CSubmenuPreferences.SINGLETON_INSTANCE;
     }
 
@@ -400,5 +411,47 @@ public enum VSubmenuPreferences implements IVSubmenu {
     /** @return {@link forge.gui.toolbox.FLabel} */
     public FLabel getBtnReset() {
         return btnReset;
+    }
+
+    //========== Overridden from IVDoc
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
+    @Override
+    public EDocID getDocumentID() {
+        return EDocID.HOME_PREFERENCES;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
+        return CSubmenuPreferences.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        this.parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

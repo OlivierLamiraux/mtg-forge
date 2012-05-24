@@ -17,13 +17,16 @@
  */
 package forge.card.spellability;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import forge.AllZone;
 import forge.AllZoneUtil;
 import forge.Card;
+import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
+import forge.card.mana.Mana;
 import forge.card.mana.ManaPool;
 import forge.card.trigger.TriggerType;
 import forge.control.input.InputPayManaCostUtil;
@@ -43,7 +46,8 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
 
     private String origProduced;
     private String lastExpressChoice = "";
-    private String lastProduced = "";
+    private String manaRestrictions = "";
+    private ArrayList<Mana> lastProduced = new ArrayList<Mana>();;
     private int amount = 1;
 
     /** The reflected. */
@@ -93,7 +97,7 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
      *            a int.
      */
     public AbilityMana(final Card sourceCard, final String parse, final String produced, final int num) {
-        this(sourceCard, new Cost(sourceCard, parse, true), produced, num);
+        this(sourceCard, new Cost(sourceCard, parse, true), produced, num, "");
     }
 
     /**
@@ -109,7 +113,7 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
      *            a {@link java.lang.String} object.
      */
     public AbilityMana(final Card sourceCard, final Cost cost, final String produced) {
-        this(sourceCard, cost, produced, 1);
+        this(sourceCard, cost, produced, 1, "");
     }
 
     /**
@@ -123,14 +127,38 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
      *            a {@link forge.card.cost.Cost} object.
      * @param produced
      *            a {@link java.lang.String} object.
+     * @param restrictions
+     *            a {@link java.lang.String} object.
+     */
+    public AbilityMana(final Card sourceCard, final Cost cost, final String produced, final String restrictions) {
+        this(sourceCard, cost, produced, 1, restrictions);
+    }
+
+    /**
+     * <p>
+     * Constructor for AbilityMana.
+     * </p>
+     * 
+     * @param sourceCard
+     *            a {@link forge.Card} object.
+     * @param cost
+     *            a {@link forge.card.cost.Cost} object.
+     * @param produced
+     *            a {@link java.lang.String} object.
+     * @param restrictions
+     *            a {@link java.lang.String} object.
      * @param num
      *            a int.
      */
-    public AbilityMana(final Card sourceCard, final Cost cost, final String produced, final int num) {
+    public AbilityMana(final Card sourceCard, final Cost cost, final String produced, final int num, final String restrictions) {
         super(sourceCard, cost, null);
 
         this.origProduced = produced;
         this.amount = num;
+        if (restrictions != null) {
+            this.manaRestrictions = restrictions;
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -170,9 +198,26 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
         // change this, once ManaPool moves to the Player
         // this.getActivatingPlayer().ManaPool.addManaToFloating(origProduced,
         // getSourceCard());
-        manaPool.addManaToFloating(produced, source);
-        //store produced to last produced
-        this.lastProduced = produced;
+
+        //clear lastProduced
+        this.lastProduced.clear();
+
+        // loop over mana produced string
+        for (final String c : produced.split(" ")) {
+            try {
+                int colorlessAmount = Integer.parseInt(c);
+                final String color = InputPayManaCostUtil.getLongColorString(c);
+                for (int i = 0; i < colorlessAmount; i++) {
+                    this.lastProduced.add(new Mana(color, source, this));
+                }
+            } catch (NumberFormatException e) {
+                final String color = InputPayManaCostUtil.getLongColorString(c);
+                this.lastProduced.add(new Mana(color, source, this));
+            }
+        }
+
+        // add the mana produced to the mana pool
+        manaPool.addManaToFloating(this.lastProduced);
 
         // TODO all of the following would be better as trigger events
         // "tapped for mana"
@@ -225,6 +270,82 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * <p>
+     * cannotCounterPaidWith.
+     * </p>
+     * 
+     * @return a {@link java.lang.String} object.
+     */
+    public boolean cannotCounterPaidWith() {
+        final AbilityFactory manaAF = this.getAbilityFactory();
+        if (manaAF == null) {
+            return false;
+        }
+        HashMap<String, String> mapParams = this.getAbilityFactory().getMapParams();
+        if (mapParams.containsKey("AddsNoCounter")) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * <p>
+     * getManaRestrictions.
+     * </p>
+     * 
+     * @return a {@link java.lang.String} object.
+     */
+    public String getManaRestrictions() {
+        return this.manaRestrictions;
+    }
+
+    /**
+     * <p>
+     * meetsManaRestrictions.
+     * </p>
+     * 
+     * @param sa
+     *            a {@link forge.card.spellability.SpellAbility} object.
+     * @return a boolean.
+     */
+    public boolean meetsManaRestrictions(final SpellAbility sa) {
+        // No restrictions
+        if (this.manaRestrictions.isEmpty()) {
+            return true;
+        }
+
+        // Loop over restrictions
+        for (String restriction : this.manaRestrictions.split(",")) {
+            if (restriction.startsWith("CostContainsX")) {
+                if (sa.isXCost()) {
+                    return true;
+                }
+                else {
+                    continue;
+                }
+            }
+
+            if (sa.isAbility()) {
+                if (restriction.startsWith("Activated")) {
+                    restriction = restriction.replace("Activated", "Card");
+                }
+                else {
+                    continue;
+                }
+            }
+
+            if (sa.getSourceCard() != null) {
+                if (sa.getSourceCard().isValid(restriction, this.getActivatingPlayer(), this.getSourceCard())) {
+                    return true;
+                }
+            }
+
+        }
+
+        return false;
     }
 
     /**
@@ -307,7 +428,7 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
      *
      * @return a {@link java.lang.String} object.
      */
-    public String getLastProduced() {
+    public ArrayList<Mana> getLastProduced() {
         return this.lastProduced;
     }
 

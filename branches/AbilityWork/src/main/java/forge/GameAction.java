@@ -34,6 +34,7 @@ import forge.card.cost.CostMana;
 import forge.card.cost.CostPart;
 import forge.card.cost.CostPayment;
 import forge.card.mana.ManaCost;
+import forge.card.mana.ManaCostShard;
 import forge.card.spellability.Ability;
 import forge.card.spellability.AbilityActivated;
 import forge.card.spellability.AbilityStatic;
@@ -1007,7 +1008,13 @@ public class GameAction {
         }
 
         if (this.checkEndGameState()) {
+            // Clear Simultaneous triggers at the end of the game
             new ViewWinLose();
+            Singletons.getModel().getGameState().getStack().clearSimultaneousStack();
+            if (!refreeze) {
+                AllZone.getStack().unfreezeStack();
+            }
+            return;
         }
 
         // do this twice, sometimes creatures/permanents will survive when they
@@ -1750,10 +1757,7 @@ public class GameAction {
                     sa.setSourceCard(Singletons.getModel().getGameAction().moveToStack(c));
                 }
             }
-            boolean x = false;
-            if (sa.getSourceCard().getManaCost().contains("X")) {
-                x = true;
-            }
+            boolean x = sa.getSourceCard().getManaCost().getShardCount(ManaCostShard.X) > 0;
 
             if (sa.isKickerAbility()) {
                 final Command paid1 = new Command() {
@@ -2443,6 +2447,13 @@ public class GameAction {
                 manaCost = new ManaCost(manaC);
             }
         } // Khalni Hydra
+
+        for (Card c : cardsInPlay) {
+            final ArrayList<StaticAbility> staticAbilities = c.getStaticAbilities();
+            for (final StaticAbility stAb : staticAbilities) {
+                manaCost = stAb.applyAbility("CostChange", spell, manaCost);
+            }
+        }
         return manaCost;
     } // GetSpellCostChange
 

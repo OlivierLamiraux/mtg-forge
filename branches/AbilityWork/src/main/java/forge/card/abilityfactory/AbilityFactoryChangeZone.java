@@ -263,12 +263,6 @@ public final class AbilityFactoryChangeZone {
         if ((tgt != null) && !tgt.canTgtPlayer()) {
             sa.getTarget().setZone(origin);
         }
-
-        if (!(sa instanceof AbilitySub)) {
-            if (origin.contains(ZoneType.Battlefield) || params.get("Destination").equals("Battlefield")) {
-                af.getHostCard().setSVar("PlayMain1", "TRUE");
-            }
-        }
     }
 
     /**
@@ -453,7 +447,7 @@ public final class AbilityFactoryChangeZone {
         // Fetching should occur fairly often as it helps cast more spells, and
         // have access to more mana
         final Cost abCost = af.getAbCost();
-        final Card source = af.getHostCard();
+        final Card source = sa.getSourceCard();
         final HashMap<String, String> params = af.getMapParams();
         ZoneType origin = null;
         if (params.containsKey("Origin")) {
@@ -671,7 +665,7 @@ public final class AbilityFactoryChangeZone {
         final HashMap<String, String> params = af.getMapParams();
 
         final StringBuilder sb = new StringBuilder();
-        final Card host = af.getHostCard();
+        final Card host = sa.getSourceCard();
 
         if (!(sa instanceof AbilitySub)) {
             sb.append(host.getName()).append(" -");
@@ -898,13 +892,13 @@ public final class AbilityFactoryChangeZone {
                                                              // moving onto
                                                              // choosing
                                                              // a card{
-                GuiUtils.chooseOneOrNone(af.getHostCard().getName() + " - Looking at Library",
+                GuiUtils.chooseOneOrNone(sa.getSourceCard().getName() + " - Looking at Library",
                         player.getCardsIn(ZoneType.Library).toArray());
             }
 
             // Look at opponents hand before moving onto choosing a card
             if (origin.contains(ZoneType.Hand) && player.isComputer()) {
-                GuiUtils.chooseOneOrNone(af.getHostCard().getName() + " - Looking at Opponent's Hand", player
+                GuiUtils.chooseOneOrNone(sa.getSourceCard().getName() + " - Looking at Opponent's Hand", player
                         .getCardsIn(ZoneType.Hand).toArray());
             }
             fetchList = AbilityFactory.filterListByType(fetchList, params.get("ChangeType"), sa);
@@ -953,7 +947,7 @@ public final class AbilityFactoryChangeZone {
                         c.setTapped(true);
                     }
                     if (params.containsKey("GainControl")) {
-                        c.addController(af.getHostCard());
+                        c.addController(sa.getSourceCard());
                     }
 
                     if (params.containsKey("AttachedTo")) {
@@ -979,6 +973,9 @@ public final class AbilityFactoryChangeZone {
                     }
 
                     movedCard = Singletons.getModel().getGameAction().moveTo(c.getController().getZone(destination), c);
+                    if (params.containsKey("Tapped")) {
+                        movedCard.setTapped(true);
+                    }
                 } else if (destination.equals(ZoneType.Exile)) {
                     movedCard = Singletons.getModel().getGameAction().exile(c);
                     if (params.containsKey("ExileFaceDown")) {
@@ -1136,10 +1133,10 @@ public final class AbilityFactoryChangeZone {
                 Singletons.getModel().getGameAction().moveToLibrary(c, libraryPos);
             } else if (ZoneType.Battlefield.equals(destination)) {
                 if (params.containsKey("Tapped")) {
-                    c.tap();
+                    c.setTapped(true);
                 }
                 if (params.containsKey("GainControl")) {
-                    c.addController(af.getHostCard());
+                    c.addController(sa.getSourceCard());
                 }
 
                 if (params.containsKey("AttachedTo")) {
@@ -1171,6 +1168,9 @@ public final class AbilityFactoryChangeZone {
                 }
 
                 newCard = Singletons.getModel().getGameAction().moveTo(c.getController().getZone(destination), c);
+                if (params.containsKey("Tapped")) {
+                    newCard.setTapped(true);
+                }
             } else if (destination.equals(ZoneType.Exile)) {
                 newCard = Singletons.getModel().getGameAction().exile(c);
                 if (params.containsKey("ExileFaceDown")) {
@@ -1190,7 +1190,7 @@ public final class AbilityFactoryChangeZone {
         }
 
         if (!ZoneType.Battlefield.equals(destination) && !"Card".equals(type) && !defined) {
-            final String picked = af.getHostCard().getName() + " - Computer picked:";
+            final String picked = sa.getSourceCard().getName() + " - Computer picked:";
             if (fetched.size() > 0) {
                 GuiUtils.chooseOne(picked, fetched.toArray());
             } else {
@@ -1314,7 +1314,7 @@ public final class AbilityFactoryChangeZone {
     private static boolean changeKnownOriginCanPlayAI(final AbilityFactory af, final SpellAbility sa) {
         // Retrieve either this card, or target Cards in Graveyard
         final Cost abCost = af.getAbCost();
-        final Card source = af.getHostCard();
+        final Card source = sa.getSourceCard();
         final HashMap<String, String> params = af.getMapParams();
 
         final ZoneType origin = ZoneType.smartValueOf(params.get("Origin"));
@@ -1787,7 +1787,7 @@ public final class AbilityFactoryChangeZone {
         final HashMap<String, String> params = af.getMapParams();
 
         final StringBuilder sb = new StringBuilder();
-        final Card host = af.getHostCard();
+        final Card host = sa.getSourceCard();
 
         if (!(sa instanceof AbilitySub)) {
             sb.append(host.getName()).append(" -");
@@ -2004,7 +2004,7 @@ public final class AbilityFactoryChangeZone {
                             tgtC.setTapped(true);
                         }
                         if (params.containsKey("GainControl")) {
-                            tgtC.addController(af.getHostCard());
+                            tgtC.addController(sa.getSourceCard());
                         }
                         if (params.containsKey("AttachedTo")) {
                             final ArrayList<Card> list = AbilityFactory.getDefinedCards(sa.getSourceCard(),
@@ -2039,6 +2039,9 @@ public final class AbilityFactoryChangeZone {
                         if (params.containsKey("Ninjutsu") || params.containsKey("Attacking")) {
                             AllZone.getCombat().addAttacker(tgtC);
                             AllZone.getCombat().addUnblockedAttacker(tgtC);
+                        }
+                        if (params.containsKey("Tapped") || params.containsKey("Ninjutsu")) {
+                            tgtC.setTapped(true);
                         }
                     } else {
                         movedCard = Singletons.getModel().getGameAction().moveTo(destination, tgtC);
@@ -2601,7 +2604,7 @@ public final class AbilityFactoryChangeZone {
         // TODO build Stack Description will need expansion as more cards are
         // added
         final StringBuilder sb = new StringBuilder();
-        final Card host = af.getHostCard();
+        final Card host = sa.getSourceCard();
 
         if (!(sa instanceof AbilitySub)) {
             sb.append(host.getName()).append(" -");
@@ -2678,24 +2681,26 @@ public final class AbilityFactoryChangeZone {
                         continue;
                     }
                 }
-
                 if (params.containsKey("Tapped")) {
-                    c.tap();
+                    c.setTapped(true);
                 }
             }
 
             if (params.containsKey("GainControl")) {
-                c.addController(af.getHostCard());
+                c.addController(sa.getSourceCard());
                 Singletons.getModel().getGameAction().moveToPlay(c, sa.getActivatingPlayer());
             } else {
                 final Card movedCard = Singletons.getModel().getGameAction().moveTo(destination, c, libraryPos);
                 if (params.containsKey("ExileFaceDown")) {
                     movedCard.setState(CardCharactersticName.FaceDown);
                 }
+                if (params.containsKey("Tapped")) {
+                    movedCard.setTapped(true);
+                }
             }
 
             if (remember != null) {
-                AllZoneUtil.getCardState(af.getHostCard()).addRemembered(c);
+                AllZoneUtil.getCardState(sa.getSourceCard()).addRemembered(c);
             }
         }
 

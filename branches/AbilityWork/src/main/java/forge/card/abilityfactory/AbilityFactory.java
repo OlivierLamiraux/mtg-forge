@@ -1561,8 +1561,18 @@ public class AbilityFactory {
             amount = amount.substring(1);
         }
         
-        if (!ability.getSVar(amount).equals("")) {
-            final String[] calcX = ability.getSVar(amount).split("\\$");
+        String svarval;
+        if(ability != null)
+        {
+            svarval = ability.getSVar(amount);
+        }
+        else
+        {
+            svarval = card.getSVar(amount);
+        }
+        
+        if (!svarval.equals("")) {
+            final String[] calcX = svarval.split("\\$");
             if ((calcX.length == 1) || calcX[1].equals("none")) {
                 return 0;
             }
@@ -1572,7 +1582,7 @@ public class AbilityFactory {
             }
 
             if (calcX[0].startsWith("Number")) {
-                return CardFactoryUtil.xCount(card, ability.getSVar(amount)) * multiplier;
+                return CardFactoryUtil.xCount(card, svarval) * multiplier;
             } else if (calcX[0].startsWith("SVar")) {
                 final String[] l = calcX[1].split("/");
                 final String[] m = CardFactoryUtil.parseMath(l);

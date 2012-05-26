@@ -3924,7 +3924,7 @@ public class CardFactoryUtil {
         to.setDescription(from.getDescription());
         to.setStackDescription(from.getDescription());
         if(from.getAbilityFactory() != null) {
-            to.setAbilityFactory(from.getAbilityFactory());
+            to.setAbilityFactory(new AbilityFactory(from.getAbilityFactory()));
         }
         if(from.getSubAbility() != null) {
             to.setSubAbility(from.getSubAbility().getCopy());
@@ -3938,6 +3938,19 @@ public class CardFactoryUtil {
         
         for(String sVar : from.getSVars()) {
             to.setSVar(sVar, from.getSVar(sVar));
+        }
+    }
+    
+    public static void correctAbilityChainSourceCard(final SpellAbility sa, final Card card)
+    {
+        sa.setSourceCard(card);
+        if(sa.getAbilityFactory() != null)
+        {
+            sa.getAbilityFactory().setHostCard(card);
+        }
+        if(sa.getSubAbility() != null)
+        {
+            correctAbilityChainSourceCard(sa.getSubAbility(), card);
         }
     }
 

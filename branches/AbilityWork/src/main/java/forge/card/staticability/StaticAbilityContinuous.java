@@ -230,16 +230,12 @@ public class StaticAbilityContinuous {
             for(Card c : cardsIGainedAbilitiesFrom) {
                 for(SpellAbility sa : c.getSpellAbilities()) {
                     if(sa instanceof AbilityActivated) {
-                        SpellAbility newSA = (((AbilityActivated)sa).getCopy());
+                        SpellAbility newSA = ((AbilityActivated)sa).getCopy();
                         if(newSA == null) {
                             System.out.println("Uh-oh...");
                         }
-                        if(newSA.getAbilityFactory() != null) {
-                            if(newSA.getAbilityFactory().hasSubAbility()) {
-                                newSA.setSubAbility(newSA.getAbilityFactory().getSubAbility());
-                            }
-                        }
                         newSA.setType("Temporary");
+                        CardFactoryUtil.correctAbilityChainSourceCard(newSA, hostCard);
                         hostCard.addSpellAbility(newSA);
                     }
                 }

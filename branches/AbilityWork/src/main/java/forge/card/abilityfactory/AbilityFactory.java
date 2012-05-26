@@ -1565,6 +1565,10 @@ public class AbilityFactory {
         if(ability != null)
         {
             svarval = ability.getSVar(amount);
+            if(svarval.equals(""))
+            {
+                svarval = card.getSVar(amount);
+            }
         }
         else
         {

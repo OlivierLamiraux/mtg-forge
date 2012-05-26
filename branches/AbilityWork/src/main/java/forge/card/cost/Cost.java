@@ -49,21 +49,6 @@ public class Cost {
         return this.costParts;
     }
     
-    public final boolean hasXManaCost() {
-        for(CostPart cp : costParts)
-        {
-            if(cp instanceof CostMana)
-            {
-                if(!((CostMana)cp).hasNoXManaCost())
-                {
-                    return true;
-                }
-            }
-        }
-        
-        return false;
-    }
-    
     private SpellAbility assocSA = null;
     
     public void setSpellAbility(final SpellAbility sa) {

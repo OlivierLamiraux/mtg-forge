@@ -207,6 +207,11 @@ public class SpellPermanent extends Spell {
      */
     public SpellPermanent(final Card sourceCard, final Cost cost, final Target tgt, final boolean setDesc) {
         super(sourceCard, cost, tgt);
+        
+        if(cost.hasXManaCost())
+        {
+            this.setSVar("X", sourceCard.getSVar("X"));
+        }
 
         if (CardFactoryUtil.hasKeyword(sourceCard, "Champion") != -1) {
             final int n = CardFactoryUtil.hasKeyword(sourceCard, "Champion");

@@ -1567,6 +1567,10 @@ public class AbilityFactory {
             svarval = ability.getSVar(amount);
             if(svarval.equals(""))
             {
+                //Print a warning to console to help debug if an ability is not stolen properly.
+                System.out.println("WARNING:SVar fallback to card with ability present!");
+                System.out.println("Card:" + card.getName());
+                System.out.println("Ability:" + ability.toString());
                 svarval = card.getSVar(amount);
             }
         }

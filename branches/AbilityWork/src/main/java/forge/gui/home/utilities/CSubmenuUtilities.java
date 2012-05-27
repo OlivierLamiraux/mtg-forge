@@ -8,7 +8,6 @@ import forge.gui.download.GuiDownloadPrices;
 import forge.gui.download.GuiDownloadQuestImages;
 import forge.gui.download.GuiDownloadSetPicturesLQ;
 import forge.gui.framework.ICDoc;
-import forge.gui.home.ICSubmenu;
 
 /** 
  * Controls the utilities submenu in the home UI.
@@ -17,7 +16,7 @@ import forge.gui.home.ICSubmenu;
  *
  */
 @SuppressWarnings("serial")
-public enum CSubmenuUtilities implements ICSubmenu, ICDoc {
+public enum CSubmenuUtilities implements ICDoc {
     /** */
     SINGLETON_INSTANCE;
 
@@ -29,16 +28,10 @@ public enum CSubmenuUtilities implements ICSubmenu, ICDoc {
         public void execute() { new GuiDownloadSetPicturesLQ(null); } };
     private final Command cmdQuestImages = new Command() { @Override
         public void execute() { new GuiDownloadQuestImages(null); } };
+    private final Command cmdDownloadPrices = new Command() { @Override
+        public void execute() { new GuiDownloadPrices(null); } };
     private final Command cmdHowToPlay = new Command() { @Override
         public void execute() { VSubmenuUtilities.SINGLETON_INSTANCE.showHowToPlay(); } };
-
-    private final Command cmdDownloadPrices = new Command() {
-        @Override
-        public void execute() {
-            final GuiDownloadPrices gdp = new GuiDownloadPrices();
-            gdp.setVisible(true);
-        }
-    };
 
     private final Command cmdImportPictures = new Command() {
         @Override
@@ -69,14 +62,6 @@ public enum CSubmenuUtilities implements ICSubmenu, ICDoc {
         view.getBtnHowToPlay().setCommand(cmdHowToPlay);
         view.getBtnDownloadPrices().setCommand(cmdDownloadPrices);
         view.getBtnLicensing().setCommand(cmdLicensing);
-    }
-
-    /* (non-Javadoc)
-     * @see forge.control.home.IControlSubmenu#getCommand()
-     */
-    @Override
-    public Command getMenuCommand() {
-        return null;
     }
 
     /* (non-Javadoc)

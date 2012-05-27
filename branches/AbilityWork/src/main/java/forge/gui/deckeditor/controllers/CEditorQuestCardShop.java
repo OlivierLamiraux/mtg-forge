@@ -31,7 +31,6 @@ import forge.AllZone;
 import forge.deck.Deck;
 import forge.deck.DeckBase;
 import forge.gui.CardListViewer;
-import forge.gui.deckeditor.SEditorIO;
 import forge.gui.deckeditor.SEditorUtil;
 import forge.gui.deckeditor.tables.DeckController;
 import forge.gui.deckeditor.tables.SColumnUtil;
@@ -107,10 +106,6 @@ public final class CEditorQuestCardShop extends ACEditorBase<InventoryItem, Deck
         columnsCatalog.get(columnsCatalog.size() - 1).setSortAndDisplayFunctions(
                 this.fnPriceCompare, this.fnPriceGet);
 
-        columnsCatalog.add(SColumnUtil.getColumn(ColumnName.CAT_DECKS));
-        columnsCatalog.get(columnsCatalog.size() - 1).setSortAndDisplayFunctions(
-                this.fnDeckCompare, this.fnDeckGet);
-
         columnsCatalog.add(SColumnUtil.getColumn(ColumnName.CAT_NEW));
         columnsCatalog.get(columnsCatalog.size() - 1).setSortAndDisplayFunctions(
                 this.questData.getCards().getFnNewCompare(), this.questData.getCards().getFnNewGet());
@@ -123,13 +118,18 @@ public final class CEditorQuestCardShop extends ACEditorBase<InventoryItem, Deck
         columnsDeck.get(columnsDeck.size() - 1).setSortAndDisplayFunctions(
                 this.questData.getCards().getFnNewCompare(), this.questData.getCards().getFnNewGet());
 
+        columnsDeck.add(SColumnUtil.getColumn(ColumnName.DECK_DECKS));
+        columnsDeck.get(columnsDeck.size() - 1).setSortAndDisplayFunctions(
+                this.fnDeckCompare, this.fnDeckGet);
+
         // Setup with current column set
         this.getTableCatalog().setup(VCardCatalog.SINGLETON_INSTANCE, columnsCatalog);
         this.getTableDeck().setup(VCurrentDeck.SINGLETON_INSTANCE, columnsDeck);
 
         SEditorUtil.resetUI();
-        VCardCatalog.SINGLETON_INSTANCE.getPnlHeader().setVisible(false);
-        VCurrentDeck.SINGLETON_INSTANCE.getPnlHeader().setVisible(false);
+
+        VCardCatalog.SINGLETON_INSTANCE.getTabLabel().setText("Cards for sale");
+        VCurrentDeck.SINGLETON_INSTANCE.getTabLabel().setText("Your Cards");
     }
 
     // fills number of decks using each card
@@ -357,12 +357,10 @@ public final class CEditorQuestCardShop extends ACEditorBase<InventoryItem, Deck
      */
     @Override
     public boolean exit() {
-        final boolean okToExit = SEditorIO.confirmSaveChanges();
-        if (okToExit) {
-            SSubmenuQuestUtil.updateStatsAndPet();
-            AllZone.getQuest().save();
-            CSubmenuQuestDecks.SINGLETON_INSTANCE.update();
-        }
-        return okToExit;
+        SSubmenuQuestUtil.updateStatsAndPet();
+        AllZone.getQuest().save();
+        CSubmenuQuestDecks.SINGLETON_INSTANCE.update();
+
+        return true;
     }
 }

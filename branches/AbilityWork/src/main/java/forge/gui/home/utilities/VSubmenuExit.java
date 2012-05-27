@@ -3,9 +3,11 @@ package forge.gui.home.utilities;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import forge.gui.framework.DragCell;
+import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
+import forge.gui.framework.ICDoc;
 import forge.gui.home.EMenuGroup;
-import forge.gui.home.ICSubmenu;
 import forge.gui.home.IVSubmenu;
 import forge.gui.toolbox.FLabel;
 
@@ -19,6 +21,10 @@ public enum VSubmenuExit implements IVSubmenu {
     /** */
     SINGLETON_INSTANCE;
 
+    // Fields used with interface IVDoc
+    private DragCell parentCell;
+    private final DragTab tab = new DragTab("Exit");
+
     /** */
     private final JPanel pnl = new JPanel();
 
@@ -31,7 +37,7 @@ public enum VSubmenuExit implements IVSubmenu {
         pnl.setOpaque(false);
 
         pnl.add(new FLabel.Builder().text("Open Deck Editor").opaque(true)
-                .hoverable(true).cmdClick(CSubmenuDeckEditor.SINGLETON_INSTANCE.getMenuCommand())
+                .hoverable(true).cmdClick(CSubmenuDeckEditor.SINGLETON_INSTANCE.getCommandOnSelect())
                 .fontSize(16).build(), "w 200px!, h 40px!");
     }
 
@@ -41,14 +47,6 @@ public enum VSubmenuExit implements IVSubmenu {
     @Override
     public EMenuGroup getGroupEnum() {
         return EMenuGroup.UTILITIES;
-    }
-
-    /* (non-Javadoc)
-     * @see forge.view.home.IViewSubmenu#getPanel()
-     */
-    @Override
-    public JPanel getPanel() {
-        return pnl;
     }
 
     /* (non-Javadoc)
@@ -64,14 +62,46 @@ public enum VSubmenuExit implements IVSubmenu {
      */
     @Override
     public EDocID getItemEnum() {
-        return null;
+        return EDocID.HOME_EXIT;
     }
 
     /* (non-Javadoc)
-     * @see forge.gui.home.IVSubmenu#getSubmenuControl()
+     * @see forge.gui.framework.IVDoc#getDocumentID()
      */
     @Override
-    public ICSubmenu getSubmenuControl() {
+    public EDocID getDocumentID() {
+        return EDocID.HOME_EXIT;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
+    @Override
+    public DragTab getTabLabel() {
+        return tab;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
+    @Override
+    public ICDoc getLayoutControl() {
         return CSubmenuExit.SINGLETON_INSTANCE;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
+     */
+    @Override
+    public void setParentCell(DragCell cell0) {
+        parentCell = cell0;
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
+    @Override
+    public DragCell getParentCell() {
+        return parentCell;
     }
 }

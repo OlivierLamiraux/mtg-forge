@@ -7,21 +7,19 @@ package forge.quest.data;
 public class QuestItemCondition {
     private int level;
 
-    /**
-     * TODO: Write javadoc for this method.
-     * @return
-     */
+    /** @return int */
     public int getLevel() {
         return level;
     }
 
+    /** @param level int */
     public void setLevel(int level) {
         this.level = level;
     }
 
     /**
      * Copy data from the parameter instance to 'this' instance.
-     * @param current
+     * @param source QuestItemCondition
      */
     public void takeDataFrom(QuestItemCondition source) {
         this.level = source.level;

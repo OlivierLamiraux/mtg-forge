@@ -13,7 +13,6 @@ import forge.Command;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.ICDoc;
 import forge.gui.home.CMainMenu;
-import forge.gui.home.ICSubmenu;
 import forge.gui.home.quest.SSubmenuQuestUtil.SelectablePanel;
 import forge.gui.toolbox.FLabel;
 import forge.quest.QuestController;
@@ -27,26 +26,9 @@ import forge.quest.bazaar.QuestPetController;
  * <br><br><i>(C at beginning of class name denotes a control class.)</i>
  *
  */
-public enum CSubmenuChallenges implements ICSubmenu, ICDoc {
+public enum CSubmenuChallenges implements ICDoc {
     /** */
     SINGLETON_INSTANCE;
-
-    /* (non-Javadoc)
-     * @see forge.control.home.IControlSubmenu#getCommand()
-     */
-    @SuppressWarnings("serial")
-    @Override
-    public Command getMenuCommand() {
-        final QuestController qc = AllZone.getQuest();
-        return new Command() {
-            @Override
-            public void execute() {
-                if (qc.getAchievements() == null) {
-                    CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDATA);
-                }
-            }
-        };
-    }
 
     /* (non-Javadoc)
      * @see forge.control.home.IControlSubmenu#initialize()
@@ -72,7 +54,7 @@ public enum CSubmenuChallenges implements ICSubmenu, ICDoc {
                 new Command() {
                     @Override
                     public void execute() {
-                        AllZone.getQuest().setAvailableChallenges(null);
+                        AllZone.getQuest().getAchievements().setCurrentChallenges(null);
                         AllZone.getQuest().getAssets().setItemLevel(QuestItemType.ZEPPELIN, 2);
                         update();
                     }
@@ -114,6 +96,7 @@ public enum CSubmenuChallenges implements ICSubmenu, ICDoc {
 
         final VSubmenuChallenges view = VSubmenuChallenges.SINGLETON_INSTANCE;
         final QuestController qCtrl = AllZone.getQuest();
+
         if (qCtrl.getAchievements() != null) {
             view.getLblTitle().setText("Challenges: " + qCtrl.getRank());
 
@@ -141,8 +124,17 @@ public enum CSubmenuChallenges implements ICSubmenu, ICDoc {
     /* (non-Javadoc)
      * @see forge.gui.framework.ICDoc#getCommandOnSelect()
      */
+    @SuppressWarnings("serial")
     @Override
     public Command getCommandOnSelect() {
-        return null;
+        final QuestController qc = AllZone.getQuest();
+        return new Command() {
+            @Override
+            public void execute() {
+                if (qc.getAchievements() == null) {
+                    CMainMenu.SINGLETON_INSTANCE.itemClick(EDocID.HOME_QUESTDATA);
+                }
+            }
+        };
     }
 }

@@ -184,22 +184,37 @@ public class ComputerUtilAttack {
      */
     public final CardList getPossibleBlockers(final CardList blockers, final CardList attackers) {
         CardList possibleBlockers = new CardList(blockers);
-        final CardList attackerList = new CardList(attackers);
         possibleBlockers = possibleBlockers.filter(new CardListFilter() {
             @Override
             public boolean addCard(final Card c) {
-                if (!c.isCreature()) {
-                    return false;
-                }
-                for (final Card attacker : attackerList) {
-                    if (CombatUtil.canBlock(attacker, c)) {
-                        return true;
-                    }
-                }
-                return false;
+                return canBlockAnAttacker(c, attackers);
             }
         });
         return possibleBlockers;
+    } // getPossibleBlockers()
+
+    /**
+     * <p>
+     * canBlockAnAttacker.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.Card} object.
+     * @param attackers
+     *            a {@link forge.CardList} object.
+     * @return a boolean.
+     */
+    public final boolean canBlockAnAttacker(final Card c, final CardList attackers) {
+        final CardList attackerList = new CardList(attackers);
+        if (!c.isCreature()) {
+            return false;
+        }
+        for (final Card attacker : attackerList) {
+            if (CombatUtil.canBlock(attacker, c)) {
+                return true;
+            }
+        }
+        return false;
     } // getPossibleBlockers()
 
     // this checks to make sure that the computer player
@@ -218,30 +233,50 @@ public class ComputerUtilAttack {
      */
     public final CardList notNeededAsBlockers(final CardList attackers, final Combat combat) {
         final CardList notNeededAsBlockers = new CardList(attackers);
+        int fixedBlockers = 0;
+        final CardList vigilantes = new CardList();
+        for (final Card c : this.computerList) {
+            if (c.getName().equals("Masako the Humorless")) {
+                // "Tapped creatures you control can block as though they were untapped."
+                return notNeededAsBlockers;
+            }
+            if (!attackers.contains(c)) { // this creature can't attack anyway
+                if (canBlockAnAttacker(c, this.humanList)) {
+                    fixedBlockers++;
+                }
+                continue;
+            }
+            if (c.hasKeyword("Vigilance")) {
+                vigilantes.add(c);
+                notNeededAsBlockers.remove(c); // they will be re-added later
+                if (canBlockAnAttacker(c, this.humanList)) {
+                    fixedBlockers++;
+                }
+            }
+        }
         CardListUtil.sortAttackLowFirst(attackers);
-        int blockersNeeded = attackers.size();
+        int blockersNeeded = this.humanList.size();
 
         // don't hold back creatures that can't block any of the human creatures
         final CardList list = this.getPossibleBlockers(attackers, this.humanList);
 
+        //Calculate the amount of creatures necessary
         for (int i = 0; i < list.size(); i++) {
             if (!this.doesHumanAttackAndWin(i)) {
                 blockersNeeded = i;
                 break;
-            } else {
-                notNeededAsBlockers.remove(list.get(i));
             }
+        }
+        int blockersStillNeeded = blockersNeeded - fixedBlockers;
+        blockersStillNeeded = Math.min(blockersNeeded, list.size());
+        for (int i = 0; i < blockersStillNeeded; i++) {
+            notNeededAsBlockers.remove(list.get(i));
         }
 
         // re-add creatures with vigilance
-        for (final Card c : attackers) {
-            if (c.hasKeyword("Vigilance")) {
-                notNeededAsBlockers.add(c);
-            }
-        }
+        notNeededAsBlockers.addAll(vigilantes);
 
-        if (blockersNeeded == list.size()) {
-            // Human will win unless everything is kept back to block
+        if (blockersNeeded > 1) {
             return notNeededAsBlockers;
         }
 
@@ -450,26 +485,23 @@ public class ComputerUtilAttack {
         // Determine who will be attacked
         this.chooseDefender(combat, bAssault);
         CardList attackersLeft = new CardList(this.attackers);
-        if (bAssault) {
-            System.out.println("Assault");
-            CardListUtil.sortAttack(attackersLeft);
-            for (int i = 0; i < attackersLeft.size(); i++) {
-                if (CombatUtil.canAttack(attackersLeft.get(i), combat)) {
-                    combat.addAttacker(attackersLeft.get(i));
-                }
-            }
-            return combat;
-        }
-
         // Attackers that don't really have a choice
         for (final Card attacker : this.attackers) {
-            if ((attacker.hasKeyword("CARDNAME attacks each turn if able.")
-                    || !attacker.getSVar("MustAttack").equals("")
-                    || attacker.hasKeyword("At the beginning of the end step, destroy CARDNAME.")
-                    || attacker.hasKeyword("At the beginning of the end step, exile CARDNAME.")
-                    || attacker.hasKeyword("At the beginning of the end step, sacrifice CARDNAME.")
-                    || attacker.getSacrificeAtEOT() || attacker.getSirenAttackOrDestroy() || (attacker.getController()
-                    .getMustAttackEntity() != null)) && CombatUtil.canAttack(attacker, combat)) {
+            if (!CombatUtil.canAttack(attacker, combat)) {
+                continue;
+            }
+            boolean mustAttack = false;
+            for (String s : attacker.getKeyword()) {
+                if (s.equals("CARDNAME attacks each turn if able.")
+                        || s.equals("At the beginning of the end step, destroy CARDNAME.")
+                        || s.equals("At the beginning of the end step, exile CARDNAME.")
+                        || s.equals("At the beginning of the end step, sacrifice CARDNAME.")) {
+                    mustAttack = true;
+                    break;
+                }
+            }
+            if (mustAttack || attacker.getSacrificeAtEOT() || attacker.getSirenAttackOrDestroy()
+                    || (attacker.getController().getMustAttackEntity() != null)) {
                 combat.addAttacker(attacker);
                 attackersLeft.remove(attacker);
             }
@@ -477,26 +509,47 @@ public class ComputerUtilAttack {
         if (attackersLeft.isEmpty()) {
             return combat;
         }
-        // Exalted
-        if ((combat.getAttackers().isEmpty())
-                && ((this.countExaltedBonus(AllZone.getComputerPlayer()) >= 3)
-                        || AllZoneUtil.isCardInPlay("Rafiq of the Many", AllZone.getComputerPlayer())
-                        || (AllZone.getComputerPlayer().getCardsIn(ZoneType.Battlefield, "Battlegrace Angel").size() >= 2)
-                        || ((AllZone.getComputerPlayer().getCardsIn(ZoneType.Battlefield, "Finest Hour").size() >= 1)
-                                && Singletons.getModel().getGameState().getPhaseHandler().isFirstCombat()))) {
-            int biggest = 0;
-            Card att = null;
-            for (int i = 0; i < attackersLeft.size(); i++) {
-                if (this.getAttack(attackersLeft.get(i)) > biggest) {
-                    biggest = this.getAttack(attackersLeft.get(i));
-                    att = attackersLeft.get(i);
+        if (bAssault) {
+            System.out.println("Assault");
+            CardListUtil.sortAttack(attackersLeft);
+            for (Card attacker : attackersLeft) {
+                if (CombatUtil.canAttack(attacker, combat) && this.isEffectiveAttacker(attacker, combat)) {
+                    combat.addAttacker(attacker);
                 }
             }
-            if ((att != null) && CombatUtil.canAttack(att, combat)) {
-                combat.addAttacker(att);
-            }
-            System.out.println("Exalted");
             return combat;
+        }
+
+        // Exalted
+        if (combat.getAttackers().isEmpty()) {
+            boolean exalted = false;
+            int exaltedCount = 0;
+            for (Card c : AllZone.getComputerPlayer().getCardsIn(ZoneType.Battlefield)) {
+                if (c.getName().equals("Rafiq of the Many") || c.getName().equals("Battlegrace Angel")) {
+                    exalted = true;
+                    break;
+                }
+                if (c.getName().equals("Finest Hour")
+                        && Singletons.getModel().getGameState().getPhaseHandler().isFirstCombat()) {
+                    exalted = true;
+                    break;
+                }
+                if (c.hasKeyword("Exalted")) {
+                    exaltedCount++;
+                    if (exaltedCount > 2) {
+                        exalted = true;
+                        break;
+                    }
+                }
+            }
+            if (exalted) {
+                Card att = CardFactoryUtil.getBestCreatureAI(attackersLeft);
+                if ((att != null) && CombatUtil.canAttack(att, combat)) {
+                    combat.addAttacker(att);
+                    System.out.println("Exalted");
+                    return combat;
+                }
+            }
         }
 
         // *******************

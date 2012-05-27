@@ -40,7 +40,6 @@ public class SEditorIO {
     private enum ColumnProperty { /** */
         enumval, /** */
         identifier, /** */
-        index, /** */
         show, /** */
         sortpriority, /** */
         sortstate, /** */
@@ -216,8 +215,6 @@ public class SEditorIO {
             writer.add(EVENT_FACTORY.createAttribute(
                     ColumnProperty.identifier.toString(), COLS.get(c).getIdentifier().toString()));
             writer.add(EVENT_FACTORY.createAttribute(
-                    ColumnProperty.index.toString(), String.valueOf(index)));
-            writer.add(EVENT_FACTORY.createAttribute(
                     ColumnProperty.show.toString(), String.valueOf(COLS.get(c).isShowing())));
             writer.add(EVENT_FACTORY.createAttribute(
                     ColumnProperty.sortpriority.toString(), String.valueOf(COLS.get(c).getSortPriority())));
@@ -294,7 +291,9 @@ public class SEditorIO {
                     while (attributes.hasNext()) {
                         attribute = (Attribute) attributes.next();
                         if (attribute.getName().toString().equals(ColumnProperty.enumval.toString())) {
-                            COLS.put(ColumnName.valueOf(attribute.getValue()), tempcol);
+                            try { COLS.put(ColumnName.valueOf(attribute.getValue()), tempcol); }
+                            catch (final Exception e) { }
+
                             tempcol.setEnumValue(attribute.getValue());
                         }
                         else if (attribute.getName().toString().equals(ColumnProperty.identifier.toString())) {
@@ -312,9 +311,6 @@ public class SEditorIO {
                         }
                         else if (attribute.getName().toString().equals(ColumnProperty.sortstate.toString())) {
                             tempcol.setSortState(SortState.valueOf(attribute.getValue().toString()));
-                        }
-                        else if (attribute.getName().toString().equals(ColumnProperty.index.toString())) {
-                            tempcol.setModelIndex(Integer.valueOf(attribute.getValue()));
                         }
                     }
                 }

@@ -18,11 +18,13 @@
 package forge.gui.deckeditor.tables;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import javax.swing.JTable;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import forge.Singletons;
@@ -69,7 +71,6 @@ public final class SColumnUtil {
         CAT_AI, /** */
         CAT_NEW, /** */
         CAT_PURCHASE_PRICE, /** */
-        CAT_DECKS, /** */
         DECK_QUANTITY, /** */
         DECK_NAME, /** */
         DECK_COST, /** */
@@ -82,7 +83,8 @@ public final class SColumnUtil {
         DECK_SET, /** */
         DECK_AI, /** */
         DECK_NEW, /** */
-        DECK_SALE_PRICE;
+        DECK_SALE_PRICE, /** */
+        DECK_DECKS;
     }
 
     /** Possible states of data sorting in a column: none, ascending, or descending. */
@@ -216,8 +218,19 @@ public final class SColumnUtil {
         else {
             col0.setShowing(true);
             colmodel.addColumn(col0);
+
             if (col0.getModelIndex() < colmodel.getColumnCount()) {
                 colmodel.moveColumn(colmodel.getColumnIndex(col0.getIdentifier()), col0.getModelIndex());
+                Enumeration<TableColumn> cols = colmodel.getColumns();
+                int index = 0;
+                // If you're getting renderer "can't cast T to U" errors, that's
+                // a sign that the model index needs updating.
+                while (cols.hasMoreElements()) {
+                   cols.nextElement().setModelIndex(index++);
+                }
+            }
+            else {
+                col0.setModelIndex(colmodel.getColumnCount());
             }
         }
     }

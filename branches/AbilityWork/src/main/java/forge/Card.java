@@ -6324,7 +6324,8 @@ public class Card extends GameEntity implements Comparable<Card> {
     @Override
     public final boolean isValid(final String restriction, final Player sourceController, final Card source) {
 
-        if (this.isImmutable()) {
+        if (this.isImmutable()
+                && !source.getRemembered().contains(this)) { // special case exclusion
             return false;
         }
 

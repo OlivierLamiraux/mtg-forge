@@ -197,6 +197,11 @@ public class AbilityFactoryDealDamage {
             }
 
             @Override
+            public boolean canPlayAI() {
+                return AbilityFactoryDealDamage.this.dealDamageCanPlayAI(this);
+            }
+
+            @Override
             public String getStackDescription() {
                 return AbilityFactoryDealDamage.this.dealDamageStackDescription(
                         AbilityFactoryDealDamage.this.abilityFactory, this);
@@ -1003,6 +1008,11 @@ public class AbilityFactoryDealDamage {
             @Override
             public String getStackDescription() {
                 return AbilityFactoryDealDamage.this.damageAllStackDescription(this.af, this);
+            }
+
+            @Override
+            public boolean canPlayAI() {
+                return AbilityFactoryDealDamage.this.damageAllCanPlayAI(this.af, this);
             }
 
             @Override

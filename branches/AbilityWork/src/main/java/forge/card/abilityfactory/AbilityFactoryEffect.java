@@ -565,8 +565,11 @@ public class AbilityFactoryEffect {
             if ((duration == null) || duration.equals("EndOfTurn")) {
                 AllZone.getEndOfTurn().addUntil(endEffect);
             }
-
-            if (duration.equals("UntilHostLeavesPlay")) {
+            else if (duration.equals("UntilHostLeavesPlay")) {
+                card.addLeavesPlayCommand(endEffect);
+            }
+            else if (duration.equals("HostLeavesOrEOT")) {
+                AllZone.getEndOfTurn().addUntil(endEffect);
                 card.addLeavesPlayCommand(endEffect);
             }
         }

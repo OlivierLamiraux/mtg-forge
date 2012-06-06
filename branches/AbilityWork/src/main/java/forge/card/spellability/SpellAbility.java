@@ -265,8 +265,8 @@ public abstract class SpellAbility {
 
     public void setManaCost(final String cost) {
         this.manaCost = cost;
-    }    
-    
+    }
+
     /**
      * <p>
      * Getter for the field <code>additionalManaCost</code>.

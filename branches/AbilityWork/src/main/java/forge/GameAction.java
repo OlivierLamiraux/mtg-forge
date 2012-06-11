@@ -671,6 +671,10 @@ public class GameAction {
             AllZone.getTriggerHandler().clearSuppression(TriggerType.Transformed);
         }
 
+        if ((libPosition == -1) || (libPosition > library.size())) {
+            libPosition = library.size();
+        }
+
         Card lastKnownInfo = c;
         if (p != null && p.is(ZoneType.Battlefield)) {
             lastKnownInfo = CardUtil.getLKICopy(c);
@@ -679,10 +683,6 @@ public class GameAction {
         } else {
             c.clearCounters(); // remove all counters
             library.add(c, libPosition);
-        }
-
-        if ((libPosition == -1) || (libPosition > library.size())) {
-            libPosition = library.size();
         }
 
         final HashMap<String, Object> runParams = new HashMap<String, Object>();
@@ -2229,12 +2229,12 @@ public class GameAction {
         }
 
         // Raise cost
-        for (Card c : cardsInPlay) {
+        /*for (Card c : cardsInPlay) {
             final ArrayList<StaticAbility> staticAbilities = c.getStaticAbilities();
             for (final StaticAbility stAb : staticAbilities) {
                 manaCost = stAb.applyAbility("RaiseCost", spell, manaCost);
             }
-        }
+        }*/
 
         if (mana.equals("0") && spell.isAbility()) {
         } else {
@@ -2463,12 +2463,12 @@ public class GameAction {
         } // Khalni Hydra
 
         // Reduce cost
-        for (Card c : cardsInPlay) {
+        /*for (Card c : cardsInPlay) {
             final ArrayList<StaticAbility> staticAbilities = c.getStaticAbilities();
             for (final StaticAbility stAb : staticAbilities) {
                 manaCost = stAb.applyAbility("ReduceCost", spell, manaCost);
             }
-        }
+        }*/
         return manaCost;
     } // GetSpellCostChange
 

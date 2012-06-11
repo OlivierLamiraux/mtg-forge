@@ -407,6 +407,11 @@ public enum VCurrentDeck implements IVDoc, ITableContainer {
         return pnlStats;
     }
 
+    /** @return {@link javax.swing.JPanel} */
+    public JPanel getPnlRemButtons() {
+        return pnlRemoveButtons;
+    }
+
     //========== Other methods
 
     private JLabel buildLabel(final ImageIcon icon0) {

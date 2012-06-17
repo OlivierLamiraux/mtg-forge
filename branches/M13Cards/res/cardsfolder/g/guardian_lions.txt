@@ -1,0 +1,9 @@
+Name:Guardian Lions
+ManaCost:4 W
+Types:Creature Cat
+Text:no text
+PT:1/6
+K:Vigilance
+SVar:Rarity:Common
+SVar:Picture:http://www.wizards.com/global/images/magic/general/guardian_lions.jpg
+End

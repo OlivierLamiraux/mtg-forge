@@ -7,4 +7,5 @@ K:Exalted
 K:Haste
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/duskmantle_prowler.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/91.jpg
 End

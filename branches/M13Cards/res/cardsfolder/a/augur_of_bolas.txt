@@ -7,4 +7,5 @@ T:Mode$ ChangesZone | ValidCard$ Card.Self | Origin$ Any | Destination$ Battlefi
 SVar:TrigDig:AB$Dig | Cost$ 0 | DigNum$ 3 | ChangeNum$ 1 | Optional$ True | ChangeValid$ Instant,Sorcery
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/augur_of_bolas.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/43.jpg
 End

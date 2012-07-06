@@ -14,4 +14,5 @@ SVar:SwampBoost:Mode$ Continuous | Affected$ Swamp.YouCtrl | AddAbility$ BlackTa
 SVar:BlackTap:AB$ Mana | Cost$ T | Produced$ B | Amount$ 4 | SpellDescription$ Add B B B B to your mana pool.
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/liliana_of_the_dark_realms.jpg
+SetInfo:M13|Mythic|http://magiccards.info/scans/en/m13/97.jpg
 End

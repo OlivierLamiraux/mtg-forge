@@ -9,4 +9,5 @@ SVar:TrigChange:AB$ChangeZone | Cost$ 0 | Origin$ Graveyard | Destination$ Hand
 SVar:DiscardMe:3
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/veilborn_ghoul.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/114.jpg
 End

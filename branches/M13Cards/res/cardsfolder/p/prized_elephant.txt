@@ -8,4 +8,5 @@ A:AB$ Pump | Cost$ G | KW$ Trample | SpellDescription$ CARDNAME gets trample unt
 SVar:X:Count$Valid Forest.YouCtrl
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/prized_elephant.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/27.jpg
 End

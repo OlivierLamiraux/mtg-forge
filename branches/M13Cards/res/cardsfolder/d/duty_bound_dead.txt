@@ -7,4 +7,5 @@ K:Exalted
 A:AB$ Regenerate | Cost$ 3 B | SpellDescription$ Regenerate CARDNAME.
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/duty_bound_dead.jpg
+SetInfo:M13|Common|http://magiccards.info/scans/en/m13/92.jpg
 End

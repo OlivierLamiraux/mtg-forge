@@ -8,4 +8,5 @@ SVar:TrigReveal:DB$ RevealHand | ValidTgts$ Opponent | TgtPrompt$ Select target 
 SVar:TrigPlay:DB$ Play | Valid$ Instant.YouDontCtrl,Sorcery.YouDontCtrl | ValidZone$ Hand | WithoutManaCost$ True | Optional$ True
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/mindclaw_shaman.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/142.jpg
 End

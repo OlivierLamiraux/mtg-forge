@@ -8,4 +8,5 @@ S:Mode$ Continuous | Affected$ Card.Self | AddPower$ 4 | AddToughness$ 4 | Check
 SVar:X:Count$InOppYard
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/jaces_phantasm.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/57.jpg
 End

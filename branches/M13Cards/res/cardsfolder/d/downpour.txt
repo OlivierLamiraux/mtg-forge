@@ -6,4 +6,5 @@ A:SP$ Tap | Cost$ 1 U | ValidTgts$ Creature | TgtPrompt$ Select up to three targ
 SVar:RemAIDeck:True
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/downpour.jpg
+SetInfo:M13|Common|http://magiccards.info/scans/en/m13/48.jpg
 End

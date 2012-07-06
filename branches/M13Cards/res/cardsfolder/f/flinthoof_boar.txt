@@ -8,4 +8,5 @@ A:AB$ Pump | Cost$ R | KW$ Haste | SpellDescription$ CARDNAME gains haste until 
 SVar:X:Count$Valid Mountain.YouCtrl
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/flinthoof_boar.jpg
+SetInfo:M13|Uncommon|http://magiccards.info/scans/en/m13/171.jpg
 End

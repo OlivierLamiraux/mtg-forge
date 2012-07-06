@@ -9,4 +9,5 @@ SVar:Token:AB$ Token | Cost$ 0 | TokenOwner$ You | TokenName$ Beast | TokenColor
 SVar:Life:DB$ GainLife | Defined$ You | LifeAmount$ 5
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/thragtusk.jpg
+SetInfo:M13|Rare|http://magiccards.info/scans/en/m13/193.jpg
 End

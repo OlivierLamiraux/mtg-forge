@@ -1,0 +1,8 @@
+Name:Catacomb Slug
+ManaCost:4 B
+Types:Creature Slug
+Text:no text
+PT:2/6
+SVar:Rarity:Common
+SVar:Picture:http://www.wizards.com/global/images/magic/general/catacomb_slug.jpg
+End

@@ -10,6 +10,7 @@ A:AB$ Destroy | Cost$ SubCounter<3/LOYALTY> | Planeswalker$ True | ValidTgts$ Pe
 A:AB$ Token | Cost$ SubCounter<7/LOYALTY> | Planeswalker$ True | Ultimate$ True | TokenAmount$ 3 | TokenName$ Assassin | TokenTypes$ Creature,Assassin | TokenOwner$ You | TokenImage$ B 1 1 Assassin | TokenColors$ Black | TokenPower$ 1 | TokenToughness$ 1 | TokenTriggers$ TrigAssassin | TokenSVars$ Assassination,MustBeBlocked | SpellDescription$ Put three 1/1 black Assassin creature tokens onto the battlefield with "Whenever this creature deals combat damage to a player, that player loses the game."
 SVar:TrigAssassin:Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | CombatDamage$ True | Execute$ Assassination | TriggerDescription$ Whenever this creature deals combat damage to a player, that player loses the game.
 SVar:Assassination:DB$ LosesGame | Defined$ TriggeredTarget
+SVar:MustBeBlocked:True
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/vraska_the_unseen.jpg
 End

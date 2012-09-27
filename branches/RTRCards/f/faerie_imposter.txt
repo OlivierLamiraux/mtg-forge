@@ -9,4 +9,5 @@ SVar:TrigSacUnless:DB$ Sacrifice | Defined$ Self | UnlessCost$ Return<1/Creature
 SVar:NeedsToPlay:Creature.YouCtrl
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/faerie_imposter.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/39.jpg
 End

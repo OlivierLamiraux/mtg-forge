@@ -10,4 +10,5 @@ SVar:X:Count$TypeInYourYard.Creature
 SVar:LichLeech:Sacrificed$CardPower
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/jarad_golgari_lich_lord.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/174.jpg
 End

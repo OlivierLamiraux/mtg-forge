@@ -9,4 +9,5 @@ SVar:Detain:DB$Pump | TargetMin$ 0 | TargetMax$ 2 | KW$ HIDDEN CARDNAME can't at
 SVar:PlayMain1:TRUE
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/archon_of_the_triumvirate.jpg
+SetInfo:RTR|Rare|http://magiccards.info/scans/en/rtr/142.jpg
 End

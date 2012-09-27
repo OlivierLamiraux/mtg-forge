@@ -7,4 +7,5 @@ SVar:DBDiscardOpp:DB$Discard | Defined$ Targeted | NumCards$ X | References$ X |
 SVar:X:Count$xPaid
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rakdoss_return.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/188.jpg
 End

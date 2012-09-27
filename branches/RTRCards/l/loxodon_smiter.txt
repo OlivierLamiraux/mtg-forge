@@ -7,4 +7,5 @@ K:CARDNAME can't be countered.
 K:If a spell or ability an opponent controls causes you to discard CARDNAME, put it onto the battlefield instead of putting it into your graveyard.
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/loxodon_smiter.jpg
+SetInfo:RTR|Rare|http://magiccards.info/scans/en/rtr/178.jpg
 End

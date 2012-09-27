@@ -9,4 +9,5 @@ SVar:Exile:AB$ ChangeZone | Cost$ 0 | Hidden$ True | Destination$ Exile | Define
 SVar:RemRandomDeck:True
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rest_in_peace.jpg
+SetInfo:RTR|Rare|http://magiccards.info/scans/en/rtr/18.jpg
 End

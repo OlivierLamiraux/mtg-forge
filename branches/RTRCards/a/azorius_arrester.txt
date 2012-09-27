@@ -7,4 +7,5 @@ T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creatu
 SVar:Detain:DB$Pump | KW$ HIDDEN CARDNAME can't attack or block. & HIDDEN CARDNAME's activated abilities can't be activated. | IsCurse$ True | UntilYourNextTurn$ True | ValidTgts$ Creature.YouDontCtrl | TgtPrompt$ Select target creature your opponent controls to detain.
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/azorius_arrester.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/5.jpg
 End

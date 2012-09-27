@@ -10,4 +10,5 @@ SVar:NeedsToPlayVar:SpiralYet GE6
 SVar:SpiralYet:Count$InYourYard
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/psychic_spiral.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/47.jpg
 End

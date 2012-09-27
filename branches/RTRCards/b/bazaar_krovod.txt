@@ -8,4 +8,5 @@ SVar:TrigPump:DB$Pump | ValidTgts$ Creature.attacking+Other | TgtPrompt$ Select 
 SVar:DBUntap:DB$Untap | Defined$ Targeted
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/bazaar_krovod.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/7.jpg
 End

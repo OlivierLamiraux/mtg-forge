@@ -7,4 +7,5 @@ R:Event$ Moved | ActiveZones$ Battlefield | Destination$ Graveyard | ValidCard$ 
 SVar:Exile:AB$ ChangeZone | Cost$ 0 | Hidden$ True | Destination$ Exile | Defined$ ReplacedCard
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/dryad_militant.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/214.jpg
 End

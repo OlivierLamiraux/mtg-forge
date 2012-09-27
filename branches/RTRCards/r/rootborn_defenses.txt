@@ -7,4 +7,5 @@ SVar:DBCopy:DB$ CopyPermanent | Defined$ Remembered | NumCopies$ 1 | SubAbility$
 SVar:DBPumpAll:DB$ PumpAll | ValidCards$ Creature.YouCtrl | KW$ HIDDEN Indestructible
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rootborn_defenses.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/19.jpg
 End

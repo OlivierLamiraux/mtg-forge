@@ -7,4 +7,5 @@ K:First Strike
 K:Haste
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/minotaur_aggressor.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/100.jpg
 End

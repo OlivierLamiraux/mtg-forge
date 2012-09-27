@@ -9,4 +9,5 @@ SVar:Detain:DB$ Pump | KW$ HIDDEN CARDNAME can't attack or block. & HIDDEN CARDN
 SVar:PlayMain1:TRUE
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/lyev_skyknight.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/179.jpg
 End

@@ -9,4 +9,5 @@ SVar:TrigChange:AB$ChangeZone | Cost$ 0 | Origin$ Graveyard | Destination$ Libra
 SVar:RemAIDeck:True
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/dark_revenant.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/61.jpg
 End

@@ -7,4 +7,5 @@ K:Haste
 K:Lifelink
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rakdos_ragemutt.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/185.jpg
 End

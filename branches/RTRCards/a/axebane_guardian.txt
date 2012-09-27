@@ -8,4 +8,5 @@ A:AB$ Mana | Cost$ T | Produced$ Combo Any | Amount$ X | References$ X | SpellDe
 SVar:X:Count$Valid Creature.withDefender+YouCtrl
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/axebane_guardian.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/115.jpg
 End

@@ -8,4 +8,5 @@ A:AB$ Counter | Cost$ Sac<1/CARDNAME> | TargetType$ Spell | ValidTgts$ Instant,S
 SVar:RemAIDeck:True
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/judges_familiar.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/218.jpg
 End

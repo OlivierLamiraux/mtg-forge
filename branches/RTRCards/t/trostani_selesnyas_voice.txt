@@ -11,4 +11,5 @@ SVar:DBCopy:DB$ CopyPermanent | Defined$ Remembered | NumCopies$ 1 | SubAbility$
 SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/trostani_selesnyas_voice.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/206.jpg
 End

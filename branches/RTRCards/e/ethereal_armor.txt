@@ -10,4 +10,5 @@ SVar:RemRandomDeck:True
 SVar:BuffedBy:Enchantment
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/ethereal_armor.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/9.jpg
 End

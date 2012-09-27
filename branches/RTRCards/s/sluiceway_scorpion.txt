@@ -8,4 +8,5 @@ A:AB$ PutCounter | Cost$ 1 B G ExileFromGrave<1/CARDNAME> | ActivationZone$ Grav
 SVar:X:Count$CardPower
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/sluiceway_scorpion.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/198.jpg
 End

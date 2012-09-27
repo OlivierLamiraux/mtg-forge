@@ -6,4 +6,5 @@ A:SP$ Pump | Cost$ 4 B G | ValidTgts$ Creature |TgtPrompt$ Select target creatur
 SVar:DBPumpNeg:DB$ Pump | Cost$ 0 | ValidTgts$ Creature |TgtPrompt$ Select another creature | TargetUnique$ True | NumAtt$ -3 | NumDef$ -3 | IsCurse$ True
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rites_of_reaping.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/191.jpg
 End

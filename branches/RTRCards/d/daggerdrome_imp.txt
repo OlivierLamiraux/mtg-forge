@@ -7,4 +7,5 @@ K:Flying
 K:Lifelink
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/daggerdrome_imp.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/60.jpg
 End

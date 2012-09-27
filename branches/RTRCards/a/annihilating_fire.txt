@@ -6,4 +6,5 @@ A:SP$ DealDamage | Cost$ 1 R R | Tgt$ TgtCP | NumDmg$ 3 | SubAbility$ Annihilate
 SVar:Annihilate:DB$ Pump | KW$ HIDDEN If CARDNAME would be put into a graveyard, exile it instead. | Defined$ Targeted
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/annihilating_fire.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/85.jpg
 End

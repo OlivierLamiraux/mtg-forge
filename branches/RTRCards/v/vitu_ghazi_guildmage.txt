@@ -9,4 +9,5 @@ SVar:DBCopy:DB$ CopyPermanent | Defined$ Remembered | NumCopies$ 1 | SubAbility$
 SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/vitu_ghazi_guildmage.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/207.jpg
 End

@@ -6,4 +6,5 @@ S:Mode$ CantAttackUnless | ValidCard$ Creature | Target$ You,Planeswalker.YouCtr
 SVar:X:Count$Valid Enchantment.YouCtrl
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/sphere_of_safety.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/24.jpg
 End

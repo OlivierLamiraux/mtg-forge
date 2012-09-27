@@ -8,4 +8,5 @@ SVar:DestroyEnch:DB$ Destroy | ValidTgts$ Enchantment | TgtPrompt$ Select target
 SVar:RegenAll:DB$ RegenerateAll | ValidCards$ Creature.YouCtrl | SpellDescription$ Regenerate each creature you control.
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/golgari_charm.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/164.jpg
 End

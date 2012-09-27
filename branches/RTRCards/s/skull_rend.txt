@@ -6,4 +6,5 @@ A:SP$ DealDamage | Cost$ 3 B R | Defined$ Opponent | NumDmg$ 2 | SubAbility$ DBD
 SVar:DBDiscard:DB$ Discard | Defined$ Opponent | NumCards$ 2 | Mode$ Random
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/skull_rend.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/195.jpg
 End

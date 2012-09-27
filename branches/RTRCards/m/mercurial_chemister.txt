@@ -8,4 +8,5 @@ A:AB$ DealDamage | Cost$ R T Discard<1/Card> | ValidTgts$ Creature | TgtPrompt$ 
 SVar:X:Discarded$CardManaCost
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/mercurial_chemister.jpg
+SetInfo:RTR|Rare|http://magiccards.info/scans/en/rtr/180.jpg
 End

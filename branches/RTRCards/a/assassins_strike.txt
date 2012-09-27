@@ -6,4 +6,5 @@ A:SP$ Destroy | Cost$ 4 B B | ValidTgts$ Creature | TgtPrompt$ Select target cre
 SVar:DBDiscard:DB$Discard | Defined$ TargetedController | NumCards$ 1 | Mode$ TgtChoose
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/assassins_strike.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/57.jpg
 End

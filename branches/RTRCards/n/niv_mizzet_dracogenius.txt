@@ -9,4 +9,5 @@ SVar:TrigDraw:AB$ Draw | Cost$ 0 | Defined$ You | NumCards$ 1
 A:AB$ DealDamage | Cost$ U R | Tgt$ TgtCP | NumDmg$ 1 | SpellDescription$ CARDNAME deals 1 damage to target creature or player.
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/niv_mizzet_dracogenius.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/183.jpg
 End

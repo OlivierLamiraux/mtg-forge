@@ -9,4 +9,5 @@ SVar:TrigPutCounter:AB$ PutCounter | Cost$ 0 | Defined$ TriggeredSource | Counte
 SVar:X:TriggerCount$DamageAmount
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/necropolis_regent.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/71.jpg
 End

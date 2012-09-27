@@ -8,4 +8,5 @@ T:Mode$ Attacks | ValidCard$ Creature.YouDontCtrl | TriggerZones$ Battlefield | 
 SVar:TrigDraw:AB$ Draw | Cost$ 0 | Defined$ You | NumCards$ 1
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/isperia_supreme_judge.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/171.jpg
 End

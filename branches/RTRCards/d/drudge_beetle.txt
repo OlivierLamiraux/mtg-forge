@@ -7,4 +7,5 @@ A:AB$ PutCounter | Cost$ 5 G ExileFromGrave<1/CARDNAME> | ActivationZone$ Gravey
 SVar:X:Count$CardPower
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/drudge_beetle.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/122.jpg
 End

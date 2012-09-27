@@ -9,4 +9,5 @@ A:AB$ Mana | Cost$ T | Produced$ Any | SpellDescription$ Add one mana of any col
 SVar:NeedsToPlay:Land.untapped+YouCtrl
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/transguild_promenade.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/249.jpg
 End

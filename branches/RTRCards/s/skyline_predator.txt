@@ -7,4 +7,5 @@ K:Flash
 K:Flying
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/skyline_predator.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/50.jpg
 End

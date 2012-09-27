@@ -10,4 +10,5 @@ S:Mode$ Continuous | Affected$ Card.Self | AddHiddenKeyword$ HIDDEN CARDNAME can
 SVar:X:Count$NumCounters.P1P1
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/thrill_kill_assassin.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/81.jpg
 End

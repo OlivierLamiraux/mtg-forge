@@ -6,4 +6,5 @@ PT:1/1
 K:Lifelink
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/trained_caracal.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/27.jpg
 End

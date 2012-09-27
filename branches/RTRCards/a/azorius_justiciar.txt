@@ -8,4 +8,5 @@ SVar:Detain:DB$Pump | TargetMin$ 0 | TargetMax$ 2 | KW$ HIDDEN CARDNAME can't at
 SVar:PlayMain1:TRUE
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/azorius_justiciar.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/6.jpg
 End

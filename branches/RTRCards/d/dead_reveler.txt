@@ -9,4 +9,5 @@ S:Mode$ Continuous | Affected$ Card.Self | AddHiddenKeyword$ HIDDEN CARDNAME can
 SVar:X:Count$NumCounters.P1P1
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/dead_reveler.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/62.jpg
 End

@@ -8,4 +8,5 @@ T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.S
 SVar:TrigToken:AB$ Token | Cost$ 0 | TokenAmount$ 1 | TokenName$ Wurm | TokenTypes$ Creature,Wurm | TokenOwner$ TriggeredCardController | TokenColors$ Green | TokenPower$ 5 | TokenToughness$ 5 | TokenKeywords$ Trample
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/armada_wurm.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/143.jpg
 End

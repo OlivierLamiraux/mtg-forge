@@ -13,4 +13,5 @@ SVar:Assassination:DB$ LosesGame | Defined$ TriggeredTarget
 SVar:MustBeBlocked:True
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/vraska_the_unseen.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/208.jpg
 End

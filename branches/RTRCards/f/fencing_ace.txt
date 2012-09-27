@@ -6,4 +6,5 @@ PT:1/1
 K:Double Strike
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/fencing_ace.jpg
+SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/11.jpg
 End

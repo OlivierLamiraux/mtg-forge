@@ -10,4 +10,5 @@ SVar:TrigShuffle:AB$ChangeZone | Cost$ 0 | Origin$ Graveyard | Destination$ Libr
 SVar:TrigToken:AB$Token | Cost$ 0 | TokenAmount$ 3 | TokenName$ Wurm | TokenTypes$ Creature,Wurm | TokenOwner$ TriggeredCardController | TokenColors$ Green | TokenPower$ 5 | TokenToughness$ 5 | TokenKeywords$ Trample
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/worldspine_wurm.jpg
+SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/140.jpg
 End

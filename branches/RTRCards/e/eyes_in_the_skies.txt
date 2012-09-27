@@ -7,4 +7,5 @@ SVar:DBChoose:DB$ ChooseCard | Cost$ 0 | Defined$ You | Amount$ 1 | Choices$ Cre
 SVar:DBCopy:DB$ CopyPermanent | Defined$ Remembered
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/eyes_in_the_skies.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/10.jpg
 End

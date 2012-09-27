@@ -7,4 +7,5 @@ A:AB$ PutCounter | Cost$ 6 B ExileFromGrave<1/CARDNAME> | ActivationZone$ Gravey
 SVar:X:Count$CardPower
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/terrus_wurm.jpg
+SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/80.jpg
 End

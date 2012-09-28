@@ -7,4 +7,5 @@ SVar:X:Count$xPaid
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/slime_molding.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/135.jpg
+Oracle:Put an X/X green Ooze creature token onto the battlefield.
 End

@@ -8,4 +8,5 @@ SVar:DBCopy:DB$ CopyPermanent | Defined$ Remembered
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/eyes_in_the_skies.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/10.jpg
+Oracle:Put a 1/1 white Bird creature token with flying onto the battlefield, then populate. (Put a token onto the battlefield that's a copy of a creature token you control.)
 End

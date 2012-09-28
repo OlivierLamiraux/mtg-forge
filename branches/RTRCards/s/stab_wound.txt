@@ -10,4 +10,5 @@ SVar:TrigLoseLife:AB$LoseLife | Cost$ 0 | Defined$ TriggeredPlayer | LifeAmount$
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/stab_wound.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/78.jpg
+Oracle:Enchant creature\nEnchanted creature gets -2/-2.\nAt the beginning of the upkeep of enchanted creature's controller, that player loses 2 life.
 End

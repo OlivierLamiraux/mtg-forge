@@ -7,4 +7,5 @@ A:AB$ Token | Cost$ 3 G W T tapXType<2/Creature> Sac<1/CARDNAME> | CostDesc$ 3 G
 SVar:Rarity:Rare
 SVar:Picture:http://www.wizards.com/global/images/magic/general/grove_of_the_guardian.jpg
 SetInfo:RTR|Rare|http://magiccards.info/scans/en/rtr/240.jpg
+Oracle:{T}: Add {1} to your mana pool.\n{3}{G}{W}, {T}, Tap two untapped creatures you control, Sacrifice Grove of the Guardian: Put an 8/8 green and white Elemental creature token with vigilance onto the battlefield.
 End

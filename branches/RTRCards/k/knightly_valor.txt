@@ -10,4 +10,5 @@ SVar:TrigToken:AB$Token | Cost$ 0 | TokenAmount$ 1 | TokenName$ Knight | TokenTy
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/knightly_valor.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/13.jpg
+Oracle:Enchant creature\nWhen Knightly Valor enters the battlefield, put a 2/2 white Knight creature token with vigilance onto the battlefield.\nEnchanted creature gets +2/+2 and has vigilance.
 End

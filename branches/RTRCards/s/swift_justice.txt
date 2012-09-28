@@ -6,4 +6,5 @@ A:SP$ Pump | Cost$ W | ValidTgts$ Creature | AILogic$ Pump | NumAtt$ +1 | KW$ Fi
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/swift_justice.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/26.jpg
+Oracle:Until end of turn, target creature gets +1/+0 and gains first strike and lifelink.
 End

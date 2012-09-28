@@ -7,4 +7,5 @@ SVar:DBGainLife:DB$ GainLife | LifeAmount$ 2
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/dramatic_rescue.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/156.jpg
+Oracle:Return target creature to its owner's hand. You gain 2 life.
 End

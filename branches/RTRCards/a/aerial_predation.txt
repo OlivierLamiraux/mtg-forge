@@ -7,4 +7,5 @@ SVar:NaturalLife:DB$GainLife | Defined$ You | LifeAmount$ 2
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/aerial_predation.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/113.jpg
+Oracle:Destroy target creature with flying. You gain 2 life.
 End

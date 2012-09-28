@@ -7,4 +7,5 @@ K:Vigilance
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/risen_sanctuary.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/190.jpg
+Oracle:Vigilance
 End

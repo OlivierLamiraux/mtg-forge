@@ -7,4 +7,5 @@ SVar:DBDiscard:DB$ Discard | Defined$ Opponent | NumCards$ 2 | Mode$ Random
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/skull_rend.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/195.jpg
+Oracle:Skull Rend deals 2 damage to each opponent. Those players each discard two cards at random.
 End

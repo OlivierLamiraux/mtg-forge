@@ -8,4 +8,5 @@ K:Defender
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/hover_barrier.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/40.jpg
+Oracle:Defender, flying
 End

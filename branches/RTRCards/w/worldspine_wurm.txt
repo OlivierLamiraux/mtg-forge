@@ -11,4 +11,5 @@ SVar:TrigToken:AB$Token | Cost$ 0 | TokenAmount$ 3 | TokenName$ Wurm | TokenType
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/worldspine_wurm.jpg
 SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/140.jpg
+Oracle:Trample\nWhen Worldspine Wurm dies, put three 5/5 green Wurm creature tokens with trample onto the battlefield.\nWhen Worldspine Wurm is put into a graveyard from anywhere, shuffle it into its owner's library.
 End

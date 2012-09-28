@@ -8,4 +8,5 @@ SVar:RemAIDeck:True
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/keening_apparition.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/12.jpg
+Oracle:Sacrifice Keening Apparition: Destroy target enchantment.
 End

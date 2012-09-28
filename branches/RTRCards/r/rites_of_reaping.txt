@@ -7,4 +7,5 @@ SVar:DBPumpNeg:DB$ Pump | Cost$ 0 | ValidTgts$ Creature |TgtPrompt$ Select anoth
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rites_of_reaping.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/191.jpg
+Oracle:Target creature gets +3/+3 until end of turn. Another target creature gets -3/-3 until end of turn.
 End

@@ -9,4 +9,5 @@ SVar:PlayMain1:TRUE
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/azorius_justiciar.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/6.jpg
+Oracle:When Azorius Justiciar enters the battlefield, detain up to two target creatures your opponents control. (Until your next turn, those creatures can't attack or block and their activated abilities can't be activated.)
 End

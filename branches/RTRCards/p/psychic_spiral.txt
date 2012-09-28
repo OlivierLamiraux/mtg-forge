@@ -11,4 +11,5 @@ SVar:SpiralYet:Count$InYourYard
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/psychic_spiral.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/47.jpg
+Oracle:Shuffle all cards from your graveyard into your library. Target player puts that many cards from the top of his or her library into his or her graveyard.
 End

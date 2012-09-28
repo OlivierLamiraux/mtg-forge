@@ -6,4 +6,5 @@ A:SP$ Destroy | Cost$ 2 W | ValidTgts$ Creature.dealtDamageThisTurn | TgtPrompt$
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/avenging_arrow.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/4.jpg
+Oracle:Destroy target creature that dealt damage this turn.
 End

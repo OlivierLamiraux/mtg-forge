@@ -8,4 +8,5 @@ SVar:X:Count$xPaid
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/rakdoss_return.jpg
 SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/188.jpg
+Oracle:Rakdos's Return deals X damage to target opponent. That player discards X cards.
 End

@@ -8,4 +8,5 @@ SVar:Exile:AB$ ChangeZone | Cost$ 0 | Hidden$ True | Destination$ Exile | Define
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/dryad_militant.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/214.jpg
+Oracle:If an instant or sorcery card would be put into a graveyard from anywhere, exile it instead.
 End

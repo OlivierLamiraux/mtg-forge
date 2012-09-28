@@ -11,4 +11,5 @@ SVar:TrigToken:AB$Token | Cost$ 0 | TokenAmount$ 1 | TokenName$ Knight | TokenTy
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/security_blockade.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/20.jpg
+Oracle:Enchant land\nWhen Security Blockade enters the battlefield, put a 2/2 white Knight creature token with vigilance onto the battlefield.\nEnchanted land has "{T}: Prevent the next 1 damage that would be dealt to you this turn."
 End

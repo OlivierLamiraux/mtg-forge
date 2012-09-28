@@ -9,4 +9,5 @@ SVar:DBUntap:DB$Untap | Defined$ Targeted
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/bazaar_krovod.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/7.jpg
+Oracle:Whenever Bazaar Krovod attacks, another target attacking creature gets +0/+2 until end of turn. Untap that creature.
 End

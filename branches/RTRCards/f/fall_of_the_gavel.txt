@@ -7,4 +7,5 @@ SVar:DBGainLife:DB$GainLife | LifeAmount$ 5
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/fall_of_the_gavel.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/161.jpg
+Oracle:Counter target spell. You gain 5 life.
 End

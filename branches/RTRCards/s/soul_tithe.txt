@@ -10,4 +10,5 @@ SVar:X:Enchanted$CardManaCost
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/soul_tithe.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/23.jpg
+Oracle:Enchant nonland permanent\nAt the beginning of the upkeep of enchanted permanent's controller, that player sacrifices it unless he or she pays {X}, where X is its converted mana cost.
 End

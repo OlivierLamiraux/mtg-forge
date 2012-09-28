@@ -10,4 +10,5 @@ SVar:PlayMain1:TRUE
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/lyev_skyknight.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/179.jpg
+Oracle:Flying\nWhen Lyev Skyknight enters the battlefield, detain target nonland permanent an opponent controls. (Until your next turn, that permanent can't attack or block and its activated abilities can't be activated.)
 End

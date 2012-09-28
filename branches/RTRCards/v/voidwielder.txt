@@ -8,4 +8,5 @@ SVar:TrigChangeZone:DB$ ChangeZone | Cost$ 0 | ValidTgts$ Creature | TgtPrompt$ 
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/voidwielder.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/56.jpg
+Oracle:When Voidwielder enters the battlefield, you may return target creature to its owner's hand.
 End

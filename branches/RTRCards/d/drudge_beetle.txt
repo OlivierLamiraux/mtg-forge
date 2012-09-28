@@ -8,4 +8,5 @@ SVar:X:Count$CardPower
 SVar:Rarity:Common
 SVar:Picture:http://www.wizards.com/global/images/magic/general/drudge_beetle.jpg
 SetInfo:RTR|Common|http://magiccards.info/scans/en/rtr/122.jpg
+Oracle:Scavenge {5}{G} ({5}{G}, Exile this card from your graveyard: Put a number of +1/+1 counters equal to this card's power on target creature. Scavenge only as a sorcery.)
 End

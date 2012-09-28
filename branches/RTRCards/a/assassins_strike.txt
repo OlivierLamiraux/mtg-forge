@@ -7,4 +7,5 @@ SVar:DBDiscard:DB$Discard | Defined$ TargetedController | NumCards$ 1 | Mode$ Tg
 SVar:Rarity:Uncommon
 SVar:Picture:http://www.wizards.com/global/images/magic/general/assassins_strike.jpg
 SetInfo:RTR|Uncommon|http://magiccards.info/scans/en/rtr/57.jpg
+Oracle:Destroy target creature. Its controller discards a card.
 End

@@ -9,4 +9,5 @@ SVar:TrigToken:AB$Token | Cost$ 0 | TokenAmount$ 1 | TokenName$ Dragon | TokenTy
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/utvara_hellkite.jpg
 SetInfo:RTR|Mythic|http://magiccards.info/scans/en/rtr/110.jpg
+Oracle:Flying\nWhenever a Dragon you control attacks, put a 6/6 red Dragon creature token with flying onto the battlefield.
 End

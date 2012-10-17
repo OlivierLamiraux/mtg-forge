@@ -68,8 +68,6 @@ public class GameState {
     private final PlayerZone stackZone = new PlayerZone(ZoneType.Stack, null);
 
     private long timestamp = 0;
-    private GameOutcome gameSummary;
-
     private int nTurn = 0;
     
     /**

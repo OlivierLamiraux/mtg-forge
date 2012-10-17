@@ -22,7 +22,6 @@ import java.util.List;
 
 import forge.Card;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.gui.CardContainer;
@@ -53,7 +52,7 @@ public enum CMatchUI implements CardContainer {
      * @param numFieldPanels int
      * @param numHandPanels int
      */
-    public void initMatch(int numFieldPanels, int numHandPanels) {
+    public void initMatch(final List<Player> players, Player localPlayer) {
         // TODO fix for use with multiplayer
         // Update avatars
         /*final String[] indices = Singletons.getModel().getPreferences().getPref(FPref.UI_AVATARS).split(",");
@@ -84,33 +83,37 @@ public enum CMatchUI implements CardContainer {
             view.getLblAvatar().getResizeTimer().start();
         }*/
 
-        // Instantiate all required field slots (user at 0)
+        // Instantiate all required field slots (user at 0) <-- that's not guaranteed 
         final List<VField> fields = new ArrayList<VField>();
-        List<Player> players = Singletons.getModel().getGameState().getPlayers();
-        for (int i = 0; i < numFieldPanels; i++) {
-            fields.add(i, new VField(EDocID.valueOf("FIELD_" + i), players.get(i)));
-            if ( i < 2 )
-                fields.get(i).getLayoutControl().initialize();
+
+        fields.add(0, new VField(EDocID.valueOf("FIELD_0"), localPlayer));
+        fields.get(0).getLayoutControl().initialize();
+
+        
+        int i = 1;
+        for (Player p : players) {
+            if (p.equals(localPlayer)) continue;
             // A field must be initialized after it's instantiated, to update player info.
             // No player, no init.
-                    
+            VField f = new VField(EDocID.valueOf("FIELD_" + i), p);
+            f.getLayoutControl().initialize();
+            fields.add(f);
+            i++;
         }
     
 
         // Instantiate all required hand slots (user at 0)
         final List<VHand> hands = new ArrayList<VHand>();
-        for (int i = 0; i < numHandPanels; i++) {
-            switch (i) {
-                case 0:
-                    // A hand must be initialized after it's instantiated, to update player info.
-                    // No player, no init.
-                    hands.add(0, new VHand(EDocID.HAND_0, Singletons.getControl().getPlayer()));
-                    hands.get(0).getLayoutControl().initialize();
-                    break;
-                default:
-                    hands.add(i, new VHand(EDocID.valueOf("HAND_" + i), null));
-            }
-        }
+        VHand newHand = new VHand(EDocID.HAND_0, localPlayer); 
+        newHand.getLayoutControl().initialize();
+        hands.add(newHand);
+
+// Max: 2+ hand are needed at 2HG (but this is quite far now) - yet it's nice to have this possibility
+//        for (int i = 0; i < numHandPanels; i++) {
+//            switch (i) {
+//                    hands.add(i, new VHand(EDocID.valueOf("HAND_" + i), null));
+//            }
+//        }
 
         // Replace old instances
         VMatchUI.SINGLETON_INSTANCE.setFieldViews(fields);

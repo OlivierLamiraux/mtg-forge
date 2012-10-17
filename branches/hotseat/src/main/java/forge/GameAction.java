@@ -902,9 +902,12 @@ public class GameAction {
             return true;
         }
 
+        boolean hasEndedNow = false;
         // award loses as SBE
         for (Player p : game.getPlayers() ) {
-            p.checkLoseCondition();
+            if ( p.checkLoseCondition() ) {
+                hasEndedNow = true;
+            }
         }
         
         // Has anyone won by spelleffect?
@@ -912,14 +915,16 @@ public class GameAction {
             if( p.hasWon() ) { // then the rest has lost!
                 for (Player pl : game.getPlayers() ) {
                     if( !pl.equals(p) )
-                        pl.loseConditionMet(GameLossReason.OpponentWon, p.getOutcome().altWinSourceName);
+                        if ( pl.loseConditionMet(GameLossReason.OpponentWon, p.getOutcome().altWinSourceName) )
+                            hasEndedNow = true;
                 }
                 break;
             }
         }
         
+        // still unclear why this has not caught me conceding
         final boolean isGameDone = Iterables.size(Iterables.filter(game.getPlayers(), Player.Predicates.NOT_LOST)) == 1;
-        if (isGameDone) {
+        if (isGameDone || hasEndedNow) {
             game.setGameOver();
             Singletons.getModel().getMatch().addGamePlayed(game);
         }

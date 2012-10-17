@@ -93,7 +93,8 @@ public enum CSubmenuMultiTest implements ICDoc {
                 MatchStartHelper starter = new MatchStartHelper();
                 Lobby lobby = Singletons.getControl().getLobby();
                 starter.addPlayer(lobby.findLocalPlayer(PlayerType.HUMAN), humanDeck);
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.COMPUTER), aiDeck);
+                for( int i = 1; i < numFields; i++ )
+                    starter.addPlayer(lobby.findLocalPlayer(PlayerType.COMPUTER), aiDeck);
                 
                 MatchController mc = Singletons.getModel().getMatch(); 
                 mc.initMatch(GameType.Constructed, starter.getPlayerMap());

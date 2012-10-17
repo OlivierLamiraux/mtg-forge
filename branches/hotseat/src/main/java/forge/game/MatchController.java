@@ -99,7 +99,7 @@ public class MatchController {
                     PlayerType.COMPUTER);
             AllZone.getInputControl().setComputer(new ComputerAIInput(new ComputerAIGeneral(computerPlayer)));
 
-            CMatchUI.SINGLETON_INSTANCE.initMatch(players.size(), 1);
+            CMatchUI.SINGLETON_INSTANCE.initMatch(currentGame.getPlayers(), Singletons.getControl().getPlayer());
             Singletons.getModel().getPreferences().actuateMatchPreferences();
             Singletons.getControl().changeState(FControl.MATCH_SCREEN);
             SDisplayUtil.showTab(EDocID.REPORT_LOG.getDoc());
@@ -108,7 +108,7 @@ public class MatchController {
             CMessage.SINGLETON_INSTANCE.subscribe(currentGame);
             CLog.SINGLETON_INSTANCE.subscribe(currentGame);
             CStack.SINGLETON_INSTANCE.subscribe(currentGame);
-            // per player observers?
+            // per player observers were set when 
 
             // Update observers
             AllZone.getStack().updateObservers();

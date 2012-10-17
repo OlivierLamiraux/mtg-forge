@@ -22,8 +22,8 @@ import java.util.Observer;
 
 import forge.AllZone;
 import forge.Card;
-import forge.Singletons;
 import forge.control.input.Input;
+import forge.game.GameState;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.util.MyObservable;
@@ -131,9 +131,9 @@ public class GuiInput extends MyObservable implements Observer {
     /**
      * TODO: Write javadoc for this method.
      */
-    public void onNewGame() {
+    public void subscribe(GameState game) {
         AllZone.getInputControl().addObserver(this);
-        AllZone.getStack().addObserver(this);
-        Singletons.getModel().getGameState().getPhaseHandler().addObserver(this);
+        game.getStack().addObserver(this);
+        game.getPhaseHandler().addObserver(this);
     }
 }

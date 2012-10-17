@@ -19,7 +19,6 @@ package forge.game.phase;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Observer;
 import java.util.Stack;
 
 import com.esotericsoftware.minlog.Log;
@@ -868,12 +867,6 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
             this.passPriority();
             AllZone.getInputControl().resetInput();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public final void addObserver(final Observer o) {
-        super.addObserver(o);
     }
 
     /**

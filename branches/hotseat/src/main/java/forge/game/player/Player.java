@@ -2156,7 +2156,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * @return a boolean.
      */
     public final boolean cantLose() {
-        if (this.outcome.lossState == GameLossReason.Conceded) {
+        if (this.outcome != null && this.outcome.lossState == GameLossReason.Conceded) {
             return false;
         }
 

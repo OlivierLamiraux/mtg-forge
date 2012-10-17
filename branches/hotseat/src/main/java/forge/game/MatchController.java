@@ -9,6 +9,7 @@ import java.util.Map;
 import forge.AllZone;
 import forge.Singletons;
 import forge.control.FControl;
+import forge.control.input.InputMulligan;
 import forge.deck.Deck;
 import forge.error.ErrorViewer;
 import forge.game.player.ComputerAIGeneral;
@@ -16,10 +17,13 @@ import forge.game.player.ComputerAIInput;
 import forge.game.player.LobbyPlayer;
 import forge.game.player.Player;
 import forge.game.player.PlayerType;
+import forge.game.zone.ZoneType;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.SDisplayUtil;
 import forge.gui.match.CMatchUI;
+import forge.gui.match.controllers.CLog;
 import forge.gui.match.controllers.CMessage;
+import forge.gui.match.controllers.CStack;
 import forge.util.Aggregates;
 
 /**
@@ -86,7 +90,6 @@ public class MatchController {
         for (Player p : currentGame.getPlayers())
             startConditions.put(p, players.get(p.getLobbyPlayer()));
 
-        
         try {
 
             CMessage.SINGLETON_INSTANCE.updateGameInfo(this);
@@ -98,14 +101,29 @@ public class MatchController {
 
             CMatchUI.SINGLETON_INSTANCE.initMatch(players.size(), 1);
             Singletons.getModel().getPreferences().actuateMatchPreferences();
-
             Singletons.getControl().changeState(FControl.MATCH_SCREEN);
             SDisplayUtil.showTab(EDocID.REPORT_LOG.getDoc());
+
+            // set all observers
+            CMessage.SINGLETON_INSTANCE.subscribe(currentGame);
+            CLog.SINGLETON_INSTANCE.subscribe(currentGame);
+            CStack.SINGLETON_INSTANCE.subscribe(currentGame);
+            // per player observers?
 
             // Update observers
             AllZone.getStack().updateObservers();
             AllZone.getInputControl().updateObservers();
             AllZone.getGameLog().updateObservers();
+
+            
+            for( Player p : currentGame.getPlayers() ) {
+                p.updateObservers();
+                p.getZone(ZoneType.Hand).updateObservers();
+            }
+
+            CMatchUI.SINGLETON_INSTANCE.setCard(Singletons.getControl().getPlayer().getCardsIn(ZoneType.Hand).get(0));
+            AllZone.getInputControl().setInput(new InputMulligan());            
+            
         } catch (Exception e) {
             ErrorViewer.showError(e);
         }

@@ -22,6 +22,7 @@ import java.awt.event.ActionListener;
 
 import forge.Command;
 import forge.Singletons;
+import forge.game.GameState;
 import forge.game.MatchController;
 import forge.gui.GuiInput;
 import forge.gui.framework.ICDoc;
@@ -60,8 +61,8 @@ public enum CMessage implements ICDoc {
         }
     };
 
-    public void onNewGame() {
-        inputControl.onNewGame();
+    public void subscribe(GameState game) {
+        inputControl.subscribe(game);
     }
     
     @Override

@@ -3,8 +3,8 @@ package forge.gui.match.controllers;
 import java.util.Observable;
 import java.util.Observer;
 
-import forge.AllZone;
 import forge.Command;
+import forge.game.GameState;
 import forge.gui.framework.ICDoc;
 import forge.gui.match.views.VLog;
 
@@ -34,8 +34,8 @@ public enum CLog implements ICDoc, Observer {
         
     }
     
-    public void subscribe() {
-        AllZone.getGameLog().addObserver(this);
+    public void subscribe(GameState currentGame) {
+        currentGame.getGameLog().addObserver(this);
     }
 
     /* (non-Javadoc)

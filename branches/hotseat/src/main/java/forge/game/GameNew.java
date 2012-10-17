@@ -21,12 +21,10 @@ import forge.CardPredicates;
 import forge.CardUtil;
 import forge.Constant.Preferences;
 import forge.Singletons;
-import forge.control.input.InputMulligan;
 import forge.deck.Deck;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
-import forge.gui.match.CMatchUI;
 import forge.gui.match.VMatchUI;
 import forge.gui.match.nonsingleton.VField;
 import forge.gui.match.views.VAntes;
@@ -230,9 +228,6 @@ public class GameNew {
                 p.drawCard();
             }
         }
-
-        CMatchUI.SINGLETON_INSTANCE.setCard(Singletons.getControl().getPlayer().getCardsIn(ZoneType.Hand).get(0));
-        AllZone.getInputControl().setInput(new InputMulligan());
     } // newGame()
     
     private static String buildFourColumnList(String firstLine, List<String> cAnteRemoved ) {

@@ -240,15 +240,6 @@ public class GameState {
         this.timestamp = timestamp0;
     }
 
-    /**
-     * Gets the game info.
-     * 
-     * @return the game info
-     */
-    public final GameOutcome getGameSummary() {
-        return this.gameSummary;
-    }
-
 
     /**
      * @return the replacementHandler
@@ -277,5 +268,12 @@ public class GameState {
      */
     public int getTurnNumber() {
         return nTurn;
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     */
+    public void notifyNextTurn() {
+        nTurn++;
     }
 }

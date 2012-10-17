@@ -20,9 +20,9 @@ package forge.gui.match;
 import java.util.ArrayList;
 import java.util.List;
 
-import forge.AllZone;
 import forge.Card;
 import forge.GameEntity;
+import forge.Singletons;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.gui.CardContainer;
@@ -47,16 +47,6 @@ public enum CMatchUI implements CardContainer {
     SINGLETON_INSTANCE;
 
     /**
-     * Due to be deprecated with new multiplayer changes. Doublestrike 13-10-12.
-     * 
-     * @param strAvatarIcon &emsp; Filename of non-default avatar icon, if desired.
-     * 
-     */
-    public void initMatch(final String strAvatarIcon) {
-        this.initMatch(2, 1);
-    }
-
-    /**
      * Instantiates at a match with a specified number of players
      * and hands.
      * 
@@ -71,7 +61,7 @@ public enum CMatchUI implements CardContainer {
         for (VField view : VMatchUI.SINGLETON_INSTANCE.getFieldViews()) {
             final Image img;
             // Update AI quest icon
-            if (i == 1 && Singletons.getModel().getMatchState().getGameType() == GameType.Quest) {
+            if (i == 1 && Singletons.getModel().getMatch().getGameType() == GameType.Quest) {
                     String filename = ForgeProps.getFile(NewConstants.IMAGE_ICON) + File.separator;
 
                     if (strAvatarIcon != null) {
@@ -96,22 +86,16 @@ public enum CMatchUI implements CardContainer {
 
         // Instantiate all required field slots (user at 0)
         final List<VField> fields = new ArrayList<VField>();
+        List<Player> players = Singletons.getModel().getGameState().getPlayers();
         for (int i = 0; i < numFieldPanels; i++) {
-            switch (i) {
-                case 0:
-                    fields.add(0, new VField(EDocID.FIELD_0, AllZone.getHumanPlayer()));
-                    fields.get(0).getLayoutControl().initialize();
-                    break;
-                case 1:
-                    fields.add(1, new VField(EDocID.FIELD_1, AllZone.getComputerPlayer()));
-                    fields.get(1).getLayoutControl().initialize();
-                    break;
-                default:
-                    // A field must be initialized after it's instantiated, to update player info.
-                    // No player, no init.
-                    fields.add(i, new VField(EDocID.valueOf("FIELD_" + i), null));
-            }
+            fields.add(i, new VField(EDocID.valueOf("FIELD_" + i), players.get(i)));
+            if ( i < 2 )
+                fields.get(i).getLayoutControl().initialize();
+            // A field must be initialized after it's instantiated, to update player info.
+            // No player, no init.
+                    
         }
+    
 
         // Instantiate all required hand slots (user at 0)
         final List<VHand> hands = new ArrayList<VHand>();
@@ -120,7 +104,7 @@ public enum CMatchUI implements CardContainer {
                 case 0:
                     // A hand must be initialized after it's instantiated, to update player info.
                     // No player, no init.
-                    hands.add(0, new VHand(EDocID.HAND_0, AllZone.getHumanPlayer()));
+                    hands.add(0, new VHand(EDocID.HAND_0, Singletons.getControl().getPlayer()));
                     hands.get(0).getLayoutControl().initialize();
                     break;
                 default:

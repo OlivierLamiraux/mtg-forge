@@ -19,7 +19,12 @@ package forge.game;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import forge.game.player.LobbyPlayer;
+import forge.game.player.PlayerStatistics;
 
 /**
  * <p>
@@ -33,10 +38,10 @@ import java.util.Map;
 // This class might be divided in two parts: the very summary (immutable with
 // only getters) and
 // GameObserver class - who should be notified of any considerable ingame event
-public final class GameSummary {
+public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStatistics>>  {
 
     /** The player winner. */
-    private String playerWinner = "Nobody";
+    private LobbyPlayer playerWinner = null;
 
     /** The player got first turn. */
     // private String playerGotFirstTurn = "Nobody";
@@ -51,7 +56,7 @@ public final class GameSummary {
     private String spellEffectWin;
 
     /** The player rating. */
-    private final Map<String, GamePlayerRating> playerRating = new HashMap<String, GamePlayerRating>();
+    private final Map<LobbyPlayer, PlayerStatistics> playerRating = new HashMap<LobbyPlayer, PlayerStatistics>();
 
     /**
      * Instantiates a new game summary.
@@ -59,13 +64,13 @@ public final class GameSummary {
      * @param names
      *            the names
      */
-    public GameSummary(final String... names) {
+    public GameOutcome(final LobbyPlayer... names) {
         this(Arrays.asList(names));
     }
 
-    public GameSummary(final Iterable<String> list) {
-        for (final String n : list) {
-            this.playerRating.put(n, new GamePlayerRating());
+    public GameOutcome(final Iterable<LobbyPlayer> list) {
+        for (final LobbyPlayer n : list) {
+            this.playerRating.put(n, new PlayerStatistics());
         }
     }    
     
@@ -79,7 +84,7 @@ public final class GameSummary {
      * @param spellEffect
      *            the spell effect
      */
-    public void end(final GameEndReason condition, final String winner, final String spellEffect) {
+    public void end(final GameEndReason condition, final LobbyPlayer winner, final String spellEffect) {
         this.winCondition = condition;
         this.playerWinner = winner;
         this.spellEffectWin = spellEffect;
@@ -101,8 +106,8 @@ public final class GameSummary {
      *            the name
      * @return true, if is winner
      */
-    public boolean isWinner(final String name) {
-        return (name != null) && name.equals(this.playerWinner);
+    public boolean isWinner(final LobbyPlayer who) {
+        return who.equals(playerWinner);
     }
 
     /**
@@ -110,7 +115,7 @@ public final class GameSummary {
      * 
      * @return the winner
      */
-    public String getWinner() {
+    public LobbyPlayer getWinner() {
         return this.playerWinner;
     }
 
@@ -130,7 +135,7 @@ public final class GameSummary {
      *            the name
      * @return the player rating
      */
-    public GamePlayerRating getPlayerRating(final String name) {
+    public PlayerStatistics getStatistics(final LobbyPlayer name) {
         return this.playerRating.get(name);
     }
 
@@ -166,6 +171,14 @@ public final class GameSummary {
      */
     public String getWinSpellEffect() {
         return this.spellEffectWin;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Iterable#iterator()
+     */
+    @Override
+    public Iterator<Entry<LobbyPlayer, PlayerStatistics>> iterator() {
+        return playerRating.entrySet().iterator();
     }
 
 }

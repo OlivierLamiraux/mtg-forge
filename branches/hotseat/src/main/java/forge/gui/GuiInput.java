@@ -41,16 +41,6 @@ public class GuiInput extends MyObservable implements Observer {
     /** The input. */
     private Input input;
 
-    /**
-     * <p>
-     * Constructor for GuiInput.
-     * </p>
-     */
-    public GuiInput() {
-        AllZone.getInputControl().addObserver(this);
-        AllZone.getStack().addObserver(this);
-        Singletons.getModel().getGameState().getPhaseHandler().addObserver(this);
-    }
 
     /** {@inheritDoc} */
     @Override
@@ -136,5 +126,14 @@ public class GuiInput extends MyObservable implements Observer {
     /** @return {@link forge.gui.GuiInput.Input} */
     public Input getInput() {
         return this.input;
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     */
+    public void onNewGame() {
+        AllZone.getInputControl().addObserver(this);
+        AllZone.getStack().addObserver(this);
+        Singletons.getModel().getGameState().getPhaseHandler().addObserver(this);
     }
 }

@@ -31,6 +31,10 @@ public enum CLog implements ICDoc, Observer {
      */
     @Override
     public void initialize() {
+        
+    }
+    
+    public void subscribe() {
         AllZone.getGameLog().addObserver(this);
     }
 

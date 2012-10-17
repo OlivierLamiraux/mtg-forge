@@ -14,18 +14,18 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
 
-import forge.AllZone;
 import forge.Command;
 import forge.Singletons;
 import forge.control.FControl;
 import forge.deck.Deck;
-import forge.game.GameNew;
 import forge.game.GameType;
-import forge.game.PlayerStartsGame;
+import forge.game.MatchStartHelper;
+import forge.game.PlayerStartConditions;
+import forge.game.player.LobbyPlayer;
+import forge.game.player.PlayerType;
 import forge.gui.SOverlayUtils;
 import forge.gui.deckeditor.CDeckEditorUI;
 import forge.gui.deckeditor.controllers.CEditorQuestCardShop;
-import forge.gui.match.CMatchUI;
 import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FPanel;
 import forge.gui.toolbox.FSkin;
@@ -269,15 +269,14 @@ public class SSubmenuQuestUtil {
         final SwingWorker<Object, Void> worker = new SwingWorker<Object, Void>() {
             @Override
             public Object doInBackground() {
-                Singletons.getModel().getMatchState().setGameType(GameType.Quest);
-
+                
                 qData.getChallengesManager().randomizeOpponents();
                 qData.getDuelsManager().randomizeOpponents();
                 qData.setCurrentEvent(event);
                 qData.save();
 
-                PlayerStartsGame p1 = new PlayerStartsGame(AllZone.getHumanPlayer(), SSubmenuQuestUtil.getCurrentDeck());
-                PlayerStartsGame p2 = new PlayerStartsGame(AllZone.getComputerPlayer(), event.getEventDeck());
+                PlayerStartConditions humanStart = new PlayerStartConditions(SSubmenuQuestUtil.getCurrentDeck());
+                PlayerStartConditions aiStart = new PlayerStartConditions(event.getEventDeck()); 
 
                 if (qData.getMode() == QuestMode.Fantasy) {
                     int lifeAI = 20;
@@ -291,14 +290,21 @@ public class SSubmenuQuestUtil {
                         }
                     }
 
-                    p1.initialLives = qData.getAssets().getLife(qData.getMode()) + extraLifeHuman;
-                    p1.cardsOnBattlefield = QuestUtil.getHumanStartingCards(qData, event);
-                    p2.initialLives = lifeAI;
-                    p2.cardsOnBattlefield = QuestUtil.getComputerStartingCards(event);
+                    humanStart.setStartingLife(qData.getAssets().getLife(qData.getMode()) + extraLifeHuman);
+                    humanStart.setCardsOnTable(QuestUtil.getHumanStartingCards(qData, event));
+                    aiStart.setStartingLife(lifeAI);
+                    aiStart.setCardsOnTable(QuestUtil.getComputerStartingCards(event));
                 } // End isFantasy
 
-                CMatchUI.SINGLETON_INSTANCE.initMatch(event.getIconFilename());
-                GameNew.newGame(p1, p2);
+                MatchStartHelper msh = new MatchStartHelper();
+                msh.addPlayer( Singletons.getControl().getLobby().getQuestPlayer(), humanStart );
+
+                LobbyPlayer aiPlayer = Singletons.getControl().getLobby().findLocalPlayer(PlayerType.COMPUTER, event.getName());
+                aiPlayer.setPicture(event.getIconFilename());
+                msh.addPlayer( aiPlayer, aiStart );
+                
+                Singletons.getModel().getMatch().initMatch(GameType.Quest, msh.getPlayerMap());
+                Singletons.getModel().getMatch().startRound();
                 return null;
             }
 

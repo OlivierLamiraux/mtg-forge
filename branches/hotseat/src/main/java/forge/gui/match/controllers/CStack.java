@@ -33,9 +33,12 @@ public enum CStack implements ICDoc, Observer {
      */
     @Override
     public void initialize() {
-        AllZone.getStack().addObserver(this);
     }
 
+    public void subscribe() {
+        AllZone.getStack().addObserver(this);
+    }
+    
     /* (non-Javadoc)
      * @see forge.gui.framework.ICDoc#update()
      */

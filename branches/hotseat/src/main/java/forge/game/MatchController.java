@@ -8,6 +8,7 @@ import java.util.Map;
 
 import forge.AllZone;
 import forge.Singletons;
+import forge.Constant.Preferences;
 import forge.control.FControl;
 import forge.control.input.InputMulligan;
 import forge.deck.Deck;
@@ -21,9 +22,13 @@ import forge.game.zone.ZoneType;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.SDisplayUtil;
 import forge.gui.match.CMatchUI;
+import forge.gui.match.VMatchUI;
 import forge.gui.match.controllers.CLog;
 import forge.gui.match.controllers.CMessage;
 import forge.gui.match.controllers.CStack;
+import forge.gui.match.nonsingleton.VField;
+import forge.gui.match.views.VAntes;
+import forge.gui.toolbox.FLabel;
 import forge.util.Aggregates;
 
 /**
@@ -91,15 +96,7 @@ public class MatchController {
             startConditions.put(p, players.get(p.getLobbyPlayer()));
 
         try {
-
-            CMessage.SINGLETON_INSTANCE.updateGameInfo(this);
-            GameNew.newGame(startConditions);
-
-            Player computerPlayer = Aggregates.firstFieldEquals(currentGame.getPlayers(), Player.Accessors.FN_GET_TYPE,
-                    PlayerType.COMPUTER);
-            AllZone.getInputControl().setComputer(new ComputerAIInput(new ComputerAIGeneral(computerPlayer)));
-
-            CMatchUI.SINGLETON_INSTANCE.initMatch(currentGame.getPlayers(), Singletons.getControl().getPlayer());
+            CMatchUI.SINGLETON_INSTANCE.initMatch(currentGame.getPlayers(), currentGame.getPlayers()); //Singletons.getControl().getPlayer());
             Singletons.getModel().getPreferences().actuateMatchPreferences();
             Singletons.getControl().changeState(FControl.MATCH_SCREEN);
             SDisplayUtil.showTab(EDocID.REPORT_LOG.getDoc());
@@ -108,8 +105,30 @@ public class MatchController {
             CMessage.SINGLETON_INSTANCE.subscribe(currentGame);
             CLog.SINGLETON_INSTANCE.subscribe(currentGame);
             CStack.SINGLETON_INSTANCE.subscribe(currentGame);
-            // per player observers were set when 
 
+            
+            GameNew.newGame(startConditions);
+
+            Player computerPlayer = Aggregates.firstFieldEquals(currentGame.getPlayers(), Player.Accessors.FN_GET_TYPE, PlayerType.COMPUTER);
+            AllZone.getInputControl().setComputer(new ComputerAIInput(new ComputerAIGeneral(computerPlayer)));
+
+
+            if (this.getPlayedGames().isEmpty()) { 
+                // TODO restore this functionality!!!
+                //VMatchUI.SINGLETON_INSTANCE.getViewDevMode().getDocument().setVisible(Preferences.DEV_MODE);
+        
+                for (final VField field : VMatchUI.SINGLETON_INSTANCE.getFieldViews()) {
+                    ((FLabel) field.getLblHand()).setHoverable(Preferences.DEV_MODE);
+                    ((FLabel) field.getLblLibrary()).setHoverable(Preferences.DEV_MODE);
+                }
+        
+                VAntes.SINGLETON_INSTANCE.clearAnteCards();
+                AllZone.getInputControl().resetInput();
+            }
+            
+            // per player observers were set in CMatchUI.SINGLETON_INSTANCE.initMatch
+
+            CMessage.SINGLETON_INSTANCE.updateGameInfo(this);
             // Update observers
             AllZone.getStack().updateObservers();
             AllZone.getInputControl().updateObservers();

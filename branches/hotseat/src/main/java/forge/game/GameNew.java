@@ -19,16 +19,12 @@ import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
 import forge.CardUtil;
-import forge.Constant.Preferences;
 import forge.Singletons;
 import forge.deck.Deck;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
-import forge.gui.match.VMatchUI;
-import forge.gui.match.nonsingleton.VField;
 import forge.gui.match.views.VAntes;
-import forge.gui.toolbox.FLabel;
 import forge.item.CardPrinted;
 import forge.properties.ForgePreferences.FPref;
 import forge.util.Aggregates;
@@ -86,22 +82,13 @@ public class GameNew {
         }
         
         // Shuffling
-        if ( player.isHuman() ) {
-            for (int i = 0; i < 100; i++) {
-                player.shuffle();
-            }
-        }
-        
-        // Ai may cheat
-        if ( player.isComputer() ) {
-            if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_SMOOTH_LAND)) {
-                // do this instead of shuffling Computer's deck
-                final Iterable<Card> c1 = GameNew.smoothComputerManaCurve(player.getCardsIn(ZoneType.Library));
-                player.getZone(ZoneType.Library).setCards(c1);
-            } else {
-                player.shuffle();
-            }
-        }
+        // Ai may cheat 
+        if ( player.isComputer() && Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_SMOOTH_LAND) ) {
+            // do this instead of shuffling Computer's deck
+            final Iterable<Card> c1 = GameNew.smoothComputerManaCurve(player.getCardsIn(ZoneType.Library));
+            player.getZone(ZoneType.Library).setCards(c1);
+        } else
+            player.shuffle();
     }
     
     
@@ -113,37 +100,19 @@ public class GameNew {
      * their decks and other special starting conditions. 
      */
     public static void newGame(final Map<Player, PlayerStartConditions> playersConditions) {
-        
-        
         AllZone.getInputControl().clearInput();
         AllZone.getColorChanger().reset();
-        
-        if (Singletons.getModel().getMatch().getPlayedGames().isEmpty()) { 
-            // TODO restore this functionality!!!
-            //VMatchUI.SINGLETON_INSTANCE.getViewDevMode().getDocument().setVisible(Preferences.DEV_MODE);
-    
-            final List<VField> allFields = VMatchUI.SINGLETON_INSTANCE.getFieldViews();
-    
-            for (final VField field : allFields) {
-                ((FLabel) field.getLblHand()).setHoverable(Preferences.DEV_MODE);
-                ((FLabel) field.getLblLibrary()).setHoverable(Preferences.DEV_MODE);
-            }
-    
-            VAntes.SINGLETON_INSTANCE.clearAnteCards();
-            AllZone.getInputControl().resetInput();
-        }
-    
+
         Card.resetUniqueNumber();
         // need this code here, otherwise observables fail
         forge.card.trigger.Trigger.resetIDs();
         AllZone.getTriggerHandler().clearTriggerSettings();
         AllZone.getTriggerHandler().clearDelayedTrigger();
-    
+
         // friendliness
         final Map<Player, List<String>> removedAnteCards = new HashMap<Player, List<String>>();
         final List<String> rAICards = new ArrayList<String>();
-    
-        
+
         for( Entry<Player, PlayerStartConditions> p : playersConditions.entrySet() ) {
             final Player player = p.getKey();
             player.setStartingLife(p.getValue().getStartingLife());

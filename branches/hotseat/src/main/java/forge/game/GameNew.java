@@ -130,6 +130,9 @@ public class GameNew {
             }
             
             prepareSingleLibrary(player, p.getValue().getDeck(), removedAnteCards, rAICards);
+            player.updateObservers();
+            bf.updateObservers();
+            player.getZone(ZoneType.Hand).updateObservers();
         }
     
     

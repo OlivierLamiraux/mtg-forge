@@ -258,6 +258,9 @@ public class GameState {
      */
     public void setGameOver() {
         this.gameOver = true;
+        for(Player p : roPlayers) {
+            p.onGameOver();
+        }
     }
 
     /**

@@ -74,13 +74,16 @@ public class MatchController {
 
     /**
      * TODO: Write javadoc for this method.
+     * @param reason 
      * 
      * @param game
      */
-    public void addGamePlayed(GameState game) {
-        game.setGameOver();
+    public void addGamePlayed(GameEndReason reason, GameState game) {
+        if ( !game.isGameOver() )
+            throw new RuntimeException("Game is not over yet.");
 
-        // game.end(GameEndReason.AllOpponentsLost, computer.getName(), null);
+        GameOutcome result = new GameOutcome(reason, game.getPlayers());
+        gamesPlayed.add(result);
     }
 
     /**
@@ -96,7 +99,7 @@ public class MatchController {
             startConditions.put(p, players.get(p.getLobbyPlayer()));
 
         try {
-            CMatchUI.SINGLETON_INSTANCE.initMatch(currentGame.getPlayers(), currentGame.getPlayers()); //Singletons.getControl().getPlayer());
+            CMatchUI.SINGLETON_INSTANCE.initMatch(currentGame.getPlayers(), Singletons.getControl().getPlayer());
             Singletons.getModel().getPreferences().actuateMatchPreferences();
             Singletons.getControl().changeState(FControl.MATCH_SCREEN);
             SDisplayUtil.showTab(EDocID.REPORT_LOG.getDoc());

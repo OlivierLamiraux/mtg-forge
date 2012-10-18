@@ -129,7 +129,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     /** The zones. */
     private final Map<ZoneType, PlayerZone> zones = new EnumMap<ZoneType, PlayerZone>(ZoneType.class);
 
-    private PlayerOutcome outcome = null;
     private PlayerStatistics stats = new PlayerStatistics();
 
     /** The Constant ALL_ZONES. */
@@ -142,7 +141,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     private LobbyPlayer lobbyPlayer; 
     
     public final PlayerOutcome getOutcome() {
-        return outcome;
+        return stats.getOutcome();
     }
 
     /**
@@ -168,7 +167,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         this.setName(lobbyPlayer.getName());
     }
 
-    protected final PlayerStatistics getStats() {
+    public final PlayerStatistics getStats() {
         return stats;
     }
 
@@ -2105,7 +2104,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             System.out.println("Tried to win, but currently can't.");
             return;
         }
-        this.outcome = PlayerOutcome.altWin(sourceName);
+        this.setOutcome(PlayerOutcome.altWin(sourceName));
 
     }
 
@@ -2137,7 +2136,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             }
         }
 
-        outcome = PlayerOutcome.loss(state, spellName);
+        setOutcome(PlayerOutcome.loss(state, spellName));
         return true;
     }
 
@@ -2145,7 +2144,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * Concede.
      */
     public final void concede() { // No cantLose checks - just lose
-        outcome = PlayerOutcome.concede();
+        setOutcome(PlayerOutcome.concede());
     }
 
     /**
@@ -2156,7 +2155,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * @return a boolean.
      */
     public final boolean cantLose() {
-        if (this.outcome != null && this.outcome.lossState == GameLossReason.Conceded) {
+        if (this.getOutcome() != null && this.getOutcome().lossState == GameLossReason.Conceded) {
             return false;
         }
 
@@ -2194,8 +2193,8 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      */
     public final boolean checkLoseCondition() {
         
-        if ( this.outcome != null )
-            return this.outcome.lossState != null;
+        if ( this.getOutcome() != null )
+            return this.getOutcome().lossState != null;
 
         if (this.poisonCounters >= 10) {
             return this.loseConditionMet(GameLossReason.Poisoned, null);
@@ -2223,7 +2222,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         // in multiplayer game one player's win is replaced by all other's lose (rule 103.4h)
         // so if someone cannot lose, the game appears to continue
 
-        return this.outcome != null && this.outcome.lossState == null;
+        return this.getOutcome() != null && this.getOutcome().lossState == null;
     }
 
     /**
@@ -2654,7 +2653,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         public static final Predicate<Player> NOT_LOST = new Predicate<Player>() {
             @Override
             public boolean apply(Player p) {
-                return p.outcome != null && p.outcome.lossState == null;
+                return p.getOutcome() == null || p.getOutcome().hasWon();
             }
         };
 
@@ -2713,5 +2712,17 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      */
     public LobbyPlayer getLobbyPlayer() {
         return lobbyPlayer;
+    }
+
+    private void setOutcome(PlayerOutcome outcome) {
+        stats.setOutcome(outcome); 
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     */
+    public void onGameOver() {
+        if ( null == stats.getOutcome() ) // not lost?  
+            setOutcome(PlayerOutcome.win()); // then won!
     }
 }

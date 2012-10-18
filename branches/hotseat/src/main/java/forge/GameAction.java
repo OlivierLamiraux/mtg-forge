@@ -51,6 +51,7 @@ import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerType;
 import forge.control.input.InputPayManaCost;
 import forge.control.input.InputPayManaCostUtil;
+import forge.game.GameEndReason;
 import forge.game.GameLossReason;
 import forge.game.GameState;
 import forge.game.player.ComputerUtil;
@@ -902,34 +903,37 @@ public class GameAction {
             return true;
         }
 
-        boolean hasEndedNow = false;
+        GameEndReason reason = null;
         // award loses as SBE
         for (Player p : game.getPlayers() ) {
-            if ( p.checkLoseCondition() ) {
-                hasEndedNow = true;
-            }
+            p.checkLoseCondition(); // this will set appropriate outcomes
         }
         
         // Has anyone won by spelleffect?
         for (Player p : game.getPlayers() ) {
-            if( p.hasWon() ) { // then the rest has lost!
+            if( p.hasWon() ) { // then the rest have lost!
+                reason = GameEndReason.WinsGameSpellEffect;
                 for (Player pl : game.getPlayers() ) {
                     if( !pl.equals(p) )
-                        if ( pl.loseConditionMet(GameLossReason.OpponentWon, p.getOutcome().altWinSourceName) )
-                            hasEndedNow = true;
+                        if ( !pl.loseConditionMet(GameLossReason.OpponentWon, p.getOutcome().altWinSourceName) )
+                            reason = null; // they cannot lose!
                 }
                 break;
             }
         }
         
         // still unclear why this has not caught me conceding
-        final boolean isGameDone = Iterables.size(Iterables.filter(game.getPlayers(), Player.Predicates.NOT_LOST)) == 1;
-        if (isGameDone || hasEndedNow) {
+        if ( reason == null && Iterables.size(Iterables.filter(game.getPlayers(), Player.Predicates.NOT_LOST)) == 1 )
+        {
+            reason = GameEndReason.AllOpponentsLost;
+        }
+        
+        if (reason != null) {
             game.setGameOver();
-            Singletons.getModel().getMatch().addGamePlayed(game);
+            Singletons.getModel().getMatch().addGamePlayed(reason, game);
         }
 
-        return isGameDone;
+        return reason != null;
     }
 
     /** */

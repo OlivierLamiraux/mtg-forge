@@ -24,6 +24,10 @@ public class PlayerOutcome {
      * @param sourceName
      * @return
      */
+    public static PlayerOutcome win() {
+        return new PlayerOutcome(null, null, null);
+    }    
+    
     public static PlayerOutcome altWin(String sourceName) {
         return new PlayerOutcome(sourceName, null, null);
     }
@@ -44,6 +48,10 @@ public class PlayerOutcome {
      */
     public static PlayerOutcome concede() {
         return new PlayerOutcome(null, GameLossReason.Conceded, null);
+    }
+    
+    public boolean hasWon() { 
+        return lossState == null;
     }
 
 }

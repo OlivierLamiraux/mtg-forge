@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import forge.game.player.LobbyPlayer;
+import forge.game.player.Player;
 import forge.game.player.PlayerStatistics;
 
 /**
@@ -40,8 +41,6 @@ import forge.game.player.PlayerStatistics;
 // GameObserver class - who should be notified of any considerable ingame event
 public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStatistics>>  {
 
-    /** The player winner. */
-    private LobbyPlayer playerWinner = null;
 
     /** The player got first turn. */
     // private String playerGotFirstTurn = "Nobody";
@@ -49,14 +48,10 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
     /** The last turn number. */
     private int lastTurnNumber = 0;
 
-    /** The win condition. */
-    private GameEndReason winCondition;
-
-    /** The spell effect win. */
-    private String spellEffectWin;
-
     /** The player rating. */
-    private final Map<LobbyPlayer, PlayerStatistics> playerRating = new HashMap<LobbyPlayer, PlayerStatistics>();
+    private final Map<LobbyPlayer, PlayerStatistics> playerRating = new HashMap<LobbyPlayer, PlayerStatistics>(4);
+
+    private GameEndReason winCondition;
 
     /**
      * Instantiates a new game summary.
@@ -64,31 +59,17 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
      * @param names
      *            the names
      */
-    public GameOutcome(final LobbyPlayer... names) {
-        this(Arrays.asList(names));
+    public GameOutcome(GameEndReason reason, final Player... names) {
+        this(reason, Arrays.asList(names));
     }
 
-    public GameOutcome(final Iterable<LobbyPlayer> list) {
-        for (final LobbyPlayer n : list) {
-            this.playerRating.put(n, new PlayerStatistics());
+    public GameOutcome(GameEndReason reason, final Iterable<Player> list) {
+        winCondition = reason;
+        for (final Player n : list) {
+            this.playerRating.put(n.getLobbyPlayer(), n.getStats());
         }
     }    
     
-    /**
-     * End.
-     * 
-     * @param condition
-     *            the condition
-     * @param winner
-     *            the winner
-     * @param spellEffect
-     *            the spell effect
-     */
-    public void end(final GameEndReason condition, final LobbyPlayer winner, final String spellEffect) {
-        this.winCondition = condition;
-        this.playerWinner = winner;
-        this.spellEffectWin = spellEffect;
-    }
 
     /**
      * Checks if is draw.
@@ -96,7 +77,12 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
      * @return true, if is draw
      */
     public boolean isDraw() {
-        return null == this.playerWinner;
+        for( PlayerStatistics pv : playerRating.values())
+        {
+            if ( pv.getOutcome().hasWon() )
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -107,7 +93,8 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
      * @return true, if is winner
      */
     public boolean isWinner(final LobbyPlayer who) {
-        return who.equals(playerWinner);
+        PlayerStatistics stats =  playerRating.get(who);
+        return stats.getOutcome().hasWon();
     }
 
     /**
@@ -116,7 +103,12 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
      * @return the winner
      */
     public LobbyPlayer getWinner() {
-        return this.playerWinner;
+        for( Entry<LobbyPlayer, PlayerStatistics> ps : playerRating.entrySet())
+        {
+            if ( ps.getValue().getOutcome().hasWon() )
+            return ps.getKey();
+        }
+        return null;
     }
 
     /**
@@ -158,19 +150,17 @@ public final class GameOutcome implements Iterable<Entry<LobbyPlayer, PlayerStat
      */
 
     /**
-     * Notify next turn.
-     */
-    public void notifyNextTurn() {
-        this.lastTurnNumber++;
-    }
-
-    /**
      * Gets the win spell effect.
      * 
      * @return the win spell effect
      */
     public String getWinSpellEffect() {
-        return this.spellEffectWin;
+        for( PlayerStatistics pv : playerRating.values())
+        {
+            if ( pv.getOutcome().hasWon() )
+            return pv.getOutcome().altWinSourceName;
+        }
+        return null;
     }
 
     /* (non-Javadoc)

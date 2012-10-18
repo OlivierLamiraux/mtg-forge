@@ -33,7 +33,7 @@ public class PlayerStatistics {
     private int turnsPlayed = 0;
 
     
-    private PlayerOutcome gameOutcome;
+    private PlayerOutcome outcome;
 
     /**
      * Gets the opening hand size.
@@ -78,12 +78,12 @@ public class PlayerStatistics {
         this.turnsPlayed++; 
     }
 
-    public PlayerOutcome getGameOutcome() {
-        return gameOutcome;
+    public PlayerOutcome getOutcome() {
+        return outcome;
     }
 
-    public void setGameOutcome(PlayerOutcome gameOutcome) {
-        this.gameOutcome = gameOutcome; 
+    public void setOutcome(PlayerOutcome gameOutcome) {
+        this.outcome = gameOutcome; 
     }
 
 }

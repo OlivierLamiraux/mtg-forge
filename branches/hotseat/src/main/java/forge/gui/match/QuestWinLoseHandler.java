@@ -354,7 +354,7 @@ public class QuestWinLoseHandler extends ControlWinLose {
                     continue;
                 }
                 
-                final PlayerOutcome outcome = aiRating.getValue().getGameOutcome();
+                final PlayerOutcome outcome = aiRating.getValue().getOutcome();
                 final GameLossReason whyAiLost = outcome.lossState;
                 final int altReward = this.getCreditsRewardForAltWin(whyAiLost);
 

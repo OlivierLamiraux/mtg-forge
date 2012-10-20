@@ -19,9 +19,8 @@ package forge.card.abilityfactory;
 
 import java.util.HashMap;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
+import forge.Singletons;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.spellability.AbilitySub;
 import forge.card.spellability.SpellAbility;
@@ -106,7 +105,7 @@ public final class AbilityFactoryCleanup {
 
         if (params.containsKey("ClearRemembered")) {
             source.clearRemembered();
-            AllZoneUtil.getCardState(source).clearRemembered();
+            Singletons.getModel().getGame().getCardState(source).clearRemembered();
         }
         if (params.containsKey("ClearImprinted")) {
             source.clearImprinted();
@@ -118,7 +117,7 @@ public final class AbilityFactoryCleanup {
             source.setSVar("ChosenY", "");
         }
         if (params.containsKey("ClearTriggered")) {
-            AllZone.getTriggerHandler().clearDelayedTrigger(source);
+            Singletons.getModel().getGame().getTriggerHandler().clearDelayedTrigger(source);
         }
     }
 

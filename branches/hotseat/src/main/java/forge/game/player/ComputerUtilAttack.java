@@ -23,8 +23,6 @@ import java.util.Random;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -243,7 +241,7 @@ public class ComputerUtilAttack {
         int fixedBlockers = 0;
         final List<Card> vigilantes = new ArrayList<Card>();
         //check for time walks
-        if (Singletons.getModel().getGameState().getPhaseHandler().isNextTurn(PlayerType.COMPUTER)) {
+        if (Singletons.getModel().getGame().getPhaseHandler().isNextTurn(PlayerType.COMPUTER)) {
             return attackers;
         }
         for (final Card c : this.computerList) {
@@ -314,7 +312,7 @@ public class ComputerUtilAttack {
                     // bonus TWICE
                     humanBaseAttack = humanBaseAttack + humanExaltedBonus;
                 }
-                final int totalExaltedAttack = AllZoneUtil.isCardInPlay("Rafiq of the Many", opp) ? 2 * humanBaseAttack
+                final int totalExaltedAttack = opp.isCardInPlay("Rafiq of the Many") ? 2 * humanBaseAttack
                         : humanBaseAttack;
                 if (ai.getLife() - 3 <= totalExaltedAttack) {
                     // We will lose if there is an Exalted attack -- keep one
@@ -382,7 +380,7 @@ public class ComputerUtilAttack {
      */
     private boolean doAssault(final Player ai) {
         // Beastmaster Ascension
-        if (AllZoneUtil.isCardInPlay("Beastmaster Ascension", ai)
+        if (ai.isCardInPlay("Beastmaster Ascension")
                 && (this.attackers.size() > 1)) {
             final List<Card> beastions = ai.getCardsIn(ZoneType.Battlefield, "Beastmaster Ascension");
             int minCreatures = 7;
@@ -468,7 +466,7 @@ public class ComputerUtilAttack {
 
         final Object entity = ai.getMustAttackEntity();
         if (null != entity) {
-            final List<GameEntity> defenders = AllZone.getCombat().getDefenders();
+            final List<GameEntity> defenders = Singletons.getModel().getGame().getCombat().getDefenders();
             n = defenders.indexOf(entity);
             if (-1 == n) {
                 System.out.println("getMustAttackEntity() returned something not in defenders.");
@@ -500,14 +498,14 @@ public class ComputerUtilAttack {
         // randomInt is used so that the computer doesn't always
         // do the same thing on turn 3 if he had the same creatures in play
         // I know this is a little confusing
-        this.random.setSeed(Singletons.getModel().getGameState().getPhaseHandler().getTurn() + this.randomInt);
+        this.random.setSeed(Singletons.getModel().getGame().getPhaseHandler().getTurn() + this.randomInt);
 
         final Combat combat = new Combat();
-        combat.setAttackingPlayer(AllZone.getCombat().getAttackingPlayer());
-        combat.setDefendingPlayer(AllZone.getCombat().getDefendingPlayer());
+        combat.setAttackingPlayer(Singletons.getModel().getGame().getCombat().getAttackingPlayer());
+        combat.setDefendingPlayer(Singletons.getModel().getGame().getCombat().getDefendingPlayer());
 
-        AllZone.getCombat().initiatePossibleDefenders(AllZone.getCombat().getDefendingPlayer());
-        combat.setDefenders(AllZone.getCombat().getDefenders());
+        Singletons.getModel().getGame().getCombat().initiatePossibleDefenders(Singletons.getModel().getGame().getCombat().getDefendingPlayer());
+        combat.setDefenders(Singletons.getModel().getGame().getCombat().getDefenders());
 
         if (this.attackers.isEmpty()) {
             return combat;
@@ -563,7 +561,7 @@ public class ComputerUtilAttack {
                     break;
                 }
                 if (c.getName().equals("Finest Hour")
-                        && Singletons.getModel().getGameState().getPhaseHandler().isFirstCombat()) {
+                        && Singletons.getModel().getGame().getPhaseHandler().isFirstCombat()) {
                     exalted = true;
                     break;
                 }
@@ -923,7 +921,7 @@ public class ComputerUtilAttack {
         // context that will be relevant to the attackers decision according to
         // the selected strategy
         for (final Card defender : defenders) {
-            if (CombatUtil.canBlock(attacker, defender)) { // , combat )) {
+            if (CombatUtil.canBlock(attacker, defender)) { 
                 numberOfPossibleBlockers += 1;
                 if (CombatUtil.canDestroyAttacker(attacker, defender, combat, false)
                         && !(attacker.hasKeyword("Undying") && attacker.getCounters(Counters.P1P1) == 0)) {
@@ -932,7 +930,8 @@ public class ComputerUtilAttack {
                                              // the creature
                     // see if the defending creature is of higher or lower
                     // value. We don't want to attack only to lose value
-                    if (CardFactoryUtil.evaluateCreature(defender) <= CardFactoryUtil.evaluateCreature(attacker)) {
+                    if (isWorthLessThanAllKillers && attacker.getSVar("SacMe").equals("") 
+                            && CardFactoryUtil.evaluateCreature(defender) <= CardFactoryUtil.evaluateCreature(attacker)) {
                         isWorthLessThanAllKillers = false;
                     }
                 }
@@ -940,6 +939,9 @@ public class ComputerUtilAttack {
                 // not record that it can't kill everything
                 if (!CombatUtil.canDestroyBlocker(defender, attacker, combat, false)) {
                     canKillAll = false;
+                    if (!canKillAllDangerous) {
+                        continue;
+                    }
                     if (defender.getSVar("HasCombatEffect").equals("TRUE")) {
                         canKillAllDangerous = false;
                     } else {

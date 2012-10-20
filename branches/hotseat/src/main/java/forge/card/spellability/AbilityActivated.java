@@ -20,9 +20,8 @@ package forge.card.spellability;
 import java.util.ArrayList;
 import java.util.List;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
+import forge.Singletons;
 
 import forge.card.cost.Cost;
 import forge.card.cost.CostPayment;
@@ -83,7 +82,7 @@ public abstract class AbilityActivated extends SpellAbility implements java.io.S
     /** {@inheritDoc} */
     @Override
     public boolean canPlay() {
-        if (AllZone.getStack().isSplitSecondOnStack()) {
+        if (Singletons.getModel().getGame().getStack().isSplitSecondOnStack()) {
             return false;
         }
 
@@ -94,7 +93,7 @@ public abstract class AbilityActivated extends SpellAbility implements java.io.S
         }
 
         // CantBeActivated static abilities
-        final List<Card> allp = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        final List<Card> allp = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         for (final Card ca : allp) {
             final ArrayList<StaticAbility> staticAbilities = ca.getStaticAbilities();
             for (final StaticAbility stAb : staticAbilities) {
@@ -108,7 +107,7 @@ public abstract class AbilityActivated extends SpellAbility implements java.io.S
             return false;
         }
 
-        if (this.isCycling() && AllZoneUtil.isCardInPlay("Stabilizer")) {
+        if (this.isCycling() && Singletons.getModel().getGame().isCardInPlay("Stabilizer")) {
             return false;
         }
 

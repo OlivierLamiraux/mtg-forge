@@ -26,12 +26,11 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
 import forge.CardPredicates;
+import forge.CardPredicates.Presets;
 import forge.CardUtil;
 import forge.Command;
 import forge.GameActionUtil;
@@ -315,7 +314,7 @@ public class AbilityFactoryPump {
      * @return true, if is useful keyword
      */
     public boolean isUsefulCurseKeyword(final Player ai, final String keyword, final Card card, final SpellAbility sa) {
-        final PhaseHandler ph = Singletons.getModel().getGameState().getPhaseHandler();
+        final PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler();
         final Player human = ai.getOpponent();
         //int attack = getNumAttack(sa);
         //int defense = getNumDefense(sa);
@@ -372,7 +371,7 @@ public class AbilityFactoryPump {
                     || card.getNetCombatDamage() <= 0
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
                     || ph.getPhase().isBefore(PhaseType.MAIN1)
-                    || CardLists.getNotKeyword(AllZoneUtil.getCreaturesInPlay(ai), "Defender").isEmpty())) {
+                    || CardLists.getNotKeyword(ai.getCreaturesInPlay(), "Defender").isEmpty())) {
                 return false;
             }
             if (ph.isPlayerTurn(human) && (!card.isAttacking()
@@ -405,7 +404,7 @@ public class AbilityFactoryPump {
      * @return true, if is useful keyword
      */
     public boolean isUsefulPumpKeyword(final Player ai, final String keyword, final Card card, final SpellAbility sa) {
-        final PhaseHandler ph = Singletons.getModel().getGameState().getPhaseHandler();
+        final PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler();
         final Player opp = ai.getOpponent();
         int attack = getNumAttack(sa);
         //int defense = getNumDefense(sa);
@@ -414,7 +413,7 @@ public class AbilityFactoryPump {
         }
 
         Predicate<Card> opBlockers = CardPredicates.possibleBlockers(card);
-        List<Card> cardsCanBlock = CardLists.filter(AllZoneUtil.getCreaturesInPlay(opp), opBlockers);
+        List<Card> cardsCanBlock = CardLists.filter(opp.getCreaturesInPlay(), opBlockers);
 
         final boolean evasive = (keyword.endsWith("Unblockable") || keyword.endsWith("Fear")
                 || keyword.endsWith("Intimidate") || keyword.endsWith("Shadow"));
@@ -431,10 +430,10 @@ public class AbilityFactoryPump {
         } else if (keyword.endsWith("Flying")) {
             if (ph.isPlayerTurn(opp)
                     && ph.getPhase().equals(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
-                    && !CardLists.getKeyword(AllZone.getCombat().getAttackerList(), "Flying").isEmpty()
+                    && !CardLists.getKeyword(Singletons.getModel().getGame().getCombat().getAttackerList(), "Flying").isEmpty()
                     && !card.hasKeyword("Reach")
                     && CombatUtil.canBlock(card)
-                    && CombatUtil.lifeInDanger(ai, AllZone.getCombat())) {
+                    && CombatUtil.lifeInDanger(ai, Singletons.getModel().getGame().getCombat())) {
                 return true;
             }
             Predicate<Card> flyingOrReach = Predicates.or(CardPredicates.hasKeyword("Flying"), CardPredicates.hasKeyword("Reach"));
@@ -446,9 +445,9 @@ public class AbilityFactoryPump {
         } else if (keyword.endsWith("Horsemanship")) {
             if (ph.isPlayerTurn(opp)
                     && ph.getPhase().equals(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
-                    && !CardLists.getKeyword(AllZone.getCombat().getAttackerList(), "Horsemanship").isEmpty()
+                    && !CardLists.getKeyword(Singletons.getModel().getGame().getCombat().getAttackerList(), "Horsemanship").isEmpty()
                     && CombatUtil.canBlock(card)
-                    && CombatUtil.lifeInDanger(ai, AllZone.getCombat())) {
+                    && CombatUtil.lifeInDanger(ai, Singletons.getModel().getGame().getCombat())) {
                 return true;
             }
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
@@ -468,7 +467,7 @@ public class AbilityFactoryPump {
         } else if (keyword.endsWith("Indestructible")) {
             return true;
         } else if (keyword.endsWith("Deathtouch")) {
-            Combat combat = AllZone.getCombat();
+            Combat combat = Singletons.getModel().getGame().getCombat();
             if (ph.isPlayerTurn(opp) && ph.getPhase().equals(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)) {
                 List<Card> attackers = combat.getAttackers();
                 for (Card attacker : attackers) {
@@ -479,7 +478,7 @@ public class AbilityFactoryPump {
                 }
             } else if (ph.isPlayerTurn(ai) && ph.getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
                     && CombatUtil.canAttack(card)) {
-                List<Card> blockers = AllZoneUtil.getCreaturesInPlay(opp);
+                List<Card> blockers = opp.getCreaturesInPlay();
                 for (Card blocker : blockers) {
                     if (CombatUtil.canBlock(card, blocker, combat)
                             && !CombatUtil.canDestroyBlocker(blocker, card, combat, false)) {
@@ -491,7 +490,7 @@ public class AbilityFactoryPump {
         } else if (combatRelevant) {
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
-                    || (AllZoneUtil.getCreaturesInPlay(opp).size() < 1)
+                    || (opp.getCreaturesInPlay().size() < 1)
                     || cardsCanBlock.isEmpty()) {
                 return false;
             }
@@ -554,13 +553,13 @@ public class AbilityFactoryPump {
         } else if (keyword.equals("Vigilance")) {
             if (ph.isPlayerTurn(opp) || !CombatUtil.canAttack(card)
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS)
-                    || CardLists.getNotKeyword(AllZoneUtil.getCreaturesInPlay(opp), "Defender").size() < 1) {
+                    || CardLists.getNotKeyword(opp.getCreaturesInPlay(), "Defender").size() < 1) {
                 return false;
             }
         } else if (keyword.equals("Reach")) {
             if (ph.isPlayerTurn(ai)
                     || !ph.getPhase().equals(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
-                    || CardLists.getKeyword(AllZone.getCombat().getAttackerList(), "Flying").isEmpty()
+                    || CardLists.getKeyword(Singletons.getModel().getGame().getCombat().getAttackerList(), "Flying").isEmpty()
                     || card.hasKeyword("Flying")
                     || !CombatUtil.canBlock(card)) {
                 return false;
@@ -572,7 +571,7 @@ public class AbilityFactoryPump {
             }
             int canBlockNum = 1 + card.getKeywordAmount("CARDNAME can block an additional creature.");
             int possibleBlockNum = 0;
-            for (Card attacker : AllZone.getCombat().getAttackerList()) {
+            for (Card attacker : Singletons.getModel().getGame().getCombat().getAttackerList()) {
                 if (CombatUtil.canBlock(attacker, card)) {
                     possibleBlockNum++;
                     if (possibleBlockNum > canBlockNum) {
@@ -591,7 +590,7 @@ public class AbilityFactoryPump {
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
                     || card.getNetCombatDamage() <= 0
-                    || CardLists.getType(AllZoneUtil.getPlayerLandsInPlay(opp), "Island").isEmpty()
+                    || CardLists.getType(opp.getLandsInPlay(), "Island").isEmpty()
                     || cardsCanBlock.isEmpty()) {
                 return false;
             }
@@ -599,7 +598,7 @@ public class AbilityFactoryPump {
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
                     || card.getNetCombatDamage() <= 0
-                    || CardLists.getType(AllZoneUtil.getPlayerLandsInPlay(opp), "Swamp").isEmpty()
+                    || CardLists.getType(opp.getLandsInPlay(), "Swamp").isEmpty()
                     || cardsCanBlock.isEmpty()) {
                 return false;
             }
@@ -607,7 +606,7 @@ public class AbilityFactoryPump {
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
                     || card.getNetCombatDamage() <= 0
-                    || CardLists.getType(AllZoneUtil.getPlayerLandsInPlay(opp), "Mountain").isEmpty()
+                    || CardLists.getType(opp.getLandsInPlay(), "Mountain").isEmpty()
                     || cardsCanBlock.isEmpty()) {
                 return false;
             }
@@ -615,7 +614,7 @@ public class AbilityFactoryPump {
             if (ph.isPlayerTurn(opp) || !(CombatUtil.canAttack(card) || card.isAttacking())
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
                     || card.getNetCombatDamage() <= 0
-                    || CardLists.getType(AllZoneUtil.getPlayerLandsInPlay(opp), "Forest").isEmpty()
+                    || CardLists.getType(opp.getLandsInPlay(), "Forest").isEmpty()
                     || cardsCanBlock.isEmpty()) {
                 return false;
             }
@@ -626,7 +625,7 @@ public class AbilityFactoryPump {
     private boolean shouldPumpCard(final Player ai, final SpellAbility sa, final Card c) {
         int attack = getNumAttack(sa);
         int defense = getNumDefense(sa);
-        PhaseHandler phase = Singletons.getModel().getGameState().getPhaseHandler();
+        PhaseHandler phase = Singletons.getModel().getGame().getPhaseHandler();
 
         if (!c.canBeTargetedBy(sa)) {
             return false;
@@ -654,7 +653,7 @@ public class AbilityFactoryPump {
             if (defense > 0 && CombatUtil.blockerWouldBeDestroyed(c)) {
                 return true;
             }
-            List<Card> blockedBy = AllZone.getCombat().getAttackersBlockedBy(c);
+            List<Card> blockedBy = Singletons.getModel().getGame().getCombat().getAttackersBlockedBy(c);
             // For now, Only care the first creature blocked by a card.
             // TODO Add in better BlockAdditional support
             if (!blockedBy.isEmpty() && attack > 0 && !CombatUtil.attackerWouldBeDestroyed(blockedBy.get(0))) {
@@ -664,21 +663,21 @@ public class AbilityFactoryPump {
 
         // is the creature unblocked and the spell will pump its power?
         if (phase.is(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
-                && AllZone.getCombat().isAttacking(c) && AllZone.getCombat().isUnblocked(c) && (attack > 0)) {
+                && Singletons.getModel().getGame().getCombat().isAttacking(c) && Singletons.getModel().getGame().getCombat().isUnblocked(c) && (attack > 0)) {
             return true;
         }
 
         // is the creature blocked and the blocker would survive
         if (phase.is(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY) && (attack > 0)
-                && AllZone.getCombat().isAttacking(c) && AllZone.getCombat().isBlocked(c)
-                && AllZone.getCombat().getBlockers(c) != null
-                && !AllZone.getCombat().getBlockers(c).isEmpty()
-                && !CombatUtil.blockerWouldBeDestroyed(AllZone.getCombat().getBlockers(c).get(0))) {
+                && Singletons.getModel().getGame().getCombat().isAttacking(c) && Singletons.getModel().getGame().getCombat().isBlocked(c)
+                && Singletons.getModel().getGame().getCombat().getBlockers(c) != null
+                && !Singletons.getModel().getGame().getCombat().getBlockers(c).isEmpty()
+                && !CombatUtil.blockerWouldBeDestroyed(Singletons.getModel().getGame().getCombat().getBlockers(c).get(0))) {
             return true;
         }
 
         // if the life of the computer is in danger, try to pump blockers blocking Tramplers
-        List<Card> blockedBy = AllZone.getCombat().getAttackersBlockedBy(c);
+        List<Card> blockedBy = Singletons.getModel().getGame().getCombat().getAttackersBlockedBy(c);
         boolean attackerHasTrample = false;
         for (Card b : blockedBy) {
             attackerHasTrample |= b.hasKeyword("Trample");
@@ -689,7 +688,7 @@ public class AbilityFactoryPump {
                 && c.isBlocking()
                 && defense > 0
                 && attackerHasTrample
-                && (sa.isAbility() || CombatUtil.lifeInDanger(ai, AllZone.getCombat()))) {
+                && (sa.isAbility() || CombatUtil.lifeInDanger(ai, Singletons.getModel().getGame().getCombat()))) {
             return true;
         }
 
@@ -705,7 +704,7 @@ public class AbilityFactoryPump {
      */
     private List<Card> getPumpCreatures(final Player ai, final SpellAbility sa) {
 
-        List<Card> list = AllZoneUtil.getCreaturesInPlay(ai);
+        List<Card> list = ai.getCreaturesInPlay();
         list = CardLists.filter(list, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
@@ -729,7 +728,7 @@ public class AbilityFactoryPump {
      * @return a {@link forge.CardList} object.
      */
     private List<Card> getCurseCreatures(final Player ai, final SpellAbility sa, final int defense, final int attack) {
-        List<Card> list = AllZoneUtil.getCreaturesInPlay(ai.getOpponent());
+        List<Card> list = ai.getOpponent().getCreaturesInPlay();
         list = CardLists.getTargetableCards(list, sa);
         if ((defense < 0) && !list.isEmpty()) { // with spells that give -X/-X,
                                                 // compi will try to destroy a
@@ -745,11 +744,11 @@ public class AbilityFactoryPump {
             }); // leaves all creatures that will be destroyed
         } // -X/-X end
         else if ((attack < 0) && !list.isEmpty()
-                && !Singletons.getModel().getGameState().getPhaseHandler().isPreventCombatDamageThisTurn()) {
+                && !Singletons.getModel().getGame().getPhaseHandler().isPreventCombatDamageThisTurn()) {
             // spells that give -X/0
-            Player activePlayer = Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn();
+            Player activePlayer = Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn();
             if (activePlayer.isComputer()) {
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_BEGIN)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_BEGIN)) {
                     // TODO: Curse creatures that will block AI's creatures, if AI is going to attack.
                     list = new ArrayList<Card>();
                 } else {
@@ -757,7 +756,7 @@ public class AbilityFactoryPump {
                 }
             } else {
                 // Human active, only curse attacking creatures
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
                     list = CardLists.filter(list, new Predicate<Card>() {
                         @Override
                         public boolean apply(final Card c) {
@@ -820,7 +819,7 @@ public class AbilityFactoryPump {
      */
     private boolean pumpPlayAI(final Player ai, final SpellAbility sa) {
         final Cost cost = sa.getPayCosts();
-        final PhaseHandler ph = Singletons.getModel().getGameState().getPhaseHandler();
+        final PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler();
 
         if (!CostUtil.checkLifeCost(ai, cost, sa.getSourceCard(), 4, null)) {
             return false;
@@ -838,7 +837,7 @@ public class AbilityFactoryPump {
             return false;
         }
 
-        if (AllZone.getStack().isEmpty() && CostUtil.hasTapCost(cost, sa.getSourceCard())) {
+        if (Singletons.getModel().getGame().getStack().isEmpty() && CostUtil.hasTapCost(cost, sa.getSourceCard())) {
                 if (ph.getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS) && ph.isPlayerTurn(ai)) {
                     return false;
                 }
@@ -850,13 +849,13 @@ public class AbilityFactoryPump {
         final SpellAbilityRestriction restrict = sa.getRestrictions();
 
         // Phase Restrictions
-        if ((AllZone.getStack().size() == 0) && ph.getPhase().isBefore(PhaseType.COMBAT_BEGIN)) {
+        if ((Singletons.getModel().getGame().getStack().size() == 0) && ph.getPhase().isBefore(PhaseType.COMBAT_BEGIN)) {
             // Instant-speed pumps should not be cast outside of combat when the
             // stack is empty
             if (!this.abilityFactory.isCurse() && !AbilityFactory.isSorcerySpeed(sa)) {
                 return false;
             }
-        } else if (AllZone.getStack().size() > 0) {
+        } else if (Singletons.getModel().getGame().getStack().size() > 0) {
             if (!this.keywords.contains("Shroud") && !this.keywords.contains("Hexproof")) {
                 return false;
             }
@@ -969,7 +968,7 @@ public class AbilityFactoryPump {
     private boolean pumpTgtAI(final Player ai, final SpellAbility sa, final int defense, final int attack, final boolean mandatory) {
         if (!mandatory
                 && !sa.isTrigger()
-                && Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
+                && Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
                 && !(this.abilityFactory.isCurse() && (defense < 0))
                 && !this.containsNonCombatKeyword(this.keywords)
                 && !sa.getAbilityFactory().getMapParams().containsKey("UntilYourNextTurn")) {
@@ -982,7 +981,7 @@ public class AbilityFactoryPump {
         List<Card> list = new ArrayList<Card>();
         if (this.abilityFactory.getMapParams().containsKey("AILogic")) {
             if (this.abilityFactory.getMapParams().get("AILogic").equals("HighestPower")) {
-                list = CardLists.getValidCards(AllZoneUtil.getCreaturesInPlay(), tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
+                list = CardLists.getValidCards(CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), Presets.CREATURES), tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
                 list = CardLists.getTargetableCards(list, sa);
                 CardLists.sortAttack(list);
                 if (!list.isEmpty()) {
@@ -1001,7 +1000,7 @@ public class AbilityFactoryPump {
         } else {
             if (!tgt.canTgtCreature()) {
                 ZoneType zone = tgt.getZone().get(0);
-                list = AllZoneUtil.getCardsIn(zone);
+                list = Singletons.getModel().getGame().getCardsIn(zone);
             } else {
                 list = this.getPumpCreatures(ai, sa);
             }
@@ -1012,16 +1011,16 @@ public class AbilityFactoryPump {
         }
 
         list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
-        if (AllZone.getStack().size() == 0) {
+        if (Singletons.getModel().getGame().getStack().size() == 0) {
             // If the cost is tapping, don't activate before declare
             // attack/block
             if ((sa.getPayCosts() != null) && sa.getPayCosts().getTap()) {
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
-                        && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(ai)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
+                        && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)) {
                     list.remove(sa.getSourceCard());
                 }
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)
-                        && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(opp)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)
+                        && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(opp)) {
                     list.remove(sa.getSourceCard());
                 }
             }
@@ -1081,7 +1080,7 @@ public class AbilityFactoryPump {
      * @return a boolean.
      */
     private boolean pumpMandatoryTarget(final Player ai, final AbilityFactory af, final SpellAbility sa, final boolean mandatory) {
-        List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         final Target tgt = sa.getTarget();
         final Player opp = ai.getOpponent();
         list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
@@ -1445,7 +1444,7 @@ public class AbilityFactoryPump {
             final Card tgtC = tgtCards.get(j);
 
             // only pump things in PumpZone
-            if (!AllZoneUtil.getCardsIn(pumpZone).contains(tgtC)) {
+            if (!Singletons.getModel().getGame().getCardsIn(pumpZone).contains(tgtC)) {
                 continue;
             }
 
@@ -1460,7 +1459,7 @@ public class AbilityFactoryPump {
         for (int i = 0; i < untargetedCards.size(); i++) {
             final Card tgtC = untargetedCards.get(i);
             // only pump things in PumpZone
-            if (!AllZoneUtil.getCardsIn(pumpZone).contains(tgtC)) {
+            if (!Singletons.getModel().getGame().getCardsIn(pumpZone).contains(tgtC)) {
                 continue;
             }
 
@@ -1480,7 +1479,7 @@ public class AbilityFactoryPump {
 
         //if host is not on the battlefield don't apply
         if (this.params.containsKey("UntilLoseControlOfHost")
-                && !AllZoneUtil.isCardInPlay(sa.getSourceCard())) {
+                && !sa.getSourceCard().isInPlay()) {
             return;
         }
         final int a = this.getNumAttack(sa);
@@ -1514,20 +1513,20 @@ public class AbilityFactoryPump {
                 }
             };
             if (this.params.containsKey("UntilEndOfCombat")) {
-                AllZone.getEndOfCombat().addUntil(untilEOT);
+                Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
             } else if (this.params.containsKey("UntilYourNextUpkeep")) {
-                Singletons.getModel().getGameState().getUpkeep().addUntil(sa.getActivatingPlayer(), untilEOT);
+                Singletons.getModel().getGame().getUpkeep().addUntil(sa.getActivatingPlayer(), untilEOT);
             } else if (params.containsKey("UntilHostLeavesPlay")) {
                 sa.getSourceCard().addLeavesPlayCommand(untilEOT);
             } else if (this.params.containsKey("UntilLoseControlOfHost")) {
                 sa.getSourceCard().addLeavesPlayCommand(untilEOT);
                 sa.getSourceCard().addChangeControllerCommand(untilEOT);
             } else if (this.params.containsKey("UntilYourNextTurn")) {
-                Singletons.getModel().getGameState().getCleanup().addUntilYourNextTurn(sa.getActivatingPlayer(), untilEOT);
+                Singletons.getModel().getGame().getCleanup().addUntilYourNextTurn(sa.getActivatingPlayer(), untilEOT);
             } else if (params.containsKey("UntilUntaps")) {
                 sa.getSourceCard().addUntapCommand(untilEOT);
             } else {
-                AllZone.getEndOfTurn().addUntil(untilEOT);
+                Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
             }
         }
     }
@@ -1554,11 +1553,11 @@ public class AbilityFactoryPump {
                 }
             };
             if (this.params.containsKey("UntilEndOfCombat")) {
-                Singletons.getModel().getGameState().getEndOfCombat().addUntil(untilEOT);
+                Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
             } else if (this.params.containsKey("UntilYourNextUpkeep")) {
-                Singletons.getModel().getGameState().getUpkeep().addUntil(sa.getActivatingPlayer(), untilEOT);
+                Singletons.getModel().getGame().getUpkeep().addUntil(sa.getActivatingPlayer(), untilEOT);
             } else {
-                Singletons.getModel().getGameState().getEndOfTurn().addUntil(untilEOT);
+                Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
             }
         }
     }
@@ -1720,7 +1719,7 @@ public class AbilityFactoryPump {
         this.params = this.abilityFactory.getMapParams();
         final int power = this.getNumAttack(sa);
         final int defense = this.getNumDefense(sa);
-        final PhaseType phase = Singletons.getModel().getGameState().getPhaseHandler().getPhase();
+        final PhaseType phase = Singletons.getModel().getGame().getPhaseHandler().getPhase();
 
         // prevent runaway activations
         final boolean chance = r.nextFloat() <= Math.pow(.6667, sa.getActivationsThisTurn()); // to
@@ -1766,8 +1765,8 @@ public class AbilityFactoryPump {
             else if (power < 0) { // -X/-0
                 if (phase.isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
                         || phase.isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)
-                        || Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(sa.getActivatingPlayer())
-                        || Singletons.getModel().getGameState().getPhaseHandler().isPreventCombatDamageThisTurn()) {
+                        || Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(sa.getActivatingPlayer())
+                        || Singletons.getModel().getGame().getPhaseHandler().isPreventCombatDamageThisTurn()) {
                     return false;
                 }
                 int totalPower = 0;
@@ -1777,8 +1776,8 @@ public class AbilityFactoryPump {
                     }
                     totalPower += Math.min(c.getNetAttack(), power * -1);
                     if (phase == PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY 
-                            && AllZone.getCombat().getUnblockedAttackers().contains(c)) {
-                        if (CombatUtil.lifeInDanger(sa.getActivatingPlayer(), AllZone.getCombat())) {
+                            && Singletons.getModel().getGame().getCombat().getUnblockedAttackers().contains(c)) {
+                        if (CombatUtil.lifeInDanger(sa.getActivatingPlayer(), Singletons.getModel().getGame().getCombat())) {
                             return true;
                         }
                         totalPower += Math.min(c.getNetAttack(), power * -1);
@@ -1859,7 +1858,7 @@ public class AbilityFactoryPump {
         list = new ArrayList<Card>();
         if ((tgtPlayers == null) || tgtPlayers.isEmpty()) {
             for (final ZoneType zone : affectedZones) {
-                list.addAll(AllZoneUtil.getCardsIn(zone));
+                list.addAll(Singletons.getModel().getGame().getCardsIn(zone));
             }
 
         } else {
@@ -1907,7 +1906,7 @@ public class AbilityFactoryPump {
 
                     @Override
                     public void execute() {
-                        if (AllZoneUtil.isCardInPlay(tgtC)) {
+                        if (tgtC.isInPlay()) {
                             tgtC.addTempAttackBoost(-1 * a);
                             tgtC.addTempDefenseBoost(-1 * d);
 
@@ -1922,7 +1921,7 @@ public class AbilityFactoryPump {
                 if (params.containsKey("UntilUntaps")) {
                     sa.getSourceCard().addUntapCommand(untilEOT);
                 } else {
-                    AllZone.getEndOfTurn().addUntil(untilEOT);
+                    Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
                 }
             }
         }

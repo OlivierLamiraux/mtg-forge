@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import forge.AllZone;
 import forge.Card;
 
 import forge.Singletons;
@@ -87,13 +86,13 @@ public class InputBlock extends Input {
     /** {@inheritDoc} */
     @Override
     public final void selectButtonOK() {
-        if (CombatUtil.finishedMandatoryBlocks(AllZone.getCombat())) {
+        if (CombatUtil.finishedMandatoryBlocks(Singletons.getModel().getGame().getCombat())) {
             // Done blocking
             ButtonUtil.reset();
             
-            CombatUtil.orderMultipleCombatants(AllZone.getCombat());
+            CombatUtil.orderMultipleCombatants(Singletons.getModel().getGame().getCombat());
 
-            Singletons.getModel().getGameState().getPhaseHandler().setNeedToNextPhase(true);
+            Singletons.getModel().getGame().getPhaseHandler().setPlayerMayHavePriority(false);
         }
     }
 
@@ -103,7 +102,7 @@ public class InputBlock extends Input {
         // is attacking?
         boolean reminder = true;
         
-        if (AllZone.getCombat().getAttackers().contains(card)) {
+        if (Singletons.getModel().getGame().getCombat().getAttackers().contains(card)) {
             this.currentAttacker = card;
             reminder = false;
         } else {
@@ -117,9 +116,9 @@ public class InputBlock extends Input {
                 
                 List<Card> attackersBlocked = this.allBlocking.get(card);
                 if (!attackersBlocked.contains(this.currentAttacker) && 
-                        CombatUtil.canBlock(this.currentAttacker, card, AllZone.getCombat())) {
+                        CombatUtil.canBlock(this.currentAttacker, card, Singletons.getModel().getGame().getCombat())) {
                     attackersBlocked.add(this.currentAttacker);
-                    AllZone.getCombat().addBlocker(this.currentAttacker, card);
+                    Singletons.getModel().getGame().getCombat().addBlocker(this.currentAttacker, card);
                     reminder = false;
                 }
             } 

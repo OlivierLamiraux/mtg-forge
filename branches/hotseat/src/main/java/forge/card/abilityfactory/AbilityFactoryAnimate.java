@@ -25,8 +25,6 @@ import java.util.Map;
 
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -362,8 +360,8 @@ public final class AbilityFactoryAnimate {
 
         // don't use instant speed animate abilities outside computers
         // Combat_Begin step
-        if (!Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.COMBAT_BEGIN)
-                && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(aiPlayer) 
+        if (!Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.COMBAT_BEGIN)
+                && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(aiPlayer) 
                 && !AbilityFactory.isSorcerySpeed(sa)
                 && !params.containsKey("ActivationPhases") && !params.containsKey("Permanent")) {
             return false;
@@ -371,7 +369,7 @@ public final class AbilityFactoryAnimate {
 
         Player opponent = aiPlayer.getOpponent();
         // don't animate if the AI won't attack anyway
-        if (Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(aiPlayer)
+        if (Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(aiPlayer)
                 && aiPlayer.getLife() < 6 
                 && opponent.getLife() > 6
                 && Iterables.any(opponent.getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.CREATURES)) {
@@ -380,14 +378,14 @@ public final class AbilityFactoryAnimate {
 
         // don't use instant speed animate abilities outside humans
         // Combat_Declare_Attackers_InstantAbility step
-        if ((!Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY) 
-                || (AllZone.getCombat().getAttackers().isEmpty())) 
-                && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(opponent)) {
+        if ((!Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY) 
+                || (Singletons.getModel().getGame().getCombat().getAttackers().isEmpty())) 
+                && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(opponent)) {
             return false;
         }
 
         // don't activate during main2 unless this effect is permanent
-        if (Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.MAIN2) && !params.containsKey("Permanent")) {
+        if (Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.MAIN2) && !params.containsKey("Permanent")) {
             return false;
         }
 
@@ -396,7 +394,7 @@ public final class AbilityFactoryAnimate {
 
             boolean bFlag = false;
             for (final Card c : defined) {
-                bFlag |= (!c.isCreature() && !c.isTapped() && !(c.getTurnInZone() == Singletons.getModel().getGameState().getPhaseHandler().getTurn()));
+                bFlag |= (!c.isCreature() && !c.isTapped() && !(c.getTurnInZone() == Singletons.getModel().getGame().getPhaseHandler().getTurn()));
 
                 // for creatures that could be improved (like Figure of Destiny)
                 if (c.isCreature() && (params.containsKey("Permanent") || (!c.isTapped() && !c.isSick()))) {
@@ -538,7 +536,7 @@ public final class AbilityFactoryAnimate {
 
         //if host is not on the battlefield don't apply
         if (params.containsKey("UntilHostLeavesPlay")
-                && !AllZoneUtil.isCardInPlay(sa.getSourceCard())) {
+                && !sa.getSourceCard().isInPlay()) {
             return;
         }
 
@@ -558,7 +556,7 @@ public final class AbilityFactoryAnimate {
         }
 
         // Every Animate event needs a unique time stamp
-        timest = AllZone.getNextTimestamp();
+        timest = Singletons.getModel().getGame().getNextTimestamp();
 
         final long timestamp = timest;
 
@@ -769,17 +767,17 @@ public final class AbilityFactoryAnimate {
 
             if (!permanent) {
                 if (params.containsKey("UntilEndOfCombat")) {
-                    AllZone.getEndOfCombat().addUntil(unanimate);
+                    Singletons.getModel().getGame().getEndOfCombat().addUntil(unanimate);
                 } else if (params.containsKey("UntilHostLeavesPlay")) {
                     host.addLeavesPlayCommand(unanimate);
                 } else if (params.containsKey("UntilYourNextUpkeep")) {
-                    Singletons.getModel().getGameState().getUpkeep().addUntil(host.getController(), unanimate);
+                    Singletons.getModel().getGame().getUpkeep().addUntil(host.getController(), unanimate);
                 } else if (params.containsKey("UntilControllerNextUntap")) {
-                    Singletons.getModel().getGameState().getUntap().addUntil(c.getController(), unanimate);
+                    Singletons.getModel().getGame().getUntap().addUntil(c.getController(), unanimate);
                 } else if (params.containsKey("UntilYourNextTurn")) {
-                    Singletons.getModel().getGameState().getCleanup().addUntilYourNextTurn(host.getController(), unanimate);
+                    Singletons.getModel().getGame().getCleanup().addUntilYourNextTurn(host.getController(), unanimate);
                 } else {
-                    AllZone.getEndOfTurn().addUntil(unanimate);
+                    Singletons.getModel().getGame().getEndOfTurn().addUntil(unanimate);
                 }
             }
         }
@@ -1208,7 +1206,7 @@ public final class AbilityFactoryAnimate {
         }
 
         // Every Animate event needs a unique time stamp
-        timest = AllZone.getNextTimestamp();
+        timest = Singletons.getModel().getGame().getNextTimestamp();
 
         final long timestamp = timest;
 
@@ -1296,7 +1294,7 @@ public final class AbilityFactoryAnimate {
         }
 
         if ((tgtPlayers == null) || tgtPlayers.isEmpty()) {
-            list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         } else {
             list = tgtPlayers.get(0).getCardsIn(ZoneType.Battlefield);
         }
@@ -1406,9 +1404,9 @@ public final class AbilityFactoryAnimate {
 
             if (!permanent) {
                 if (params.containsKey("UntilEndOfCombat")) {
-                    AllZone.getEndOfCombat().addUntil(unanimate);
+                    Singletons.getModel().getGame().getEndOfCombat().addUntil(unanimate);
                 } else {
-                    AllZone.getEndOfTurn().addUntil(unanimate);
+                    Singletons.getModel().getGame().getEndOfTurn().addUntil(unanimate);
                 }
             }
         }

@@ -25,8 +25,6 @@ import com.esotericsoftware.minlog.Log;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -43,6 +41,7 @@ import forge.card.spellability.Target;
 import forge.control.input.Input;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
+import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
 
@@ -87,7 +86,7 @@ class CardFactoryAuras {
                     final Player opp = getActivatingPlayer().getOpponent();
                     final String[] landTypes = new String[] { "Plains", "Island", "Swamp", "Mountain", "Forest" };
                     final HashMap<String, Integer> humanLandCount = new HashMap<String, Integer>();
-                    final List<Card> humanlands = AllZoneUtil.getPlayerLandsInPlay(opp);
+                    final List<Card> humanlands = opp.getLandsInPlay();
 
                     for (final String landType : landTypes) {
                         humanLandCount.put(landType, 0);
@@ -115,7 +114,7 @@ class CardFactoryAuras {
                     }
 
                     newType[0] = landTypes[minAt];
-                    List<Card> list = AllZoneUtil.getPlayerLandsInPlay(opp);
+                    List<Card> list = opp.getLandsInPlay();
                     list = CardLists.getNotType(list, newType[0]); // Don't enchant lands
                                                         // that already have the
                                                         // type
@@ -132,11 +131,11 @@ class CardFactoryAuras {
                     if (card.getController().isHuman()) {
                         newType[0] = GuiChoose.one("Select land type.", CardUtil.getLandTypes());
                     }
-                    Singletons.getModel().getGameAction().moveToPlay(card);
+                    Singletons.getModel().getGame().getAction().moveToPlay(card);
 
                     final Card c = this.getTargetCard();
 
-                    if (AllZoneUtil.isCardInPlay(c) && c.canBeTargetedBy(this)) {
+                    if (c.isInPlay() && c.canBeTargetedBy(this)) {
                         card.enchantEntity(c);
                     }
 
@@ -213,7 +212,7 @@ class CardFactoryAuras {
                                     crd.removeSpellAbility(cardAbilitie);
                                 }
                             }
-                            final Card c = AllZone.getCardFactory().copyCard(crd);
+                            final Card c = Singletons.getModel().getCardFactory().copyCard(crd);
                             final ArrayList<String> types = c.getType();
                             final SpellAbility[] abilities = card.getSpellAbility();
                             for (int i = 0; i < types.size(); i++) {
@@ -250,7 +249,7 @@ class CardFactoryAuras {
 
                 @Override
                 public void showMessage() {
-                    final List<Card> land = AllZoneUtil.getLandsInPlay();
+                    final List<Card> land = Singletons.getModel().getGame().getLandsInPlay();
                     this.stopSetNext(CardFactoryUtil
                             .inputTargetSpecific(spell, land, "Select target land", true, false));
                 }
@@ -268,7 +267,7 @@ class CardFactoryAuras {
 
                 @Override
                 public boolean canPlayAI() {
-                    List<Card> list = AllZoneUtil.getCreaturesInPlay(getActivatingPlayer().getOpponent());
+                    List<Card> list = getActivatingPlayer().getOpponent().getCreaturesInPlay();
                     list = CardLists.getKeyword(list, "Flying");
                     if (list.isEmpty()) {
                         return false;
@@ -296,11 +295,11 @@ class CardFactoryAuras {
 
                 @Override
                 public void resolve() {
-                    Singletons.getModel().getGameAction().moveToPlay(card);
+                    Singletons.getModel().getGame().getAction().moveToPlay(card);
 
                     final Card c = this.getTargetCard();
 
-                    if (AllZoneUtil.isCardInPlay(c) && c.canBeTargetedBy(this)) {
+                    if (c.isInPlay() && c.canBeTargetedBy(this)) {
                         card.enchantEntity(c);
                         Log.debug("Enchanted: " + this.getTargetCard());
                     }
@@ -378,7 +377,7 @@ class CardFactoryAuras {
                         this.setTargetCard(stuffy.get(0));
                         return true;
                     } else {
-                        final List<Card> list = AllZoneUtil.getCreaturesInPlay(getActivatingPlayer().getOpponent());
+                        final List<Card> list = getActivatingPlayer().getOpponent().getCreaturesInPlay();
 
                         if (list.isEmpty()) {
                             return false;
@@ -403,11 +402,11 @@ class CardFactoryAuras {
 
                 @Override
                 public void resolve() {
-                    final Card aura = Singletons.getModel().getGameAction().moveToPlay(card);
+                    final Card aura = Singletons.getModel().getGame().getAction().moveToPlay(card);
 
                     final Card c = this.getTargetCard();
 
-                    if (AllZoneUtil.isCardInPlay(c) && c.canBeTargetedBy(this)) {
+                    if (c.isInPlay() && c.canBeTargetedBy(this)) {
                         aura.enchantEntity(c);
                     }
                 } // resolve()
@@ -427,7 +426,7 @@ class CardFactoryAuras {
                     // This includes creatures Animate Dead can't enchant once
                     // in play.
                     // The human may try to Animate them, the AI will not.
-                    return CardLists.filter(AllZoneUtil.getCardsIn(ZoneType.Graveyard), Presets.CREATURES);
+                    return CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard), Presets.CREATURES);
                 }
 
                 @Override
@@ -481,18 +480,18 @@ class CardFactoryAuras {
                     }
 
                     final Card animated = targetC[0];
-                    final PlayerZone grave = AllZone.getZoneOf(animated);
+                    final Zone grave = Singletons.getModel().getGame().getZoneOf(animated);
 
                     if (!grave.is(ZoneType.Graveyard)) {
                         // Animated Creature got removed before ability resolved
-                        Singletons.getModel().getGameAction().sacrifice(card, null);
+                        Singletons.getModel().getGame().getAction().sacrifice(card, null);
                         return;
                     }
 
                     // Bring creature onto the battlefield under your control
                     // (should trigger etb Abilities)
                     animated.addController(card.getController());
-                    Singletons.getModel().getGameAction().moveToPlay(animated, card.getController());
+                    Singletons.getModel().getGame().getAction().moveToPlay(animated, card.getController());
                     if (cardName.equals("Dance of the Dead")) {
                         animated.tap();
                     }
@@ -501,7 +500,7 @@ class CardFactoryAuras {
 
                     if (CardFactoryUtil.hasProtectionFrom(card, animated)) {
                         // Animated a creature with protection
-                        Singletons.getModel().getGameAction().sacrifice(card, null);
+                        Singletons.getModel().getGame().getAction().sacrifice(card, null);
                         return;
                     }
 
@@ -525,7 +524,7 @@ class CardFactoryAuras {
                         // note: this should be a state-based action, but it doesn't work currently.
                         // I don't know if that because it's hard-coded or what, but this fixes
                         // these cards being put on the battlefield not attached to anything.
-                        Singletons.getModel().getGameAction().moveToGraveyard(card);
+                        Singletons.getModel().getGame().getAction().moveToGraveyard(card);
                     }
                 }
             };
@@ -539,7 +538,7 @@ class CardFactoryAuras {
                     final PlayerZone play = card.getController().getZone(ZoneType.Battlefield);
 
                     if (play.contains(c)) {
-                        Singletons.getModel().getGameAction().sacrifice(c, null);
+                        Singletons.getModel().getGame().getAction().sacrifice(c, null);
                     }
                 }
             }; // Detach
@@ -554,7 +553,7 @@ class CardFactoryAuras {
                     final PlayerZone play = card.getController().getZone(ZoneType.Battlefield);
 
                     if (play.contains(c)) {
-                        AllZone.getStack().addSimultaneousStackEntry(detach);
+                        Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(detach);
                     }
 
                 }

@@ -21,8 +21,6 @@ import java.util.List;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -57,15 +55,15 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
 
         // TODO - should this freeze the Stack?
 
-        final List<Card> all = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        final List<Card> all = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
 
         //EndOfTurn.endOfTurnWallOfReverence();
         EndOfTurn.endOfTurnLighthouseChronologist();
 
         // reset mustAttackEntity for me
-        Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn().setMustAttackEntity(null);
+        Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn().setMustAttackEntity(null);
 
-        AllZone.getStaticEffects().rePopulateStateBasedList();
+        Singletons.getModel().getGame().getStaticEffects().rePopulateStateBasedList();
 
         for (final Card c : all) {
             if (!c.isFaceDown() && c.hasKeyword("At the beginning of the end step, sacrifice CARDNAME.")) {
@@ -73,8 +71,8 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 final SpellAbility sac = new Ability(card, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(card)) {
-                            Singletons.getModel().getGameAction().sacrifice(card, null);
+                        if (card.isInPlay()) {
+                            Singletons.getModel().getGame().getAction().sacrifice(card, null);
                         }
                     }
                 };
@@ -83,7 +81,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 sac.setStackDescription(sb.toString());
                 sac.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(sac);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(sac);
 
             }
             if (!c.isFaceDown() && c.hasKeyword("At the beginning of the end step, exile CARDNAME.")) {
@@ -91,8 +89,8 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 final SpellAbility exile = new Ability(card, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(card)) {
-                            Singletons.getModel().getGameAction().exile(card);
+                        if (card.isInPlay()) {
+                            Singletons.getModel().getGame().getAction().exile(card);
                         }
                     }
                 };
@@ -101,7 +99,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 exile.setStackDescription(sb.toString());
                 exile.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(exile);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(exile);
 
             }
             if (!c.isFaceDown() && c.hasKeyword("At the beginning of the end step, destroy CARDNAME.")) {
@@ -109,8 +107,8 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 final SpellAbility destroy = new Ability(card, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(card)) {
-                            Singletons.getModel().getGameAction().destroy(card);
+                        if (card.isInPlay()) {
+                            Singletons.getModel().getGame().getAction().destroy(card);
                         }
                     }
                 };
@@ -119,7 +117,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 destroy.setStackDescription(sb.toString());
                 destroy.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(destroy);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(destroy);
 
             }
             // Berserk is using this, so don't check isFaceDown()
@@ -129,8 +127,8 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                     final SpellAbility sac = new Ability(card, "0") {
                         @Override
                         public void resolve() {
-                            if (AllZoneUtil.isCardInPlay(card)) {
-                                Singletons.getModel().getGameAction().destroy(card);
+                            if (card.isInPlay()) {
+                                Singletons.getModel().getGame().getAction().destroy(card);
                             }
                         }
                     };
@@ -139,7 +137,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                     sac.setStackDescription(sb.toString());
                     sac.setDescription(sb.toString());
 
-                    AllZone.getStack().addSimultaneousStackEntry(sac);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(sac);
 
                 } else {
                     c.removeAllExtrinsicKeyword("At the beginning of the next end step, "
@@ -151,7 +149,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 final SpellAbility change = new Ability(vale, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(vale)) {
+                        if (vale.isInPlay()) {
                             vale.addController(vale.getController().getOpponent());
                             // Singletons.getModel().getGameAction().changeController(
                             // new ArrayList<Card>(vale), vale.getController(),
@@ -167,16 +165,16 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 change.setStackDescription(sb.toString());
                 change.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(change);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(change);
 
             }
             if (c.getName().equals("Erg Raiders") && !c.getDamageHistory().getCreatureAttackedThisTurn() && !c.hasSickness()
-                    && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(c.getController())) {
+                    && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(c.getController())) {
                 final Card raider = c;
                 final SpellAbility change = new Ability(raider, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(raider)) {
+                        if (raider.isInPlay()) {
                             raider.getController().addDamage(2, raider);
                         }
                     }
@@ -186,17 +184,17 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 change.setStackDescription(sb.toString());
                 change.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(change);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(change);
 
             }
             if (c.hasKeyword("At the beginning of your end step, return CARDNAME to its owner's hand.")
-                    && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(c.getController())) {
+                    && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(c.getController())) {
                 final Card source = c;
                 final SpellAbility change = new Ability(source, "0") {
                     @Override
                     public void resolve() {
-                        if (AllZoneUtil.isCardInPlay(source)) {
-                            Singletons.getModel().getGameAction().moveToHand(source);
+                        if (source.isInPlay()) {
+                            Singletons.getModel().getGame().getAction().moveToHand(source);
                         }
                     }
                 };
@@ -205,12 +203,12 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
                 change.setStackDescription(sb.toString());
                 change.setDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(change);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(change);
 
             }
 
         }
-        Player activePlayer = Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn();
+        Player activePlayer = Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn();
         if (activePlayer.hasKeyword("At the beginning of this turn's end step, you lose the game.")) {
             final Card source = new Card();
             final SpellAbility change = new Ability(source, "0") {
@@ -223,7 +221,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
             change.setDescription("At the beginning of this turn's end step, you lose the game.");
             change.setActivatingPlayer(activePlayer);
 
-            AllZone.getStack().addSimultaneousStackEntry(change);
+            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(change);
         }
 
         this.execute(this.getAt());
@@ -231,7 +229,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
     } // executeAt()
 
     private static void endOfTurnLighthouseChronologist() {
-        final Player player = Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn();
+        final Player player = Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn();
         final Player opponent = player.getOpponent();
         List<Card> list = opponent.getCardsIn(ZoneType.Battlefield);
 
@@ -248,7 +246,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
             ability = new Ability(list.get(i), "0") {
                 @Override
                 public void resolve() {
-                    Singletons.getModel().getGameState().getPhaseHandler().addExtraTurn(card.getController());
+                    Singletons.getModel().getGame().getPhaseHandler().addExtraTurn(card.getController());
                 }
             };
 
@@ -257,7 +255,7 @@ public class EndOfTurn extends Phase implements java.io.Serializable {
             ability.setStackDescription(sb.toString());
             ability.setDescription(sb.toString());
 
-            AllZone.getStack().addSimultaneousStackEntry(ability);
+            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
         }
     }

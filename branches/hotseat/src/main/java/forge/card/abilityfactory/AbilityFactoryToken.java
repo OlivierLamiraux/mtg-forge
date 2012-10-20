@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.Singletons;
@@ -319,7 +317,7 @@ public class AbilityFactoryToken extends AbilityFactory {
             }
         }
 
-        PhaseHandler ph = Singletons.getModel().getGameState().getPhaseHandler(); 
+        PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler(); 
         // Don't generate tokens without haste before main 2 if possible
         if (ph.getPhase().isBefore(PhaseType.MAIN2)
                 && ph.isPlayerTurn(ai) && !haste
@@ -333,7 +331,7 @@ public class AbilityFactoryToken extends AbilityFactory {
                 && !AbilityFactory.isSorcerySpeed(sa) && !haste) {
             return false;
         }
-        if ((ph.getPhase().isAfter(PhaseType.COMBAT_BEGIN) || Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(
+        if ((ph.getPhase().isAfter(PhaseType.COMBAT_BEGIN) || Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(
                 opp))
                 && oneShot) {
             return false;
@@ -388,7 +386,7 @@ public class AbilityFactoryToken extends AbilityFactory {
             return chance;
         }
 
-        if (Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)) {
+        if (Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY)) {
             return ((r.nextFloat() < .95) && chance);
         }
         if (sa.isAbility()) {
@@ -638,13 +636,13 @@ public class AbilityFactoryToken extends AbilityFactory {
                     c.setTapped(true);
                 }
                 if (this.tokenAttacking) {
-                    AllZone.getCombat().addAttacker(c);
+                    Singletons.getModel().getGame().getCombat().addAttacker(c);
                 }
                 if (remember != null) {
-                    AllZoneUtil.getCardState(sa.getSourceCard()).addRemembered(c);
+                    Singletons.getModel().getGame().getCardState(sa.getSourceCard()).addRemembered(c);
                 }
                 if (this.abilityFactory.getMapParams().get("RememberSource") != null) {
-                    AllZoneUtil.getCardState(c).addRemembered(host);
+                    Singletons.getModel().getGame().getCardState(c).addRemembered(host);
                 }
             }
         }

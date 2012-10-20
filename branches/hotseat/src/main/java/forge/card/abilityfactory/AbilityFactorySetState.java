@@ -23,9 +23,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardCharacteristicName;
+import forge.Singletons;
 
 import forge.CardLists;
 import forge.card.spellability.AbilityActivated;
@@ -471,7 +471,7 @@ public class AbilityFactorySetState {
             valid = valid.replace("X", Integer.toString(AbilityFactory.calculateAmount(card, "X", sa)));
         }
 
-        List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
 
         if (targetPlayer != null) {
             list = CardLists.filterControlledBy(list, targetPlayer);

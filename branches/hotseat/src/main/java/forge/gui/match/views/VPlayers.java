@@ -26,7 +26,6 @@ import javax.swing.JPanel;
 import javax.swing.border.MatteBorder;
 
 import net.miginfocom.swing.MigLayout;
-import forge.AllZone;
 import forge.Card;
 
 import forge.Singletons;
@@ -35,7 +34,6 @@ import forge.game.zone.ZoneType;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
-import forge.gui.framework.ICDoc;
 import forge.gui.framework.IVDoc;
 import forge.gui.match.controllers.CPlayers;
 import forge.gui.toolbox.FSkin;
@@ -46,7 +44,7 @@ import forge.properties.ForgePreferences.FPref;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VPlayers implements IVDoc {
+public enum VPlayers implements IVDoc<CPlayers> {
     /** */
     SINGLETON_INSTANCE;
 
@@ -68,7 +66,7 @@ public enum VPlayers implements IVDoc {
         final JPanel pnl = parentCell.getBody();
         pnl.setLayout(new MigLayout("insets 0, gap 0, wrap"));
 
-        final List<Player> players = Singletons.getModel().getGameState().getPlayers();
+        final List<Player> players = Singletons.getModel().getGame().getPlayers();
         this.infoLBLs = new HashMap<Player, JLabel[]>();
 
         final String constraints = "w 97%!, gapleft 2%, gapbottom 1%";
@@ -139,7 +137,7 @@ public enum VPlayers implements IVDoc {
      * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getLayoutControl() {
+    public CPlayers getLayoutControl() {
         return CPlayers.SINGLETON_INSTANCE;
     }
 
@@ -180,7 +178,7 @@ public enum VPlayers implements IVDoc {
         // No need to update if this panel isn't showing
         if (!parentCell.getSelected().equals(this)) { return; }
 
-        stormLabel.setText("Storm count: " + AllZone.getStack().getCardsCastThisTurn().size());
+        stormLabel.setText("Storm count: " + Singletons.getModel().getGame().getStack().getCardsCastThisTurn().size());
     }
 
     //========= Custom class handling

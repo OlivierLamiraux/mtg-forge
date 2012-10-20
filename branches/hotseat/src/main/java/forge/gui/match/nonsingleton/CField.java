@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
-import forge.AllZone;
 import forge.Card;
 
 import forge.Command;
@@ -296,7 +295,7 @@ public class CField implements ICDoc {
                             faceDown.setName("Face Down");
                             choices2.add(faceDown);
                         } else {
-                            final Card faceDown = AllZone.getCardFactory().copyCard(crd);
+                            final Card faceDown = Singletons.getModel().getCardFactory().copyCard(crd);
                             faceDown.turnFaceUp();
                             choices2.add(faceDown);
                         }
@@ -346,7 +345,7 @@ public class CField implements ICDoc {
 
                 @Override
                 protected void doAction(final Card c) {
-                    Singletons.getModel().getGameAction().playCard(c);
+                    Singletons.getModel().getGame().getAction().playCard(c);
                 }
             } .actionPerformed(null);
         }
@@ -363,7 +362,7 @@ public class CField implements ICDoc {
 
                 @Override
                 protected void doAction(final Card c) {
-                    Singletons.getModel().getGameAction().playCard(c);
+                    Singletons.getModel().getGame().getAction().playCard(c);
                 }
             } .actionPerformed(null);
         }
@@ -436,7 +435,7 @@ public class CField implements ICDoc {
                 }
             }
 
-            final List<Card> att = AllZone.getCombat().getAttackerList();
+            final List<Card> att = Singletons.getModel().getGame().getCombat().getAttackerList();
             if ((c.isTapped() || c.hasSickness() || ((c.hasKeyword("Vigilance")) && att.contains(c)))
                     && (input instanceof InputAttack)) {
                 final forge.view.arcane.CardPanel cardPanel = CField.this.view.getTabletop().getCardPanel(
@@ -452,11 +451,11 @@ public class CField implements ICDoc {
                 if (att.contains(c) && (input instanceof InputAttack)
                         && !c.hasKeyword("CARDNAME attacks each turn if able.")) {
                     c.untap();
-                    AllZone.getCombat().removeFromCombat(c);
+                    Singletons.getModel().getGame().getCombat().removeFromCombat(c);
                     CombatUtil.showCombat();
                 } else if (input instanceof InputBlock) {
                     if (c.getController().isHuman()) {
-                        AllZone.getCombat().removeFromCombat(c);
+                        Singletons.getModel().getGame().getCombat().removeFromCombat(c);
                     }
                     ((InputBlock) input).removeFromAllBlocking(c);
                     CombatUtil.showCombat();
@@ -485,7 +484,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.BLACK);
@@ -499,7 +498,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.BLUE);
@@ -513,7 +512,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.GREEN);
@@ -527,7 +526,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.RED);
@@ -541,7 +540,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.WHITE);
@@ -555,7 +554,7 @@ public class CField implements ICDoc {
             System.out.println("Stop trying to spend the AI's mana");
             // TODO: Mindslaver might need to add changes here
         } else {
-            final Input in = AllZone.getInputControl().getInput();
+            final Input in = Singletons.getModel().getMatch().getInput().getInput();
             if (in instanceof InputMana) {
                 // Do something
                 ((InputMana) in).selectManaPool(Constant.Color.COLORLESS);

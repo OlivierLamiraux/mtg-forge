@@ -22,11 +22,10 @@ import javax.swing.border.Border;
 import javax.swing.border.MatteBorder;
 
 import net.miginfocom.swing.MigLayout;
-import forge.AllZone;
+import forge.Singletons;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
-import forge.gui.framework.ICDoc;
 import forge.gui.framework.IVDoc;
 import forge.gui.match.controllers.CCombat;
 import forge.gui.toolbox.FSkin;
@@ -36,7 +35,7 @@ import forge.gui.toolbox.FSkin;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VCombat implements IVDoc {
+public enum VCombat implements IVDoc<CCombat> {
     /** */
     SINGLETON_INSTANCE;
 
@@ -90,7 +89,7 @@ public enum VCombat implements IVDoc {
      * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getLayoutControl() {
+    public CCombat getLayoutControl() {
         return CCombat.SINGLETON_INSTANCE;
     }
 
@@ -106,7 +105,7 @@ public enum VCombat implements IVDoc {
 
         final Border border = new MatteBorder(0, 0, 0, 0, FSkin.getColor(FSkin.Colors.CLR_BORDERS));
 
-        tab.setText("Combat : " + AllZone.getCombat().getAttackers().size());
+        tab.setText("Combat : " + Singletons.getModel().getGame().getCombat().getAttackers().size());
 
         final JTextArea tar = new JTextArea(s0);
         tar.setOpaque(false);

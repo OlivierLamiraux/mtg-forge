@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardLists;
+import forge.Singletons;
 import forge.card.cost.Cost;
 
 import forge.GameActionUtil;
@@ -35,6 +35,7 @@ import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * <p>
@@ -278,7 +279,7 @@ public final class AbilityFactoryRepeat {
             if (params.containsKey("RepeatDefined")) {
                 list.addAll(AbilityFactory.getDefinedCards(sa.getSourceCard(), params.get("RepeatDefined"), sa));
             } else {
-                list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+                list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             }
 
             list = CardLists.getValidCards(list, repeatPresent.split(","), sa.getActivatingPlayer(), sa.getSourceCard());
@@ -295,7 +296,7 @@ public final class AbilityFactoryRepeat {
 
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, repeatCompare, right)) {
+            if (!Expressions.compare(left, repeatCompare, right)) {
                 return false;
             }
         }
@@ -310,7 +311,7 @@ public final class AbilityFactoryRepeat {
             final int svarValue = AbilityFactory.calculateAmount(sa.getSourceCard(), params.get("RepeatCheckSVar"), sa);
             final int operandValue = AbilityFactory.calculateAmount(sa.getSourceCard(), sVarOperand, sa);
 
-            if (!AllZoneUtil.compare(svarValue, sVarOperator, operandValue)) {
+            if (!Expressions.compare(svarValue, sVarOperator, operandValue)) {
                 return false;
             }
         }

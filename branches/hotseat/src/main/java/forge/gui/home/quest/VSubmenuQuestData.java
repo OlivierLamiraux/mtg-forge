@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -23,7 +24,6 @@ import forge.game.GameFormat;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
-import forge.gui.framework.ICDoc;
 import forge.gui.home.EMenuGroup;
 import forge.gui.home.IVSubmenu;
 import forge.gui.home.VHomeUI;
@@ -41,7 +41,7 @@ import forge.util.IStorageView;
  *
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public enum VSubmenuQuestData implements IVSubmenu {
+public enum VSubmenuQuestData implements IVSubmenu<CSubmenuQuestData> {
     /** */
     SINGLETON_INSTANCE;
 
@@ -76,6 +76,8 @@ public enum VSubmenuQuestData implements IVSubmenu {
     private final JRadioButton radUnrestricted = new FRadioButton("Unrestricted Starting Pool");
     private final JRadioButton radRotatingStart = new FRadioButton("Format: ");
     private final JComboBox cbxFormat = new JComboBox();
+    private final FCheckBox boxFormatCustom = new FCheckBox("Custom");
+    private final JButton btnFormatCustom = new JButton("Define");
 
     private final JRadioButton radPreconStart = new FRadioButton("Preconstructed Deck: ");
     private final JComboBox cbxPrecon = new JComboBox();
@@ -145,6 +147,8 @@ public enum VSubmenuQuestData implements IVSubmenu {
         cbxFormat.setEnabled(false);
         boxFormatPersist.setSelected(true);
         boxFormatPersist.setEnabled(false);
+        boxFormatCustom.setEnabled(false);
+        btnFormatCustom.setEnabled(false);
         radUnrestricted.setSelected(true);
         cbxPrecon.setEnabled(false);
         radMedium.setEnabled(true);
@@ -161,7 +165,9 @@ public enum VSubmenuQuestData implements IVSubmenu {
         pnlOptions.add(radUnrestricted, constraints);
 
         pnlOptions.add(radMedium, constraints + ", gap 1% 4% 0 5px");
-        pnlOptions.add(radRotatingStart, constraints);
+        pnlOptions.add(radRotatingStart, constraints + ", w 23%!, h 27px!, split 3");
+        pnlOptions.add(boxFormatCustom, constraints + ", w 12%!, h 27px!");
+        pnlOptions.add(btnFormatCustom, constraints + ", w 12%!, h 27px!");
 
         pnlOptions.add(radHard, constraints + ", gap 1% 4% 0 5px");
         pnlOptions.add(cbxFormat, constraints);
@@ -268,6 +274,20 @@ public enum VSubmenuQuestData implements IVSubmenu {
     }
 
     /**
+     * @return {@link javax.swing.JCheckBox}
+     */
+    public JCheckBox getBoxCustom() {
+        return boxFormatCustom;
+    }
+
+    /**
+     * @return {@link javax.swing.JButton}
+     */
+    public JButton getBtnCustom() {
+        return btnFormatCustom;
+    }
+
+    /**
      * @return {@link javax.swing.JRadioButton}
      */
     public JRadioButton getRadUnrestricted() {
@@ -311,6 +331,14 @@ public enum VSubmenuQuestData implements IVSubmenu {
         return btnEmbark;
     }
 
+    /**
+    * @return {@link forge.gui.toolbox.JButton}
+    */
+    public JButton getBtnFormatCustom() {
+        return btnFormatCustom;
+    }
+
+
     //========== Overridden from IVDoc
 
     /* (non-Javadoc)
@@ -333,7 +361,7 @@ public enum VSubmenuQuestData implements IVSubmenu {
      * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getLayoutControl() {
+    public CSubmenuQuestData getLayoutControl() {
         return CSubmenuQuestData.SINGLETON_INSTANCE;
     }
 

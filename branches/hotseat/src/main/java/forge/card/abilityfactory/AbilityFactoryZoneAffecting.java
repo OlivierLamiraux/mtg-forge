@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import com.google.common.base.Predicate;
+
 import forge.Card;
 
 import forge.CardLists;
@@ -343,7 +345,7 @@ public class AbilityFactoryZoneAffecting {
         }
 
         // Don't use draw abilities before main 2 if possible
-        if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2)
+        if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2)
                 && !params.containsKey("ActivationPhases")) {
             return false;
         }
@@ -360,8 +362,8 @@ public class AbilityFactoryZoneAffecting {
         if (AbilityFactory.isSorcerySpeed(sa)) {
             randomReturn = true;
         }
-        if ((Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.END_OF_TURN)
-                && Singletons.getModel().getGameState().getPhaseHandler().isNextTurn(PlayerType.COMPUTER))) {
+        if ((Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.END_OF_TURN)
+                && Singletons.getModel().getGame().getPhaseHandler().isNextTurn(PlayerType.COMPUTER))) {
             randomReturn = true;
         }
 
@@ -464,7 +466,7 @@ public class AbilityFactoryZoneAffecting {
             }
 
             if (((computerHandSize + numCards) > computerMaxHandSize)
-                    && Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn().isComputer()) {
+                    && Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn().isComputer()) {
                 if (xPaid) {
                     numCards = computerMaxHandSize - computerHandSize;
                     source.setSVar("PayX", Integer.toString(numCards));
@@ -504,7 +506,7 @@ public class AbilityFactoryZoneAffecting {
             }
 
             if (((computerHandSize + numCards) > computerMaxHandSize)
-                    && Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn().isComputer()
+                    && Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn().isComputer()
                     && !sa.isTrigger()) {
                 // Don't draw too many cards and then risk discarding cards at
                 // EOT
@@ -899,7 +901,7 @@ public class AbilityFactoryZoneAffecting {
         final Random r = MyRandom.getRandom();
 
         // Don't use draw abilities before main 2 if possible
-        if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2) && !params.containsKey("ActivationPhases")) {
+        if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2) && !params.containsKey("ActivationPhases")) {
             return false;
         }
 
@@ -914,8 +916,8 @@ public class AbilityFactoryZoneAffecting {
             chance = .667; // 66.7% chance for sorcery speed
         }
 
-        if ((Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.END_OF_TURN) 
-                && Singletons.getModel().getGameState().getPhaseHandler().isNextTurn(PlayerType.COMPUTER))) {
+        if ((Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.END_OF_TURN) 
+                && Singletons.getModel().getGame().getPhaseHandler().isNextTurn(PlayerType.COMPUTER))) {
             chance = .9; // 90% for end of opponents turn
         }
 
@@ -1433,23 +1435,37 @@ public class AbilityFactoryZoneAffecting {
                             // discard human cards
                             for (int i = 0; i < numCards; i++) {
                                 if (dPChHand.size() > 0) {
+                                    List<Card> goodChoices = CardLists.filter(dPChHand, new Predicate<Card>() {
+                                        @Override
+                                        public boolean apply(final Card c) {
+                                            if (c.hasKeyword("If a spell or ability an opponent controls causes you to discard CARDNAME," +
+                                                    " put it onto the battlefield instead of putting it into your graveyard.")
+                                                    || !c.getSVar("DiscardMe").equals("")) {
+                                                return false;
+                                            }
+                                            return true;
+                                        }
+                                    });
+                                    if (goodChoices.isEmpty()) {
+                                        goodChoices = dPChHand;
+                                    }
                                     final List<Card> dChoices = new ArrayList<Card>();
                                     if (params.containsKey("DiscardValid")) {
                                         final String validString = params.get("DiscardValid");
                                         if (validString.contains("Creature") && !validString.contains("nonCreature")) {
-                                            final Card c = CardFactoryUtil.getBestCreatureAI(dPChHand);
+                                            final Card c = CardFactoryUtil.getBestCreatureAI(goodChoices);
                                             if (c != null) {
-                                                dChoices.add(CardFactoryUtil.getBestCreatureAI(dPChHand));
+                                                dChoices.add(CardFactoryUtil.getBestCreatureAI(goodChoices));
                                             }
                                         }
                                     }
 
-                                    Collections.sort(dPChHand, CardLists.TextLenReverseComparator);
+                                    Collections.sort(goodChoices, CardLists.TextLenReverseComparator);
 
-                                    CardLists.sortCMC(dPChHand);
-                                    dChoices.add(dPChHand.get(0));
+                                    CardLists.sortCMC(goodChoices);
+                                    dChoices.add(goodChoices.get(0));
 
-                                    final Card dC = dChoices.get(CardUtil.getRandomIndex(dChoices));
+                                    final Card dC = goodChoices.get(CardUtil.getRandomIndex(goodChoices));
                                     dPChHand.remove(dC);
 
                                     if (mode.startsWith("Reveal")) {
@@ -1666,7 +1682,7 @@ public class AbilityFactoryZoneAffecting {
         }
 
         // Don't use draw abilities before main 2 if possible
-        if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2)
+        if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2)
                 && !params.containsKey("ActivationPhases")) {
             return false;
         }

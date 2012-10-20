@@ -20,9 +20,8 @@ package forge.card.spellability;
 import java.util.ArrayList;
 import java.util.List;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
+import forge.Singletons;
 
 import forge.CardLists;
 import forge.card.cardfactory.CardFactoryUtil;
@@ -30,9 +29,9 @@ import forge.card.cost.Cost;
 import forge.card.cost.CostPayment;
 import forge.card.staticability.StaticAbility;
 import forge.error.ErrorViewer;
-import forge.game.phase.PhaseHandler;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * <p>
@@ -91,7 +90,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
     /** {@inheritDoc} */
     @Override
     public boolean canPlay() {
-        if (AllZone.getStack().isSplitSecondOnStack()) {
+        if (Singletons.getModel().getGame().getStack().isSplitSecondOnStack()) {
             return false;
         }
 
@@ -102,7 +101,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
             activator = this.getSourceCard().getController();
         }
 
-        if (!(card.isInstant() || PhaseHandler.canCastSorcery(activator) || card.hasKeyword("Flash")
+        if (!(card.isInstant() || Player.canCastSorcery(activator) || card.hasKeyword("Flash")
                || this.getRestrictions().isInstantSpeed()
                || activator.hasKeyword("You may cast nonland cards as though they had flash.")
                || card.hasStartOfKeyword("You may cast CARDNAME as though it had flash."))) {
@@ -124,7 +123,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
         }
 
         // CantBeCast static abilities
-        final List<Card> allp = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        final List<Card> allp = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         allp.add(card);
         for (final Card ca : allp) {
             final ArrayList<StaticAbility> staticAbilities = ca.getStaticAbilities();
@@ -144,7 +143,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
         final Card card = this.getSourceCard();
         if (card.getSVar("NeedsToPlay").length() > 0) {
             final String needsToPlay = card.getSVar("NeedsToPlay");
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
 
             list = CardLists.getValidCards(list, needsToPlay.split(","), card.getController(), card);
             if (list.isEmpty()) {
@@ -168,7 +167,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
             } catch (final NumberFormatException e) {
                 y = CardFactoryUtil.xCount(card, card.getSVar(compareTo));
             }
-            if (!AllZoneUtil.compare(x, comparator, y)) {
+            if (!Expressions.compare(x, comparator, y)) {
                 return false;
             }
         }

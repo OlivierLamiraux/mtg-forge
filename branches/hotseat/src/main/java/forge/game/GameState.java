@@ -21,6 +21,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
+import forge.Card;
+import forge.CardLists;
+import forge.CardPredicates.Presets;
+import forge.ColorChanger;
+import forge.GameAction;
 import forge.GameLog;
 import forge.StaticEffects;
 import forge.card.replacement.ReplacementHandler;
@@ -36,6 +42,7 @@ import forge.game.player.LobbyPlayer;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.MagicStack;
+import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 
 /**
@@ -43,32 +50,27 @@ import forge.game.zone.ZoneType;
  * "cleaned up" at each new game.
  */
 public class GameState {
-
-    /** The Constant HUMAN_PLAYER_NAME. */
-    public static final String HUMAN_PLAYER_NAME = "Human";
-
-    /** The Constant AI_PLAYER_NAME. */
-    public static final String AI_PLAYER_NAME = "Computer";
-
     private final List<Player> roPlayers;
     private final Cleanup cleanup = new Cleanup();
     private final EndOfTurn endOfTurn = new EndOfTurn();
     private final EndOfCombat endOfCombat = new EndOfCombat();
     private final Untap untap = new Untap();
     private final Upkeep upkeep = new Upkeep();
-    private PhaseHandler phaseHandler = new PhaseHandler();
-    private final MagicStack stack = new MagicStack();
+    private final PhaseHandler phaseHandler;
+    private final MagicStack stack;
     private final StaticEffects staticEffects = new StaticEffects();
     private final TriggerHandler triggerHandler = new TriggerHandler();
     private final ReplacementHandler replacementHandler = new ReplacementHandler();
     private Combat combat = new Combat();
     private final GameLog gameLog = new GameLog();
+    private final ColorChanger colorChanger = new ColorChanger();
+    
     private boolean gameOver = false;
 
-    private final PlayerZone stackZone = new PlayerZone(ZoneType.Stack, null);
+    private final Zone stackZone = new Zone(ZoneType.Stack);
 
     private long timestamp = 0;
-    private int nTurn = 0;
+    private final GameAction action;
     
     /**
      * Constructor.
@@ -80,6 +82,9 @@ public class GameState {
             players.add(p.getIngamePlayer());
         }
         roPlayers = Collections.unmodifiableList(players);
+        action = new GameAction(this);
+        stack = new MagicStack(this);
+        phaseHandler = new PhaseHandler(this);
     }
 
     /**
@@ -205,7 +210,7 @@ public class GameState {
      * 
      * @return the stackZone
      */
-    public final PlayerZone getStackZone() {
+    public final Zone getStackZone() {
         return this.stackZone;
     }
 
@@ -263,18 +268,176 @@ public class GameState {
         }
     }
 
+    
+    // THESE WERE MOVED HERE FROM AllZoneUtil 
+    // They must once become non-static members of this class 
+    
+    public Zone getZoneOf(final Card c) {
+        if (getStackZone().contains(c)) {
+            return getStackZone();
+        }
+    
+        for (final Player p : getPlayers()) {
+            for (final ZoneType z : Player.ALL_ZONES) {
+                final PlayerZone pz = p.getZone(z);
+                if (pz.contains(c)) {
+                    return pz;
+                }
+            }
+        }
+    
+        return null;
+    }
+
+    public boolean isCardInZone(final Card c, final ZoneType zone) {
+         if (zone.equals(ZoneType.Stack)) {
+            if (getStackZone().contains(c)) {
+                return true;
+            }
+        } else {
+            for (final Player p : getPlayers()) {
+                if (p.getZone(zone).contains(c)) {
+                    return true;
+                }
+            }
+        }
+    
+        return false;
+    }
+
+    public List<Card> getCardsIn(final ZoneType zone) {
+        if (zone == ZoneType.Stack) {
+            return getStackZone().getCards();
+        } else {
+            List<Card> cards = null;
+            for (final Player p : getPlayers()) {
+                if ( cards == null ) 
+                    cards = p.getZone(zone).getCards();
+                else
+                    cards.addAll(p.getZone(zone).getCards());
+            }
+            return cards;
+        }
+    }
+
+    public List<Card> getCardsIn(final Iterable<ZoneType> zones) {
+        final List<Card> cards = new ArrayList<Card>();
+        for (final ZoneType z : zones) {
+            cards.addAll(getCardsIn(z));
+        }
+        return cards;
+    }
+
+    public List<Card> getLandsInPlay() {
+        return CardLists.filter(getCardsIn(ZoneType.Battlefield), Presets.LANDS);
+    }
+
+    public boolean isCardExiled(final Card c) {
+        return getCardsIn(ZoneType.Exile).contains(c);
+    }
+
+    
+    public boolean isCardInPlay(final String cardName) {
+        for (final Player p : getPlayers()) {
+            if (p.isCardInPlay(cardName))
+                return true;
+        }
+        return false;
+    }
+
+    public List<Card> getColoredCardsInPlay(final String color) {
+        final List<Card> cards = new ArrayList<Card>();
+        for(Player p : getPlayers()) {
+            cards.addAll(p.getColoredCardsInPlay(color));
+        }
+        return cards;
+    }
+
+    public Card getCardState(final Card card) {
+        for (final Card c : getCardsInGame()) {
+            if (card.equals(c)) {
+                return c;
+            }
+        }
+    
+        return card;
+    }
+
     /**
-     * TODO: Write javadoc for this method.
-     * @return
+     * <p>
+     * compareTypeAmountInPlay.
+     * </p>
+     * 
+     * @param player
+     *            a {@link forge.game.player.Player} object.
+     * @param type
+     *            a {@link java.lang.String} object.
+     * @return a int.
      */
-    public int getTurnNumber() {
-        return nTurn;
+    public static int compareTypeAmountInPlay(final Player player, final String type) {
+        // returns the difference between player's
+        final Player opponent = player.getOpponent();
+        final List<Card> playerList = CardLists.getType(player.getCardsIn(ZoneType.Battlefield), type);
+        final List<Card> opponentList = CardLists.getType(opponent.getCardsIn(ZoneType.Battlefield), type);
+        return (playerList.size() - opponentList.size());
+    }
+
+    /**
+     * <p>
+     * compareTypeAmountInGraveyard.
+     * </p>
+     * 
+     * @param player
+     *            a {@link forge.game.player.Player} object.
+     * @param type
+     *            a {@link java.lang.String} object.
+     * @return a int.
+     */
+    public static int compareTypeAmountInGraveyard(final Player player, final String type) {
+        // returns the difference between player's
+        final Player opponent = player.getOpponent();
+        final List<Card> playerList = CardLists.getType(player.getCardsIn(ZoneType.Graveyard), type);
+        final List<Card> opponentList = CardLists.getType(opponent.getCardsIn(ZoneType.Graveyard), type);
+        return (playerList.size() - opponentList.size());
+    }
+
+    public List<Card> getCardsInGame() {
+        final List<Card> all = new ArrayList<Card>();
+        for (final Player player : getPlayers()) {
+            all.addAll(player.getZone(ZoneType.Graveyard).getCards());
+            all.addAll(player.getZone(ZoneType.Hand).getCards());
+            all.addAll(player.getZone(ZoneType.Library).getCards());
+            all.addAll(player.getZone(ZoneType.Battlefield).getCards(false));
+            all.addAll(player.getZone(ZoneType.Exile).getCards());
+        }
+        all.addAll(getStackZone().getCards());
+        return all;
     }
 
     /**
      * TODO: Write javadoc for this method.
+     * @return
      */
-    public void notifyNextTurn() {
-        nTurn++;
+    public ColorChanger getColorChanger() {
+        return colorChanger;
+    }
+
+    public GameAction getAction() {
+        return action;
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     * @param playerTurn
+     * @return
+     */
+    public Player getNextPlayerAfter(Player playerTurn) {
+        int iPlayer = roPlayers.indexOf(playerTurn);
+        if( iPlayer == roPlayers.size() - 1)
+            iPlayer = -1;
+        iPlayer++;
+        // should also check that he has not lost yet.
+        return roPlayers.get(iPlayer);
+                
     }
 }

@@ -30,8 +30,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -382,8 +380,7 @@ public final class AbilityFactoryChoose {
                             if (params.containsKey("AILogic")) {
                                 final String logic = params.get("AILogic");
                                 if (logic.equals("MostProminentOnBattlefield")) {
-                                    chosen = CardFactoryUtil.getMostProminentCreatureType(AllZoneUtil
-                                            .getCardsIn(ZoneType.Battlefield));
+                                    chosen = CardFactoryUtil.getMostProminentCreatureType(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield));
                                 }
                                 if (logic.equals("MostProminentComputerControls")) {
                                     chosen = CardFactoryUtil.getMostProminentCreatureType(ai.getCardsIn(ZoneType.Battlefield));
@@ -391,11 +388,11 @@ public final class AbilityFactoryChoose {
                                 if (logic.equals("MostProminentHumanControls")) {
                                     chosen = CardFactoryUtil.getMostProminentCreatureType(opp.getCardsIn(ZoneType.Battlefield));
                                     if (!CardUtil.isACreatureType(chosen) || invalidTypes.contains(chosen)) {
-                                        chosen = CardFactoryUtil.getMostProminentCreatureType(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), opp));
+                                        chosen = CardFactoryUtil.getMostProminentCreatureType(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), opp));
                                     }
                                 }
                                 if (logic.equals("MostProminentInComputerDeck")) {
-                                    chosen = CardFactoryUtil.getMostProminentCreatureType(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), ai));
+                                    chosen = CardFactoryUtil.getMostProminentCreatureType(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), ai));
                                 }
                                 if (logic.equals("MostProminentInComputerGraveyard")) {
                                     chosen = CardFactoryUtil.getMostProminentCreatureType(ai.getCardsIn(ZoneType.Graveyard));
@@ -730,21 +727,21 @@ public final class AbilityFactoryChoose {
                     if (params.containsKey("AILogic")) {
                         final String logic = params.get("AILogic");
                         if (logic.equals("MostProminentInHumanDeck")) {
-                            chosen.add(CardFactoryUtil.getMostProminentColor(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), opp)));
+                            chosen.add(CardFactoryUtil.getMostProminentColor(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), opp)));
                         } else if (logic.equals("MostProminentInComputerDeck")) {
-                            chosen.add(CardFactoryUtil.getMostProminentColor(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), ai)));
+                            chosen.add(CardFactoryUtil.getMostProminentColor(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), ai)));
                         } else if (logic.equals("MostProminentDualInComputerDeck")) {
-                            List<String> prominence = CardFactoryUtil.getColorByProminence(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), ai));
+                            List<String> prominence = CardFactoryUtil.getColorByProminence(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), ai));
                             chosen.add(prominence.get(0));
                             chosen.add(prominence.get(1));
                         }
                         else if (logic.equals("MostProminentInGame")) {
-                            chosen.add(CardFactoryUtil.getMostProminentColor(AllZoneUtil.getCardsInGame()));
+                            chosen.add(CardFactoryUtil.getMostProminentColor(Singletons.getModel().getGame().getCardsInGame()));
                         }
                         else if (logic.equals("MostProminentHumanCreatures")) {
-                            List<Card> list = AllZoneUtil.getCreaturesInPlay(opp);
+                            List<Card> list = opp.getCreaturesInPlay();
                             if (list.isEmpty()) {
-                                list = CardLists.filter(CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), opp), CardPredicates.Presets.CREATURES);
+                                list = CardLists.filter(CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), opp), CardPredicates.Presets.CREATURES);
                             }
                             chosen.add(CardFactoryUtil.getMostProminentColor(list));
                         }
@@ -752,11 +749,11 @@ public final class AbilityFactoryChoose {
                             chosen.add(CardFactoryUtil.getMostProminentColor(ai.getCardsIn(ZoneType.Battlefield)));
                         }
                         else if (logic.equals("MostProminentPermanent")) {
-                            final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+                            final List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
                             chosen.add(CardFactoryUtil.getMostProminentColor(list));
                         }
                         else if (logic.equals("MostProminentAttackers")) {
-                            chosen.add(CardFactoryUtil.getMostProminentColor(AllZone.getCombat()
+                            chosen.add(CardFactoryUtil.getMostProminentColor(Singletons.getModel().getGame().getCombat()
                                     .getAttackerList()));
                         }
                     }
@@ -1306,7 +1303,7 @@ public final class AbilityFactoryChoose {
         }
 
         final ArrayList<Player> choices = params.containsKey("Choices") ? AbilityFactory.getDefinedPlayers(
-                sa.getSourceCard(), params.get("Choices"), sa) : new ArrayList<Player>(Singletons.getModel().getGameState().getPlayers());
+                sa.getSourceCard(), params.get("Choices"), sa) : new ArrayList<Player>(Singletons.getModel().getGame().getPlayers());
 
         final String choiceDesc = params.containsKey("ChoiceTitle") ? params.get("ChoiceTitle") : "Choose a player";
 
@@ -1632,7 +1629,7 @@ public final class AbilityFactoryChoose {
                         // still missing a listener to display the card preview
                         // in the right
                         name = choice.getSelectedValue();
-                        if (AllZone.getCardFactory().getCard(CardDb.instance().getCard(name), p).isValid(valid, host.getController(), host)) {
+                        if (Singletons.getModel().getCardFactory().getCard(CardDb.instance().getCard(name), p).isValid(valid, host.getController(), host)) {
                             host.setNamedCard(choice.getSelectedValue());
                             ok = true;
                         }
@@ -1646,7 +1643,7 @@ public final class AbilityFactoryChoose {
                                 chosen = CardFactoryUtil.getMostProminentCardName(p.getOpponent().getCardsIn(ZoneType.Library));
                             }
                         } else {
-                            List<Card> list = CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), p.getOpponent());
+                            List<Card> list = CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), p.getOpponent());
                             list = CardLists.filter(list, Predicates.not(Presets.LANDS));
                             if (!list.isEmpty()) {
                                 chosen = list.get(0).getName();
@@ -1872,7 +1869,7 @@ public final class AbilityFactoryChoose {
             if (params.containsKey("ChoiceZone")) {
                 choiceZone = ZoneType.smartValueOf(params.get("ChoiceZone"));
             }
-            List<Card> choices = AllZoneUtil.getCardsIn(choiceZone);
+            List<Card> choices = Singletons.getModel().getGame().getCardsIn(choiceZone);
             if (params.containsKey("Choices")) {
                 choices = CardLists.getValidCards(choices, params.get("Choices"), host.getController(), host);
             }
@@ -1941,7 +1938,7 @@ public final class AbilityFactoryChoose {
         if (params.containsKey("ChoiceZone")) {
             choiceZone = ZoneType.smartValueOf(params.get("ChoiceZone"));
         }
-        List<Card> choices = AllZoneUtil.getCardsIn(choiceZone);
+        List<Card> choices = Singletons.getModel().getGame().getCardsIn(choiceZone);
         if (params.containsKey("Choices")) {
             choices = CardLists.getValidCards(choices, params.get("Choices"), host.getController(), host);
         }
@@ -1954,7 +1951,7 @@ public final class AbilityFactoryChoose {
                 ? CardFactoryUtil.xCount(host, host.getSVar(params.get("Amount"))) : Integer.parseInt(numericAmount);
 
         if (params.containsKey("SunderingTitan")) {
-            final List<Card> land = AllZoneUtil.getLandsInPlay();
+            final List<Card> land = Singletons.getModel().getGame().getLandsInPlay();
             final ArrayList<String> basic = CardUtil.getBasicTypes();
 
             for (final String type : basic) {

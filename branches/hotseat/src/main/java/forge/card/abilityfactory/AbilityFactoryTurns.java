@@ -20,7 +20,6 @@ package forge.card.abilityfactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import forge.AllZone;
 import forge.Card;
 import forge.Singletons;
 import forge.card.spellability.AbilityActivated;
@@ -348,7 +347,7 @@ public class AbilityFactoryTurns {
         for (final Player p : tgtPlayers) {
             if ((tgt == null) || p.canBeTargetedBy(sa)) {
                 for (int i = 0; i < numTurns; i++) {
-                    ExtraTurn extra = Singletons.getModel().getGameState().getPhaseHandler().addExtraTurn(p);
+                    ExtraTurn extra = Singletons.getModel().getGame().getPhaseHandler().addExtraTurn(p);
                     if (params.containsKey("LoseAtEndStep")) {
                         extra.setLoseAtEndStep(true);
                     }
@@ -503,25 +502,25 @@ public class AbilityFactoryTurns {
         // 1) All spells and abilities on the stack are exiled. This includes
         // Time Stop, though it will continue to resolve. It also includes
         // spells and abilities that can't be countered.
-        for (final Card c : AllZone.getStackZone().getCards()) {
-            Singletons.getModel().getGameAction().exile(c);
+        for (final Card c : Singletons.getModel().getGame().getStackZone().getCards()) {
+            Singletons.getModel().getGame().getAction().exile(c);
         }
-        AllZone.getStack().getStack().clear();
+        Singletons.getModel().getGame().getStack().getStack().clear();
 
         // 2) All attacking and blocking creatures are removed from combat.
-        AllZone.getCombat().reset();
+        Singletons.getModel().getGame().getCombat().reset();
 
         // 3) State-based actions are checked. No player gets priority, and no
         // triggered abilities are put onto the stack.
-        Singletons.getModel().getGameAction().checkStateEffects();
+        Singletons.getModel().getGame().getAction().checkStateEffects();
 
         // 4) The current phase and/or step ends. The game skips straight to the
         // cleanup step. The cleanup step happens in its entirety.
-        Singletons.getModel().getGameState().getPhaseHandler().setPhaseState(PhaseType.CLEANUP);
+        Singletons.getModel().getGame().getPhaseHandler().setPhaseState(PhaseType.CLEANUP);
 
         // Update observers
-        AllZone.getStack().updateObservers();
-        for (Player p : Singletons.getModel().getGameState().getPlayers()) {
+        Singletons.getModel().getGame().getStack().updateObservers();
+        for (Player p : Singletons.getModel().getGame().getPlayers()) {
             p.updateObservers();
             p.updateLabelObservers();
         }

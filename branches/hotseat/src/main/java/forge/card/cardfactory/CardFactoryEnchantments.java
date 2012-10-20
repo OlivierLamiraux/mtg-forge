@@ -4,8 +4,6 @@ import java.util.List;
 
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -74,7 +72,7 @@ class CardFactoryEnchantments {
                 @Override
                 public boolean canPlay() {
                     boolean haveGraveWithSomeCreatures = false;
-                    for( Player p : Singletons.getModel().getGameState().getPlayers()) {
+                    for( Player p : Singletons.getModel().getGame().getPlayers()) {
                         Iterable<Card> grave = CardLists.filter(p.getCardsIn(ZoneType.Graveyard), CardPredicates.Presets.CREATURES);
                         if( Iterables.size(grave) > 1)
                         {
@@ -121,11 +119,11 @@ class CardFactoryEnchantments {
                             if (o2 != null) {
                                 final Card c2 = (Card) o2;
                                 newGrave.remove(c2);
-                                Singletons.getModel().getGameAction().exile(c);
-                                Singletons.getModel().getGameAction().exile(c2);
+                                Singletons.getModel().getGame().getAction().exile(c);
+                                Singletons.getModel().getGame().getAction().exile(c2);
                                 this.once = true;
 
-                                AllZone.getStack().addAndUnfreeze(nightSoil);
+                                Singletons.getModel().getGame().getStack().addAndUnfreeze(nightSoil);
 
                             }
                         }
@@ -160,8 +158,8 @@ class CardFactoryEnchantments {
 
                 @Override
                 public boolean canPlayAI() {
-                    final List<Card> compCreats = AllZoneUtil.getCreaturesInPlay(getActivatingPlayer());
-                    final List<Card> humCreats = AllZoneUtil.getCreaturesInPlay(getActivatingPlayer().getOpponent());
+                    final List<Card> compCreats = getActivatingPlayer().getCreaturesInPlay();
+                    final List<Card> humCreats = getActivatingPlayer().getOpponent().getCreaturesInPlay();
 
                     // only play standstill if comp controls more creatures than
                     // human
@@ -193,7 +191,7 @@ class CardFactoryEnchantments {
                     sb.append(" loses life equal to his or her life total.");
                     loseAllLife.setStackDescription(sb.toString());
 
-                    AllZone.getStack().addSimultaneousStackEntry(loseAllLife);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(loseAllLife);
 
                 }
             };
@@ -216,7 +214,7 @@ class CardFactoryEnchantments {
                     sb.append("loses the game.");
                     loseGame.setStackDescription(sb.toString());
 
-                    AllZone.getStack().addSimultaneousStackEntry(loseGame);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(loseGame);
 
                 }
             };
@@ -247,7 +245,7 @@ class CardFactoryEnchantments {
                             sb.append(card).append(" - Select a card drawn this turn: ").append(numPutBack - i)
                                 .append(" of " + numPutBack);
                             final String prompt = sb.toString();
-                            AllZone.getInputControl().setInput(new Input() {
+                            Singletons.getModel().getMatch().getInput().setInput(new Input() {
                                 private static final long serialVersionUID = -3389565833121544797L;
 
                                 @Override
@@ -266,7 +264,7 @@ class CardFactoryEnchantments {
                                             player.payLife(4, card);
                                             // card stays in hand
                                         } else {
-                                            Singletons.getModel().getGameAction().moveToLibrary(card);
+                                            Singletons.getModel().getGame().getAction().moveToLibrary(card);
                                         }
                                         this.stop();
                                     }

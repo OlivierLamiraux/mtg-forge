@@ -14,7 +14,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import forge.AllZone;
 import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
@@ -35,13 +34,10 @@ import forge.util.MyRandom;
  * All of these methods can and should be static.
  */
 public class GameNew {
-    private static void prepareSingleLibrary(final Player player, final Deck deck, final Map<Player, List<String>> removedAnteCards, final List<String> rAICards) {
+    private static void prepareSingleLibrary(final Player player, final Deck deck, final Map<Player, List<String>> removedAnteCards, final List<String> rAICards, boolean canRandomFoil) {
         final Random generator = MyRandom.getRandom();
         boolean useAnte = Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_ANTE);
-        final boolean canRandomFoil = Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_RANDOM_FOIL)
-                && Singletons.getModel().getMatch().getGameType() == GameType.Constructed;
-                
-        
+
         PlayerZone library = player.getZone(ZoneType.Library);
         for (final Entry<CardPrinted, Integer> stackOfCards : deck.getMain()) {
             final CardPrinted cardPrinted = stackOfCards.getKey();
@@ -99,15 +95,14 @@ public class GameNew {
      * TODO: Accept something like match state as parameter. Match should be aware of players, 
      * their decks and other special starting conditions. 
      */
-    public static void newGame(final Map<Player, PlayerStartConditions> playersConditions) {
-        AllZone.getInputControl().clearInput();
-        AllZone.getColorChanger().reset();
+    public static void newGame(final Map<Player, PlayerStartConditions> playersConditions, final GameState game, final boolean canRandomFoil ) {
+        Singletons.getModel().getMatch().getInput().clearInput();
 
         Card.resetUniqueNumber();
         // need this code here, otherwise observables fail
         forge.card.trigger.Trigger.resetIDs();
-        AllZone.getTriggerHandler().clearTriggerSettings();
-        AllZone.getTriggerHandler().clearDelayedTrigger();
+        game.getTriggerHandler().clearTriggerSettings();
+        game.getTriggerHandler().clearDelayedTrigger();
 
         // friendliness
         final Map<Player, List<String>> removedAnteCards = new HashMap<Player, List<String>>();
@@ -129,7 +124,7 @@ public class GameNew {
                 }
             }
             
-            prepareSingleLibrary(player, p.getValue().getDeck(), removedAnteCards, rAICards);
+            prepareSingleLibrary(player, p.getValue().getDeck(), removedAnteCards, rAICards, canRandomFoil);
             player.updateObservers();
             bf.updateObservers();
             player.getZone(ZoneType.Hand).updateObservers();
@@ -150,7 +145,7 @@ public class GameNew {
             JOptionPane.showMessageDialog(null, ante.toString(), "", JOptionPane.INFORMATION_MESSAGE);
         }
 
-        GameNew.actuateGame();
+        GameNew.actuateGame(game);
     }
 
     /**
@@ -160,41 +155,42 @@ public class GameNew {
      * That process (also cleanup and observer updates) should be done in
      * newGame, then when all is ready, call this function.
      */
-    private static void actuateGame() {
+    private static void actuateGame(final GameState game) {
 
         // Deciding which cards go to ante 
         if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_ANTE)) {
             final String nl = System.getProperty("line.separator");
             final StringBuilder msg = new StringBuilder();
-            for (final Player p : Singletons.getModel().getGameState().getPlayers()) {
+            for (final Player p : game.getPlayers()) {
                 final List<Card> lib = p.getCardsIn(ZoneType.Library);
                 Predicate<Card> goodForAnte = Predicates.not(CardPredicates.Presets.BASIC_LANDS);
                 Card ante = Aggregates.random(Iterables.filter(lib, goodForAnte));
                 if (ante == null) {
                     throw new RuntimeException(p + " library is empty.");                        
                 }
-                AllZone.getGameLog().add("Ante", p + " anted " + ante, 0);
+                game.getGameLog().add("Ante", p + " anted " + ante, 0);
                 VAntes.SINGLETON_INSTANCE.addAnteCard(p, ante);
-                Singletons.getModel().getGameAction().moveTo(ZoneType.Ante, ante);
+                game.getAction().moveTo(ZoneType.Ante, ante);
                 msg.append(p.getName()).append(" ante: ").append(ante).append(nl);
             }
             JOptionPane.showMessageDialog(null, msg, "Ante", JOptionPane.INFORMATION_MESSAGE);
         }
 
 
+        GameOutcome lastGameOutcome = Singletons.getModel().getMatch().getLastGameOutcome(); 
         // Only cut/coin toss if it's the first game of the match
-        if (Singletons.getModel().getMatch().getPlayedGames().isEmpty()) {
+        if (lastGameOutcome == null) {
             GameNew.seeWhoPlaysFirstDice();
         } else {
             Player human = Singletons.getControl().getPlayer();
-            Player goesFirst = Singletons.getModel().getMatch().getLastGameOutcome().isWinner(human.getLobbyPlayer()) ? human.getOpponent() : human;
+            Player goesFirst = lastGameOutcome.isWinner(human.getLobbyPlayer()) ? human.getOpponent() : human;
             setPlayersFirstTurn(goesFirst);
         }
             
 
 
         // Draw 7 cards 
-        for (final Player p : Singletons.getModel().getGameState().getPlayers())
+        for (final Player p : game.getPlayers())
         {
             for (int i = 0; i < 7; i++) {
                 p.drawCard();
@@ -287,7 +283,7 @@ public class GameNew {
             computerDie = MyRandom.getRandom().nextInt(20);
         }
         
-        List<Player> allPlayers = Singletons.getModel().getGameState().getPlayers();
+        List<Player> allPlayers = Singletons.getModel().getGame().getPlayers();
         setPlayersFirstTurn(allPlayers.get(MyRandom.getRandom().nextInt(allPlayers.size())));
     }
     
@@ -295,26 +291,22 @@ public class GameNew {
     { 
         String message = goesFirst + " has won the coin toss.";
         if ( goesFirst.isHuman() ) {
-            if( !humanPlayOrDraw(message) );
-            
+            if( !humanPlayOrDraw(message) )
+                goesFirst = goesFirst.getOpponent();
         } else {
-            computerPlayOrDraw(message);
+            JOptionPane.showMessageDialog(null, message + "\nComputer Going First", 
+                    "Play or Draw?", JOptionPane.INFORMATION_MESSAGE);
         }
-        Singletons.getModel().getGameState().getPhaseHandler().setPlayerTurn(goesFirst);
+        Singletons.getModel().getGame().getPhaseHandler().setPlayerTurn(goesFirst);
     } // seeWhoPlaysFirstDice()
 
     private static boolean humanPlayOrDraw(String message) {
-        final Object[] possibleValues = { "Play", "Draw" };
+        final String[] possibleValues = { "Play", "Draw" };
         
         final Object playDraw = JOptionPane.showOptionDialog(null, message + "\n\nWould you like to play or draw?", 
                 "Play or Draw?", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, 
                 possibleValues, possibleValues[0]);
         
         return !playDraw.equals(1);
-    }
-    
-    private static void computerPlayOrDraw(String message) {
-        JOptionPane.showMessageDialog(null, message + "\nComputer Going First", 
-                "Play or Draw?", JOptionPane.INFORMATION_MESSAGE);
     }
 }

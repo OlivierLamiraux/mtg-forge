@@ -24,8 +24,6 @@ import javax.swing.JOptionPane;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -97,7 +95,7 @@ class CardFactoryLands {
                     boolean needsTheMana = false;
                     final Player ai = card.getController();
                     if (ai.getLife() > 3) {
-                        final int landsize = AllZoneUtil.getPlayerLandsInPlay(ai).size();
+                        final int landsize = ai.getLandsInPlay().size();
                         for (Card c : ai.getCardsIn(ZoneType.Hand)) {
                             if (landsize == c.getCMC()) {
                                 needsTheMana = true;
@@ -145,8 +143,8 @@ class CardFactoryLands {
 
                 @Override
                 public boolean apply(final Card c) {
-                    return AllZoneUtil.isCardInPlay(c) && c.isCreature()
-                            && (c.getTurnInZone() == Singletons.getModel().getGameState().getPhaseHandler().getTurn());
+                    return c.isInPlay() && c.isCreature()
+                            && (c.getTurnInZone() == Singletons.getModel().getGame().getPhaseHandler().getTurn());
                 }
             };
 
@@ -169,8 +167,8 @@ class CardFactoryLands {
 
                 @Override
                 public boolean canPlayAI() {
-                    if (Singletons.getModel().getGameState().getPhaseHandler().getPhase() != PhaseType.MAIN1
-                     && Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn().isComputer()) {
+                    if (Singletons.getModel().getGame().getPhaseHandler().getPhase() != PhaseType.MAIN1
+                     && Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn().isComputer()) {
                         return false;
                     }
                     this.inPlay.clear();
@@ -181,7 +179,7 @@ class CardFactoryLands {
                 @Override
                 public void resolve() {
                     this.inPlay.clear();
-                    this.inPlay.addAll(AllZoneUtil.getCardsIn(ZoneType.Battlefield));
+                    this.inPlay.addAll(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield));
                     for (final Card targ : CardLists.filter(this.inPlay, targets)) {
                         targ.addCounter(Counters.P1P1, 1);
                     }
@@ -224,7 +222,7 @@ class CardFactoryLands {
 
                     if (land.size() > 0) {
                         for (final Card c : land) {
-                            Singletons.getModel().getGameAction().sacrifice(c, null);
+                            Singletons.getModel().getGame().getAction().sacrifice(c, null);
                         }
                     }
                 }
@@ -291,7 +289,7 @@ class CardFactoryLands {
                 }
 
                 public void humanExecute() {
-                    AllZone.getInputControl().setInput(new Input() {
+                    Singletons.getModel().getMatch().getInput().setInput(new Input() {
                         private static final long serialVersionUID = -2774066137824255680L;
 
                         @Override

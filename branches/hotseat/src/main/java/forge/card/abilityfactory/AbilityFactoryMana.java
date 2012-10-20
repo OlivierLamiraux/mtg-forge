@@ -25,7 +25,6 @@ import java.util.Random;
 
 import com.google.common.collect.Iterables;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -468,7 +467,7 @@ public class AbilityFactoryMana {
             final int num = card.getCounters(Counters.getType(deplete));
             if (num == 0) {
                 abMana.setUndoable(false);
-                Singletons.getModel().getGameAction().sacrifice(card, null);
+                Singletons.getModel().getGame().getAction().sacrifice(card, null);
             }
         }
 
@@ -772,7 +771,7 @@ public class AbilityFactoryMana {
                 cards.add(c);
             }
         } else {
-            cards = CardLists.getValidCards(AllZoneUtil.getCardsIn(ZoneType.Battlefield), validCard, abMana.getActivatingPlayer(), card);
+            cards = CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), validCard, abMana.getActivatingPlayer(), card);
         }
 
         // remove anything cards that is already in parents

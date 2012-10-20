@@ -31,7 +31,6 @@ import javax.swing.JLayeredPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-import forge.AllZone;
 import forge.Singletons;
 import forge.control.KeyboardShortcuts.Shortcut;
 import forge.game.player.Player;
@@ -143,9 +142,6 @@ public enum FControl {
 
     /** After view and model have been initialized, control can start. */
     public void initialize() {
-        // Preloads all cards (using progress bar).
-        AllZone.getCardFactory();
-
         // Preloads skin components (using progress bar).
         FSkin.loadFull();
 
@@ -278,7 +274,7 @@ public enum FControl {
         if (Singletons.getModel() == null) 
             return null;
 
-        return Aggregates.firstFieldEquals(Singletons.getModel().getGameState().getPlayers(), Player.Accessors.FN_GET_TYPE, PlayerType.HUMAN);
+        return Aggregates.firstFieldEquals(Singletons.getModel().getGame().getPlayers(), Player.Accessors.FN_GET_TYPE, PlayerType.HUMAN);
     }
 
     /**

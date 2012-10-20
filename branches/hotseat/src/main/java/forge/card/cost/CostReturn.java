@@ -21,7 +21,6 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -116,7 +115,7 @@ public class CostReturn extends CostPartWithList {
             if ((amount != null) && (typeList.size() < amount)) {
                 return false;
             }
-        } else if (!AllZoneUtil.isCardInPlay(source)) {
+        } else if (!source.isInPlay()) {
             return false;
         }
 
@@ -132,7 +131,7 @@ public class CostReturn extends CostPartWithList {
     @Override
     public final void payAI(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
         for (final Card c : this.getList()) {
-            Singletons.getModel().getGameAction().moveToHand(c);
+            Singletons.getModel().getGame().getAction().moveToHand(c);
         }
     }
 
@@ -159,9 +158,11 @@ public class CostReturn extends CostPartWithList {
             }
         }
         if (this.getThis()) {
-            CostUtil.setInput(CostReturn.returnThis(ability, payment, this));
+            final Input inp = CostReturn.returnThis(ability, payment, this);
+            Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
         } else {
-            CostUtil.setInput(CostReturn.returnType(ability, this.getType(), payment, this, c));
+            final Input inp = CostReturn.returnType(ability, this.getType(), payment, this, c);
+            Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
         }
         return false;
     }
@@ -248,7 +249,7 @@ public class CostReturn extends CostPartWithList {
                 if (this.typeList.contains(card)) {
                     this.nReturns++;
                     part.addToList(card);
-                    Singletons.getModel().getGameAction().moveToHand(card);
+                    Singletons.getModel().getGame().getAction().moveToHand(card);
                     this.typeList.remove(card);
                     // in case nothing else to return
                     if (this.nReturns == nNeeded) {
@@ -297,7 +298,7 @@ public class CostReturn extends CostPartWithList {
             @Override
             public void showMessage() {
                 final Card card = sa.getSourceCard();
-                if (card.getController().isHuman() && AllZoneUtil.isCardInPlay(card)) {
+                if (card.getController().isHuman() && card.isInPlay()) {
                     final StringBuilder sb = new StringBuilder();
                     sb.append(card.getName());
                     sb.append(" - Return to Hand?");
@@ -307,7 +308,7 @@ public class CostReturn extends CostPartWithList {
                             possibleValues[0]);
                     if (choice.equals(0)) {
                         part.addToList(card);
-                        Singletons.getModel().getGameAction().moveToHand(card);
+                        Singletons.getModel().getGame().getAction().moveToHand(card);
                         this.stop();
                         part.addListToHash(sa, "Returned");
                         payment.paidCost(part);

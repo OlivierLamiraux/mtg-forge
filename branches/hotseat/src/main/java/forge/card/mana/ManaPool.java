@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import forge.AllZoneUtil;
 import forge.Constant;
 import forge.Singletons;
 import forge.card.spellability.AbilityMana;
@@ -165,7 +164,7 @@ public class ManaPool {
         for (final Mana m : manaList) {
             this.addManaToPool(this.floatingMana, m);
         }
-        Singletons.getModel().getGameAction().checkStateEffects();
+        Singletons.getModel().getGame().getAction().checkStateEffects();
         owner.updateObservers();
     }
 
@@ -185,7 +184,7 @@ public class ManaPool {
             return numRemoved;
         }
 
-        if (AllZoneUtil.isCardInPlay("Omnath, Locus of Mana", this.owner)) {
+        if (this.owner.isCardInPlay("Omnath, Locus of Mana")) {
             // Omnath in play, clear all non-green mana
             int i = 0;
             while (i < this.floatingMana.size()) {

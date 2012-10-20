@@ -40,13 +40,12 @@ public class MyObservable extends Observable {
         this.setChanged();
         this.notifyObservers();
 
-        if (Singletons.getModel() == null) { return; }
-        PhaseHandler phases = Singletons.getModel().getGameState().getPhaseHandler();
+        PhaseHandler phases = Singletons.getModel().getGame().getPhaseHandler();
 
-        if ((phases != null) && phases.isNeedToNextPhase()) {
+        if (phases != null && phases.getPlayerTurn() != null && !phases.mayPlayerHavePriority()) {
             if (phases.isNeedToNextPhaseInit()) {
                 // this is used.
-                phases.setNeedToNextPhase(false);
+                phases.setPlayerMayHavePriority(true);
                 phases.nextPhase();
             }
         }

@@ -35,12 +35,12 @@ import javax.swing.border.MatteBorder;
 import net.miginfocom.swing.MigLayout;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.mana.ManaPool;
+import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
-import forge.gui.framework.ICDoc;
 import forge.gui.framework.IVDoc;
 import forge.gui.match.controllers.CPlayers;
 import forge.gui.toolbox.FLabel;
@@ -53,7 +53,7 @@ import forge.view.arcane.PlayArea;
  * 
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public class VField implements IVDoc {
+public class VField implements IVDoc<CField> {
     // Fields used with interface IVDoc
     private final CField control;
     private DragCell parentCell;
@@ -200,7 +200,7 @@ public class VField implements IVDoc {
      * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getLayoutControl() {
+    public CField getLayoutControl() {
         return control;
     }
 
@@ -416,12 +416,12 @@ public class VField implements IVDoc {
     }
 
     /** @return {@link javax.swing.JLabel} */
-    public JLabel getLblHand() {
+    public FLabel getLblHand() {
         return this.lblHand;
     }
 
     /** @return {@link javax.swing.JLabel} */
-    public JLabel getLblLibrary() {
+    public FLabel getLblLibrary() {
         return this.lblLibrary;
     }
 
@@ -537,6 +537,39 @@ public class VField implements IVDoc {
     }
 
     //========== Custom class handling
+
+    public PhaseLabel getLabelFor(final PhaseType s) {
+        switch (s) {
+        case UPKEEP:
+            return this.getLblUpkeep();
+        case DRAW:
+            return this.getLblDraw();
+        case MAIN1:
+            return this.getLblMain1();
+        case COMBAT_BEGIN:
+            return this.getLblBeginCombat();
+        case COMBAT_DECLARE_ATTACKERS:
+        case COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY:
+            return this.getLblDeclareAttackers();
+        case COMBAT_DECLARE_BLOCKERS:
+        case COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY:
+            return this.getLblDeclareBlockers();
+        case COMBAT_DAMAGE:
+            return this.getLblCombatDamage();
+        case COMBAT_FIRST_STRIKE_DAMAGE:
+            return this.getLblFirstStrike();
+        case COMBAT_END:
+            return this.getLblEndCombat();
+        case MAIN2:
+            return this.getLblMain2();
+        case END_OF_TURN:
+            return this.getLblEndTurn();
+        case CLEANUP:
+            return this.getLblCleanup();
+        default:
+            return null;
+        }
+    }
 
     /**
      * Shows phase labels, handles repainting and on/off states. A PhaseLabel

@@ -19,12 +19,11 @@ package forge.card.spellability;
 
 import java.util.ArrayList;
 
-import forge.AllZone;
 import forge.Card;
 import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cost.CostPayment;
-import forge.game.zone.PlayerZone;
+import forge.game.zone.Zone;
 
 /**
  * <p>
@@ -66,7 +65,7 @@ public class SpellAbilityRequirements {
         this.isFree = bFree;
     }
 
-    private PlayerZone fromZone = null;
+    private Zone fromZone = null;
     private boolean bCasting = false;
 
     /**
@@ -111,15 +110,15 @@ public class SpellAbilityRequirements {
             if (!this.ability.getSourceCard().isCopiedSpell()) {
                 final Card c = this.ability.getSourceCard();
 
-                this.fromZone = AllZone.getZoneOf(c);
+                this.fromZone = Singletons.getModel().getGame().getZoneOf(c);
                 this.zonePosition = this.fromZone.getPosition(c);
-                this.ability.setSourceCard(Singletons.getModel().getGameAction().moveToStack(c));
+                this.ability.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(c));
             }
         }
 
         // freeze Stack. No abilities should go onto the stack while I'm filling
         // requirements.
-        AllZone.getStack().freezeStack();
+        Singletons.getModel().getGame().getStack().freezeStack();
 
         // Skip to paying if parent ability doesn't target and has no
         // subAbilities.
@@ -144,11 +143,11 @@ public class SpellAbilityRequirements {
             final Card c = this.ability.getSourceCard();
             if (this.bCasting && !c.isCopiedSpell()) { // and not a copy
                 // add back to where it came from
-                Singletons.getModel().getGameAction().moveTo(this.fromZone, c, this.zonePosition);
+                Singletons.getModel().getGame().getAction().moveTo(this.fromZone, c, this.zonePosition);
             }
 
             this.select.resetTargets();
-            AllZone.getStack().removeFromFrozenStack(this.ability);
+            Singletons.getModel().getGame().getStack().removeFromFrozenStack(this.ability);
             return;
         } else {
             this.needPayment();
@@ -193,12 +192,12 @@ public class SpellAbilityRequirements {
             }
 
             this.select.resetTargets();
-            Singletons.getModel().getGameAction().checkStateEffects();
+            Singletons.getModel().getGame().getAction().checkStateEffects();
         } else if (this.payment.isCanceled()) {
             final Card c = this.ability.getSourceCard();
             if (this.bCasting && !c.isCopiedSpell()) { // and not a copy
                 // add back to Previous Zone
-                Singletons.getModel().getGameAction().moveTo(this.fromZone, c, this.zonePosition);
+                Singletons.getModel().getGame().getAction().moveTo(this.fromZone, c, this.zonePosition);
             }
 
             if (this.select != null) {
@@ -207,7 +206,7 @@ public class SpellAbilityRequirements {
 
             this.ability.resetOnceResolved();
             this.payment.cancelPayment();
-            AllZone.getStack().clearFrozen();
+            Singletons.getModel().getGame().getStack().clearFrozen();
         }
     }
 
@@ -235,6 +234,6 @@ public class SpellAbilityRequirements {
         }
 
         this.ability.getActivatingPlayer().getManaPool().clearManaPaid(this.ability, false);
-        AllZone.getStack().addAndUnfreeze(this.ability);
+        Singletons.getModel().getGame().getStack().addAndUnfreeze(this.ability);
     }
 }

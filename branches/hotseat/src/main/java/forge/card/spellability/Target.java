@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardUtil;
 import forge.Singletons;
@@ -705,7 +704,7 @@ public class Target {
      * @return a boolean.
      */
     public final boolean hasCandidates(final SpellAbility sa, final boolean isTargeted) {
-        for (Player player : Singletons.getModel().getGameState().getPlayers()) {
+        for (Player player : Singletons.getModel().getGame().getPlayers()) {
             if (sa.canTarget(player)) {
                 return true;
             }
@@ -714,7 +713,7 @@ public class Target {
         if (this.tgtZone.contains(ZoneType.Stack)) {
             return true;
         } else {
-            for (final Card c : AllZoneUtil.getCardsIn(this.tgtZone)) {
+            for (final Card c : Singletons.getModel().getGame().getCardsIn(this.tgtZone)) {
                 if (c.isValid(this.validTgts, this.srcCard.getController(), this.srcCard)
                         && (!isTargeted || c.canBeTargetedBy(sa))
                         && !this.getTargetCards().contains(c)) {

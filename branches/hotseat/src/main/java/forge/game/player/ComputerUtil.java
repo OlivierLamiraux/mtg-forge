@@ -27,8 +27,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
@@ -138,11 +136,11 @@ public class ComputerUtil {
             return false;
         }
 
-        AllZone.getStack().freezeStack();
+        Singletons.getModel().getGame().getStack().freezeStack();
         final Card source = sa.getSourceCard();
 
         if (sa.isSpell() && !source.isCopiedSpell()) {
-            sa.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+            sa.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
         }
 
         final Cost cost = sa.getPayCosts();
@@ -150,12 +148,12 @@ public class ComputerUtil {
         if (cost == null) {
             ComputerUtil.payManaCost(ai, sa);
             sa.getBeforePayManaAI().execute();
-            AllZone.getStack().addAndUnfreeze(sa);
+            Singletons.getModel().getGame().getStack().addAndUnfreeze(sa);
             return true;
         } else {
             final CostPayment pay = new CostPayment(cost, sa);
             if (pay.payComputerCosts(ai)) {
-                AllZone.getStack().addAndUnfreeze(sa);
+                Singletons.getModel().getGame().getStack().addAndUnfreeze(sa);
                 if (sa.getSplicedCards() != null && !sa.getSplicedCards().isEmpty()) {
                     GuiChoose.oneOrNone("Computer reveals spliced cards:", sa.getSplicedCards());
                 }
@@ -292,11 +290,11 @@ public class ComputerUtil {
         // TODO - "Look" at Targeted SA and "calculate" the threshold
         // if (bestRestriction < targetedThreshold) return false;
 
-        AllZone.getStack().freezeStack();
+        Singletons.getModel().getGame().getStack().freezeStack();
         final Card source = bestSA.getSourceCard();
 
         if (bestSA.isSpell() && !source.isCopiedSpell()) {
-            bestSA.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+            bestSA.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
         }
 
         final Cost cost = bestSA.getPayCosts();
@@ -305,11 +303,11 @@ public class ComputerUtil {
             // Honestly Counterspells shouldn't use this branch
             ComputerUtil.payManaCost(ai, bestSA);
             bestSA.getBeforePayManaAI().execute();
-            AllZone.getStack().addAndUnfreeze(bestSA);
+            Singletons.getModel().getGame().getStack().addAndUnfreeze(bestSA);
         } else {
             final CostPayment pay = new CostPayment(cost, bestSA);
             if (pay.payComputerCosts(ai)) {
-                AllZone.getStack().addAndUnfreeze(bestSA);
+                Singletons.getModel().getGame().getStack().addAndUnfreeze(bestSA);
             }
         }
 
@@ -330,16 +328,16 @@ public class ComputerUtil {
         if (ComputerUtil.canPayCost(sa, ai)) {
             final Card source = sa.getSourceCard();
             if (sa.isSpell() && !source.isCopiedSpell()) {
-                sa.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+                sa.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
             }
             final Cost cost = sa.getPayCosts();
             if (cost == null) {
                 ComputerUtil.payManaCost(ai, sa);
-                AllZone.getStack().add(sa);
+                Singletons.getModel().getGame().getStack().add(sa);
             } else {
                 final CostPayment pay = new CostPayment(cost, sa);
                 if (pay.payComputerCosts(ai)) {
-                    AllZone.getStack().add(sa);
+                    Singletons.getModel().getGame().getStack().add(sa);
                 }
             }
         }
@@ -358,10 +356,10 @@ public class ComputerUtil {
 
         final Card source = sa.getSourceCard();
         if (sa.isSpell() && !source.isCopiedSpell()) {
-            sa.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+            sa.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
         }
 
-        AllZone.getStack().add(sa);
+        Singletons.getModel().getGame().getStack().add(sa);
     }
 
     /**
@@ -395,13 +393,13 @@ public class ComputerUtil {
 
         final Card source = newSA.getSourceCard();
         if (newSA.isSpell() && !source.isCopiedSpell()) {
-            newSA.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+            newSA.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
         }
 
         final CostPayment pay = new CostPayment(cost, newSA);
         pay.payComputerCosts(ai);
 
-        AllZone.getStack().add(newSA);
+        Singletons.getModel().getGame().getStack().add(newSA);
     }
 
     /**
@@ -418,7 +416,7 @@ public class ComputerUtil {
         if (ComputerUtil.canPayCost(sa, ai)) {
             final Card source = sa.getSourceCard();
             if (sa.isSpell() && !source.isCopiedSpell()) {
-                sa.setSourceCard(Singletons.getModel().getGameAction().moveToStack(source));
+                sa.setSourceCard(Singletons.getModel().getGame().getAction().moveToStack(source));
             }
 
             sa.setActivatingPlayer(ai);
@@ -434,7 +432,7 @@ public class ComputerUtil {
             AbilityFactory.resolve(sa, false);
 
             // destroys creatures if they have lethal damage, etc..
-            Singletons.getModel().getGameAction().checkStateEffects();
+            Singletons.getModel().getGame().getAction().checkStateEffects();
         }
     } // play()
 
@@ -877,7 +875,7 @@ public class ComputerUtil {
 
         ManaCost cost = new ManaCost(mana);
 
-        cost = Singletons.getModel().getGameAction().getSpellCostChange(sa, cost);
+        cost = Singletons.getModel().getGame().getAction().getSpellCostChange(sa, cost);
 
         final Card card = sa.getSourceCard();
         // Tack xMana Payments into mana here if X is a set value
@@ -1280,7 +1278,7 @@ public class ComputerUtil {
             public boolean apply(final Card c) {
                 if (c.getSVar("NeedsToPlay").length() > 0) {
                     final String needsToPlay = c.getSVar("NeedsToPlay");
-                    List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+                    List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
 
                     list = CardLists.getValidCards(list, needsToPlay.split(","), c.getController(), c);
                     if (list.isEmpty()) {
@@ -1360,7 +1358,7 @@ public class ComputerUtil {
             landList.remove(land);
             ai.playLand(land);
 
-            if (AllZone.getStack().size() != 0) {
+            if (Singletons.getModel().getGame().getStack().size() != 0) {
                 return true;
             }
         }
@@ -1613,8 +1611,8 @@ public class ComputerUtil {
             final Card target, final int amount) {
         List<Card> typeList = new ArrayList<Card>();
         if (zone.equals(ZoneType.Stack)) {
-            for (int i = 0; i < AllZone.getStack().size(); i++) {
-                typeList.add(AllZone.getStack().peekAbility(i).getSourceCard());
+            for (int i = 0; i < Singletons.getModel().getGame().getStack().size(); i++) {
+                typeList.add(Singletons.getModel().getGame().getStack().peekAbility(i).getSourceCard());
                 typeList = CardLists.getValidCards(typeList, type.split(","), activate.getController(), activate);
             }
         } else {
@@ -1783,7 +1781,7 @@ public class ComputerUtil {
     public static Combat getBlockers(final Player ai) {
         final List<Card> blockers = ai.getCardsIn(ZoneType.Battlefield);
 
-        return ComputerUtilBlock.getBlockers(ai, AllZone.getCombat(), blockers);
+        return ComputerUtilBlock.getBlockers(ai, Singletons.getModel().getGame().getCombat(), blockers);
     }
 
     /**
@@ -1914,11 +1912,11 @@ public class ComputerUtil {
                 }
             }
             if (destroy) {
-                if (!Singletons.getModel().getGameAction().destroy(c)) {
+                if (!Singletons.getModel().getGame().getAction().destroy(c)) {
                     continue;
                 }
             } else {
-                if (!Singletons.getModel().getGameAction().sacrifice(c, source)) {
+                if (!Singletons.getModel().getGame().getAction().sacrifice(c, source)) {
                     continue;
                 }
             }
@@ -1964,7 +1962,7 @@ public class ComputerUtil {
 
                     final Target tgt = sa.getTarget();
                     if (tgt != null) {
-                        if (CardLists.getValidCards(AllZoneUtil.getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
+                        if (CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
                             return true;
                         }
                     } else if (AbilityFactory.getDefinedCards(sa.getSourceCard(), mapParams.get("Defined"), sa)
@@ -2013,7 +2011,7 @@ public class ComputerUtil {
                             }
                             final Target tgt = sa.getTarget();
                             if (tgt != null) {
-                                if (CardLists.getValidCards(AllZoneUtil.getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, af.getHostCard()).contains(card)) {
+                                if (CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, af.getHostCard()).contains(card)) {
                                     prevented += AbilityFactory.calculateAmount(af.getHostCard(),
                                             mapParams.get("Amount"), sa);
                                 }
@@ -2113,13 +2111,13 @@ public class ComputerUtil {
             // Otherwise, if life is possibly in danger, then this is fine.
             Combat combat = new Combat();
             combat.initiatePossibleDefenders(ai);
-            List<Card> attackers = AllZoneUtil.getCreaturesInPlay(ai.getOpponent());
+            List<Card> attackers = ai.getOpponent().getCreaturesInPlay();
             for (Card att : attackers) {
                 if (CombatUtil.canAttackNextTurn(att)) {
                     combat.addAttacker(att);
                 }
             }
-            combat = ComputerUtilBlock.getBlockers(ai, combat, AllZoneUtil.getCreaturesInPlay(ai));
+            combat = ComputerUtilBlock.getBlockers(ai, combat, ai.getCreaturesInPlay());
             if (!CombatUtil.lifeInDanger(ai, combat)) {
                 // Otherwise, return false. Do not play now.
                 ret = false;
@@ -2153,8 +2151,8 @@ public class ComputerUtil {
             if (discardCMC > landsInPlay.size() + landsInHand.size() + 2) {
                 // not castable for some time.
                 return true;
-            } else if (!Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(ai)
-                    && Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.MAIN2)
+            } else if (!Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)
+                    && Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.MAIN2)
                     && discardCMC > landsInPlay.size() + landsInHand.size()
                     && discardCMC > landsInPlay.size() + 1
                     && nonLandsInHand.size() > 1) {

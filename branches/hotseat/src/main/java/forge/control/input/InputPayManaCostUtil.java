@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import forge.AllZone;
 import forge.Card;
 import forge.CardUtil;
 import forge.Constant;
@@ -31,7 +30,6 @@ import forge.card.abilityfactory.AbilityFactory;
 import forge.card.abilityfactory.AbilityFactoryMana;
 import forge.card.cost.CostMana;
 import forge.card.cost.CostPayment;
-import forge.card.cost.CostUtil;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaPool;
 import forge.card.spellability.AbilityMana;
@@ -204,7 +202,7 @@ public class InputPayManaCostUtil {
         // save off color needed for use by any mana and reflected mana
         chosen.setExpressChoice(colorsNeeded);
 
-        Singletons.getModel().getGameAction().playSpellAbility(chosen);
+        Singletons.getModel().getGame().getAction().playSpellAbility(chosen);
 
         manaCost = Singletons.getControl().getPlayer().getManaPool().payManaFromAbility(sa, manaCost, chosen);
 
@@ -408,7 +406,7 @@ public class InputPayManaCostUtil {
                     this.xPaid++;
                 }
     
-                if (AllZone.getInputControl().getInput() == this) {
+                if (Singletons.getModel().getMatch().getInput().getInput() == this) {
                     this.showMessage();
                 }
             }
@@ -440,7 +438,7 @@ public class InputPayManaCostUtil {
                     this.xPaid++;
                 }
     
-                if (AllZone.getInputControl().getInput() == this) {
+                if (Singletons.getModel().getMatch().getInput().getInput() == this) {
                     this.showMessage();
                 }
             }
@@ -469,7 +467,7 @@ public class InputPayManaCostUtil {
             final int manaToAdd) {
         final ManaCost manaCost;
     
-        if (Singletons.getModel().getGameState() != null ) {
+        if (Singletons.getModel().getGame() != null ) {
             final String mana = costMana.getManaToPay();
             manaCost = new ManaCost(mana);
             manaCost.increaseColorlessMana(manaToAdd);
@@ -503,7 +501,7 @@ public class InputPayManaCostUtil {
     
                 if (this.mana.isPaid()) {
                     this.done();
-                } else if (AllZone.getInputControl().getInput() == this) {
+                } else if (Singletons.getModel().getMatch().getInput().getInput() == this) {
                     this.showMessage();
                 }
             }
@@ -533,7 +531,8 @@ public class InputPayManaCostUtil {
                     payment.paidCost(costMana);
                 } else {
                     source.setXManaCostPaid(0);
-                    CostUtil.setInput(InputPayManaCostUtil.inputPayXMana(sa, payment, costMana, costMana.getXMana()));
+                    final Input inp = InputPayManaCostUtil.inputPayXMana(sa, payment, costMana, costMana.getXMana());
+                    Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
                 }
     
                 // If this is a spell with convoke, re-tap all creatures used
@@ -546,12 +545,12 @@ public class InputPayManaCostUtil {
                 // being tapped for convoke)
     
                 if (sa.getTappedForConvoke() != null) {
-                    AllZone.getTriggerHandler().suppressMode(TriggerType.Untaps);
+                    Singletons.getModel().getGame().getTriggerHandler().suppressMode(TriggerType.Untaps);
                     for (final Card c : sa.getTappedForConvoke()) {
                         c.untap();
                         c.tap();
                     }
-                    AllZone.getTriggerHandler().clearSuppression(TriggerType.Untaps);
+                    Singletons.getModel().getGame().getTriggerHandler().clearSuppression(TriggerType.Untaps);
                     sa.clearTappedForConvoke();
                 }
     
@@ -562,11 +561,11 @@ public class InputPayManaCostUtil {
                 // If we're paying for a spell with convoke, untap all creatures
                 // used for it.
                 if (sa.getTappedForConvoke() != null) {
-                    AllZone.getTriggerHandler().suppressMode(TriggerType.Untaps);
+                    Singletons.getModel().getGame().getTriggerHandler().suppressMode(TriggerType.Untaps);
                     for (final Card c : sa.getTappedForConvoke()) {
                         c.untap();
                     }
-                    AllZone.getTriggerHandler().clearSuppression(TriggerType.Untaps);
+                    Singletons.getModel().getGame().getTriggerHandler().clearSuppression(TriggerType.Untaps);
                     sa.clearTappedForConvoke();
                 }
     
@@ -605,7 +604,7 @@ public class InputPayManaCostUtil {
     
                 if (this.mana.isPaid()) {
                     this.done();
-                } else if (AllZone.getInputControl().getInput() == this) {
+                } else if (Singletons.getModel().getMatch().getInput().getInput() == this) {
                     this.showMessage();
                 }
             }

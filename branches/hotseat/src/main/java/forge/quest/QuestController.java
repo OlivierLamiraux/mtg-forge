@@ -70,8 +70,7 @@ public class QuestController {
     private QuestPetStorage pets = null;
 
     // This is used by shop. Had no idea where else to place this
-    private static transient IStorageView<PreconDeck> preconManager = new StorageView<PreconDeck>(new PreconReader(
-            ForgeProps.getFile(NewConstants.Quest.PRECONS)));
+    private static transient IStorageView<PreconDeck> preconManager = null;
 
     /** The Constant RANK_TITLES. */
     public static final String[] RANK_TITLES = new String[] { "Level 0 - Confused Wizard", "Level 1 - Mana Mage",
@@ -161,6 +160,9 @@ public class QuestController {
      * @return QuestPreconManager
      */
     public static IStorageView<PreconDeck> getPrecons() {
+        if ( null == preconManager )
+            preconManager = new StorageView<PreconDeck>(new PreconReader(ForgeProps.getFile(NewConstants.Quest.PRECONS)));
+        
         return QuestController.preconManager;
     }
 
@@ -176,9 +178,6 @@ public class QuestController {
         this.myCards = this.model == null ? null : new QuestUtilCards(this);
         this.questFormat = this.model == null ? null : this.model.getFormat();
         this.currentEvent = null;
-
-        // if (questFormat == null) { System.out.println("No quest."); }
-        // else { System.out.println("Quest = " + questFormat.getName()); }
 
         this.getChallengesManager().randomizeOpponents();
         this.getDuelsManager().randomizeOpponents();
@@ -211,26 +210,31 @@ public class QuestController {
      * @param startPool the start type
      * @param startFormat the format of starting pool
      * @param preconName the precon name
+     * @param userFormat user-defined format, if any
      * @param persist
      *      enforce the format for the whole quest
      */
     public void newGame(final String name, final int diff, final QuestMode mode, final QuestStartPool startPool,
-            final String startFormat, final String preconName, final boolean persist) {
+            final String startFormat, final String preconName, final GameFormatQuest userFormat, final boolean persist) {
 
         if (persist && startPool == QuestStartPool.Rotating) {
-            this.load(new QuestData(name, diff, mode, startFormat));
+            this.load(new QuestData(name, diff, mode, startFormat, userFormat));
         } else {
-            this.load(new QuestData(name, diff, mode, null));
+            this.load(new QuestData(name, diff, mode, null, null));
         }
 
         final Predicate<CardPrinted> filter;
         switch (startPool) {
         case Precon:
-            this.myCards.addPreconDeck(QuestController.preconManager.get(preconName));
+            this.myCards.addPreconDeck(QuestController.getPrecons().get(preconName));
             return;
 
         case Rotating:
-            filter = Singletons.getModel().getFormats().getFormat(startFormat).getFilterPrinted();
+            if (userFormat != null) {
+                filter = userFormat.getFilterPrinted();
+            } else {
+                filter = Singletons.getModel().getFormats().getFormat(startFormat).getFilterPrinted();
+            }
             break;
 
         default: // Unrestricted

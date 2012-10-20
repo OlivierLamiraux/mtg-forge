@@ -25,7 +25,6 @@ import forge.game.player.Player;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
-import forge.gui.framework.ICDoc;
 import forge.gui.framework.IVDoc;
 import forge.view.arcane.HandArea;
 
@@ -34,15 +33,13 @@ import forge.view.arcane.HandArea;
  * 
  * <br><br><i>(V at beginning of class name denotes a view class.)</i>
  */
-public class VHand implements IVDoc {
+public class VHand implements IVDoc<CHand> {
     // Fields used with interface IVDoc
     private final CHand control;
     private DragCell parentCell;
     private final EDocID docID;
     private final DragTab tab = new DragTab("Your Hand");
 
-    // Other fields
-    private Player player = null;
 
     // Top-level containers
     private final JScrollPane scroller = new JScrollPane();
@@ -66,8 +63,6 @@ public class VHand implements IVDoc {
             tab.setText(player0.getName() + " Hand");
         }
 
-        player = player0;
-
         scroller.setBorder(null);
         scroller.setViewportView(VHand.this.hand);
         scroller.setOpaque(false);
@@ -75,7 +70,7 @@ public class VHand implements IVDoc {
 
         hand.setOpaque(false);
 
-        control = new CHand(player, this);
+        control = new CHand(player0, this);
     }
 
     //========= Overridden methods
@@ -127,7 +122,7 @@ public class VHand implements IVDoc {
      * @see forge.gui.framework.IVDoc#getLayoutControl()
      */
     @Override
-    public ICDoc getLayoutControl() {
+    public CHand getLayoutControl() {
         return control;
     }
 
@@ -141,20 +136,4 @@ public class VHand implements IVDoc {
         return VHand.this.hand;
     }
 
-    /**
-     * Gets the player currently associated with this hand.
-     * @return {@link forge.game.player.Player}
-     */
-    public Player getPlayer() {
-        return this.player;
-    }
-
-    /**
-     * Sets the player currently associated with this field.
-     * @param player0 &emsp; {@link forge.game.player.Player}
-     */
-    public void setPlayer(final Player player0) {
-        this.player = player0;
-        if (player0 != null) { tab.setText(player0.getName() + " Field"); }
-    }
 }

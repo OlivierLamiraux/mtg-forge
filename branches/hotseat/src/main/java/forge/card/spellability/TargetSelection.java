@@ -23,9 +23,8 @@ import java.util.List;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
+import forge.Singletons;
 
 import forge.CardLists;
 import forge.card.abilityfactory.AbilityFactory;
@@ -269,8 +268,7 @@ public class TargetSelection {
             return;
         }
 
-        List<Card> choices = CardLists.getTargetableCards(CardLists.getValidCards(AllZoneUtil
-                .getCardsIn(zone), this.target.getValidTgts(), this.ability.getActivatingPlayer(), this.ability.getSourceCard()), this.ability);
+        List<Card> choices = CardLists.getTargetableCards(CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(zone), this.target.getValidTgts(), this.ability.getActivatingPlayer(), this.ability.getSourceCard()), this.ability);
 
         ArrayList<Object> objects = new ArrayList<Object>();
         if (tgt.isUniqueTargets()) {
@@ -320,7 +318,7 @@ public class TargetSelection {
         }
 
         if (zone.contains(ZoneType.Battlefield) && zone.size() == 1) {
-            AllZone.getInputControl().setInput(this.inputTargetSpecific(choices, true, mandatory, objects));
+            Singletons.getModel().getMatch().getInput().setInput(this.inputTargetSpecific(choices, true, mandatory, objects));
         } else {
             this.chooseCardFromList(choices, true, mandatory);
         }
@@ -461,15 +459,15 @@ public class TargetSelection {
         final List<Card> crdsLibrary = new ArrayList<Card>();
         final List<Card> crdsStack = new ArrayList<Card>();
         for (final Card inZone : choicesZoneUnfiltered) {
-            if (AllZoneUtil.getCardsIn(ZoneType.Battlefield).contains(inZone)) {
+            if (Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield).contains(inZone)) {
                 crdsBattle.add(inZone);
-            } else if (AllZoneUtil.getCardsIn(ZoneType.Exile).contains(inZone)) {
+            } else if (Singletons.getModel().getGame().getCardsIn(ZoneType.Exile).contains(inZone)) {
                 crdsExile.add(inZone);
-            } else if (AllZoneUtil.getCardsIn(ZoneType.Graveyard).contains(inZone)) {
+            } else if (Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard).contains(inZone)) {
                 crdsGrave.add(inZone);
-            } else if (AllZoneUtil.getCardsIn(ZoneType.Library).contains(inZone)) {
+            } else if (Singletons.getModel().getGame().getCardsIn(ZoneType.Library).contains(inZone)) {
                 crdsLibrary.add(inZone);
-            } else if (AllZoneUtil.getCardsIn(ZoneType.Stack).contains(inZone)) {
+            } else if (Singletons.getModel().getGame().getCardsIn(ZoneType.Stack).contains(inZone)) {
                 crdsStack.add(inZone);
             }
         }
@@ -594,8 +592,8 @@ public class TargetSelection {
     public static ArrayList<SpellAbility> getTargetableOnStack(final SpellAbility sa, final Target tgt) {
         final ArrayList<SpellAbility> choosables = new ArrayList<SpellAbility>();
 
-        for (int i = 0; i < AllZone.getStack().size(); i++) {
-            choosables.add(AllZone.getStack().peekAbility(i));
+        for (int i = 0; i < Singletons.getModel().getGame().getStack().size(); i++) {
+            choosables.add(Singletons.getModel().getGame().getStack().peekAbility(i));
         }
 
         for (int i = 0; i < choosables.size(); i++) {

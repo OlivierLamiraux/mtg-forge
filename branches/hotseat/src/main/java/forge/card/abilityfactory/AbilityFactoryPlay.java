@@ -25,8 +25,6 @@ import java.util.Random;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardCharacteristicName;
 
@@ -293,7 +291,7 @@ public final class AbilityFactoryPlay {
         }
 
         // don't use this as a response
-        if (AllZone.getStack().size() != 0) {
+        if (Singletons.getModel().getGame().getStack().size() != 0) {
             return false;
         }
 
@@ -304,7 +302,7 @@ public final class AbilityFactoryPlay {
         final Target tgt = sa.getTarget();
         if (tgt != null) {
             ZoneType zone = tgt.getZone().get(0);
-            cards = AllZoneUtil.getCardsIn(zone);
+            cards = Singletons.getModel().getGame().getCardsIn(zone);
             cards = CardLists.getValidCards(cards, tgt.getValidTgts(), ai, source);
             if (cards.isEmpty()) {
                 return false;
@@ -376,7 +374,7 @@ public final class AbilityFactoryPlay {
             if (params.containsKey("ValidZone")) {
                 zone = ZoneType.smartValueOf(params.get("ValidZone"));
             }
-            tgtCards = AllZoneUtil.getCardsIn(zone);
+            tgtCards = Singletons.getModel().getGame().getCardsIn(zone);
             tgtCards = AbilityFactory.filterListByType(tgtCards, params.get("Valid"), sa);
         } else if (params.containsKey("Defined")) {
             tgtCards = new ArrayList<Card>(AbilityFactory.getDefinedCards(sa.getSourceCard(), params.get("Defined"), sa));
@@ -446,7 +444,7 @@ public final class AbilityFactoryPlay {
                 source.clearRemembered();
             }
             if (params.containsKey("CopyCard")) {
-                tgtCard = AllZone.getCardFactory().getCard(CardDb.instance().getCard(tgtCard), sa.getActivatingPlayer());
+                tgtCard = Singletons.getModel().getCardFactory().getCard(CardDb.instance().getCard(tgtCard), sa.getActivatingPlayer());
                 // when copying something stolen:
                 tgtCard.addController(sa.getActivatingPlayer());
 
@@ -513,7 +511,7 @@ public final class AbilityFactoryPlay {
                     newSA.setPayCosts(cost);
                     newSA.setManaCost("");
                     newSA.setDescription(newSA.getDescription() + " (without paying its mana cost)");
-                    Singletons.getModel().getGameAction().playSpellAbility(newSA);
+                    Singletons.getModel().getGame().getAction().playSpellAbility(newSA);
                     if (remember) {
                         source.addRemembered(tgtSA.getSourceCard());
                     }
@@ -530,7 +528,7 @@ public final class AbilityFactoryPlay {
                 }
             } else {
                 if (controller.isHuman()) {
-                    Singletons.getModel().getGameAction().playSpellAbility(tgtSA);
+                    Singletons.getModel().getGame().getAction().playSpellAbility(tgtSA);
                     if (remember) {
                         source.addRemembered(tgtSA.getSourceCard());
                     }

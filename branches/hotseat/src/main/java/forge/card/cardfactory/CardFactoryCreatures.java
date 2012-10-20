@@ -26,8 +26,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardCharacteristicName;
 
@@ -103,7 +101,7 @@ public class CardFactoryCreatures {
 
                 if (c.sumAllCounters() == 0) {
                     return;
-                } else if (AllZoneUtil.isCardInPlay(c) && c.canBeTargetedBy(this)) {
+                } else if (c.isInPlay() && c.canBeTargetedBy(this)) {
                     // zerker clean up:
                     for (final Counters c1 : Counters.values()) {
                         if (c.getCounters(c1) > 0) {
@@ -199,7 +197,7 @@ public class CardFactoryCreatures {
             @Override
             public boolean canPlayAI() {
                 return Iterables.any(getActivatingPlayer().getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.ARTIFACTS)
-                     && AllZone.getZoneOf(this.getSourceCard()).is(ZoneType.Hand);
+                     && Singletons.getModel().getGame().getZoneOf(this.getSourceCard()).is(ZoneType.Hand);
             }
         });
         card.addComesIntoPlayCommand(intoPlay);
@@ -244,7 +242,7 @@ public class CardFactoryCreatures {
                 card.setChosenColor(colors);
                 final String s = CardUtil.getShortColor(color[0]);
 
-                timeStamp[0] = AllZone.getColorChanger().addColorChanges(s, card, true, true);
+                timeStamp[0] = Singletons.getModel().getGame().getColorChanger().addColorChanges(s, card, true, true);
             }
         }; // Command
 
@@ -254,7 +252,7 @@ public class CardFactoryCreatures {
             @Override
             public void execute() {
                 final String s = CardUtil.getShortColor(color[0]);
-                AllZone.getColorChanger().removeColorChanges(s, card, true, timeStamp[0]);
+                Singletons.getModel().getGame().getColorChanger().removeColorChanges(s, card, true, timeStamp[0]);
             }
         };
 
@@ -276,8 +274,8 @@ public class CardFactoryCreatures {
 
                     @Override
                     public void execute() {
-                        if (AllZoneUtil.isCardInPlay(card)) {
-                            Singletons.getModel().getGameAction().sacrifice(card, null);
+                        if (card.isInPlay()) {
+                            Singletons.getModel().getGame().getAction().sacrifice(card, null);
                         }
                     }
                 });
@@ -294,7 +292,7 @@ public class CardFactoryCreatures {
 
             @Override
             public void execute() {
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         });
@@ -304,10 +302,10 @@ public class CardFactoryCreatures {
 
             @Override
             public void execute() {
-                final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Stangg Twin");
+                final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Stangg Twin"));
 
                 if (list.size() == 1) {
-                    Singletons.getModel().getGameAction().exile(list.get(0));
+                    Singletons.getModel().getGame().getAction().exile(list.get(0));
                 }
             }
         });
@@ -330,7 +328,7 @@ public class CardFactoryCreatures {
 
             @Override
             public void resolve() {
-                List<Card> allTokens = AllZoneUtil.getCreaturesInPlay(card.getController());
+                List<Card> allTokens = card.getController().getCreaturesInPlay();
                 allTokens = CardLists.filter(allTokens, Presets.TOKEN);
 
                 CardFactoryUtil.copyTokens(allTokens);
@@ -338,7 +336,7 @@ public class CardFactoryCreatures {
 
             @Override
             public boolean canPlayAI() {
-                List<Card> allTokens = AllZoneUtil.getCreaturesInPlay(getActivatingPlayer());
+                List<Card> allTokens = getActivatingPlayer().getCreaturesInPlay();
                 allTokens = CardLists.filter(allTokens, Presets.TOKEN);
 
                 return allTokens.size() >= 2;
@@ -451,7 +449,7 @@ public class CardFactoryCreatures {
                     return;
                 }
 
-                if (!(target.canBeTargetedBy(this) && AllZoneUtil.isCardInPlay(target))) {
+                if (!(target.canBeTargetedBy(this) && target.isInPlay())) {
                     return;
                 }
 
@@ -463,14 +461,14 @@ public class CardFactoryCreatures {
                 if (target.getController().isHuman()) { // Human choose
                                                         // spread damage
                     for (int x = 0; x < target.getNetAttack(); x++) {
-                        AllZone.getInputControl().setInput(
+                        Singletons.getModel().getMatch().getInput().setInput(
                                 CardFactoryUtil.masterOfTheWildHuntInputTargetCreature(this, wolves, new Command() {
                                     private static final long serialVersionUID = -328305150127775L;
 
                                     @Override
                                     public void execute() {
                                         getTargetCard().addDamage(1, target);
-                                        Singletons.getModel().getGameAction().checkStateEffects();
+                                        Singletons.getModel().getGame().getAction().checkStateEffects();
                                     }
                                 }));
                     }
@@ -564,7 +562,7 @@ public class CardFactoryCreatures {
             @Override
             public void resolve() {
                 int xCounters = card.getXManaCostPaid();
-                final Card c = Singletons.getModel().getGameAction().moveToPlay(this.getSourceCard());
+                final Card c = Singletons.getModel().getGame().getAction().moveToPlay(this.getSourceCard());
 
                 if (xCounters >= 5) {
                     xCounters = 2 * xCounters;
@@ -611,7 +609,7 @@ public class CardFactoryCreatures {
                 sb.append("Kinsbaile Borderguard enters the battlefield with a ");
                 sb.append("+1/+1 counter on it for each other Kithkin you control.");
                 ability.setStackDescription(sb.toString());
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         };
@@ -640,7 +638,7 @@ public class CardFactoryCreatures {
                 sb.append("from play, put a 1/1 white Kithkin Soldier creature ");
                 sb.append("token onto the battlefield for each counter on it.");
                 ability2.setStackDescription(sb.toString());
-                AllZone.getStack().addSimultaneousStackEntry(ability2);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
 
             }
         };
@@ -668,7 +666,7 @@ public class CardFactoryCreatures {
 
             @Override
             public void execute() {
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         };
@@ -775,7 +773,7 @@ public class CardFactoryCreatures {
                         for (int m = 0; m < selection.size(); m++) {
                             intermSumPower += selection.get(m).getBaseAttack();
                             intermSumToughness += selection.get(m).getBaseDefense();
-                            Singletons.getModel().getGameAction().exile(selection.get(m));
+                            Singletons.getModel().getGame().getAction().exile(selection.get(m));
                         }
                     }
 
@@ -787,7 +785,7 @@ public class CardFactoryCreatures {
                         if ((c.getNetAttack() <= 2) && (c.getNetDefense() <= 3)) {
                             intermSumPower += c.getBaseAttack();
                             intermSumToughness += c.getBaseDefense();
-                            Singletons.getModel().getGameAction().exile(c);
+                            Singletons.getModel().getGame().getAction().exile(c);
                             count++;
                         }
                         // is this needed?
@@ -869,7 +867,7 @@ public class CardFactoryCreatures {
 
             @Override
             public void execute() {
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         };
@@ -888,9 +886,9 @@ public class CardFactoryCreatures {
             public void resolve() {
                 final Player p = this.getTargetPlayer();
                 if (p.canBeTargetedBy(this)) {
-                    p.setSkipNextUntap(true);
+                    p.addKeyword("Skip your next untap step.");
                     for (final Card c : targetPerms) {
-                        if (AllZoneUtil.isCardInPlay(c) && c.canBeTargetedBy(this)) {
+                        if (c.isInPlay() && c.canBeTargetedBy(this)) {
                             c.tap();
                         }
                     }
@@ -931,7 +929,7 @@ public class CardFactoryCreatures {
                 //adding ability to stack first cause infinite loop (with observers notification)
                 //so it has to be stop first and add ability later
                 this.stop();
-                AllZone.getStack().add(ability);
+                Singletons.getModel().getGame().getStack().add(ability);
             }
 
             @Override
@@ -978,14 +976,14 @@ public class CardFactoryCreatures {
                 final Player player = card.getController();
                 
                 if (player.isHuman()) {
-                    AllZone.getInputControl().setInput(playerInput);
+                    Singletons.getModel().getMatch().getInput().setInput(playerInput);
                 } else  {
-                    List<Card> list = AllZoneUtil.getCreaturesInPlay(player.getOpponent());
+                    List<Card> list = player.getOpponent().getCreaturesInPlay();
                     list = CardLists.getTargetableCards(list, ability);
                     if ( !list.isEmpty() )
                     {
                         ability.setTargetCard(CardFactoryUtil.getBestCreatureAI(list));
-                        AllZone.getStack().addSimultaneousStackEntry(ability);
+                        Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
                     }
                 }
             } // execute()
@@ -1022,7 +1020,7 @@ public class CardFactoryCreatures {
                         @Override
                         public void selectButtonCancel() {
                             toSac.clear();
-                            Singletons.getModel().getGameAction().sacrifice(card, null);
+                            Singletons.getModel().getGame().getAction().sacrifice(card, null);
                             this.stop();
                         }
 
@@ -1037,16 +1035,16 @@ public class CardFactoryCreatures {
                         private void done() {
                             if (getTotalPower() >= 12) {
                                 for (final Card sac : toSac) {
-                                    Singletons.getModel().getGameAction().sacrifice(sac, null);
+                                    Singletons.getModel().getGame().getAction().sacrifice(sac, null);
                                 }
                             } else {
-                                Singletons.getModel().getGameAction().sacrifice(card, null);
+                                Singletons.getModel().getGame().getAction().sacrifice(card, null);
                             }
                             toSac.clear();
                             this.stop();
                         }
                     }; // Input
-                    AllZone.getInputControl().setInput(target);
+                    Singletons.getModel().getMatch().getInput().setInput(target);
                 }
             } // end resolve
 

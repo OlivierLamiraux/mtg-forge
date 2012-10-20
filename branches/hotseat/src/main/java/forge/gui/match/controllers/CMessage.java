@@ -22,8 +22,8 @@ import java.awt.event.ActionListener;
 
 import forge.Command;
 import forge.Singletons;
-import forge.game.GameState;
 import forge.game.MatchController;
+import forge.game.phase.PhaseHandler;
 import forge.gui.GuiInput;
 import forge.gui.framework.ICDoc;
 import forge.gui.framework.SDisplayUtil;
@@ -52,19 +52,16 @@ public enum CMessage implements ICDoc {
         public void actionPerformed(final ActionEvent evt) {
             inputControl.selectButtonOK();
 
-            if (Singletons.getModel().getGameState().getPhaseHandler().isNeedToNextPhase()) {
+            final PhaseHandler phaseHandler = Singletons.getModel().getGame().getPhaseHandler(); 
+            if (!phaseHandler.mayPlayerHavePriority()) {
                 // moves to next turn
-                Singletons.getModel().getGameState().getPhaseHandler().setNeedToNextPhase(false);
-                Singletons.getModel().getGameState().getPhaseHandler().nextPhase();
+                phaseHandler.setPlayerMayHavePriority(true);
+                phaseHandler.nextPhase();
             }
             VMessage.SINGLETON_INSTANCE.getBtnOK().requestFocusInWindow();
         }
     };
 
-    public void subscribe(GameState game) {
-        inputControl.subscribe(game);
-    }
-    
     @Override
     public void initialize() {
         VMessage.SINGLETON_INSTANCE.getBtnCancel().removeActionListener(actCancel);
@@ -96,7 +93,7 @@ public enum CMessage implements ICDoc {
                 match.getGameType().toString() + ": Game #"
                 + (match.getPlayedGames().size() + 1)
                 + " of " + match.getGamesPerMatch()
-                + ", turn " + match.getCurrentGame().getTurnNumber());
+                + ", turn " + match.getCurrentGame().getPhaseHandler().getTurn());
     }
 
     /** Flashes animation on input panel if play is currently waiting on input. */

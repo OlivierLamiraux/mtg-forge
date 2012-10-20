@@ -24,11 +24,10 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
+import forge.CardPredicates;
 import forge.CardPredicates.Presets;
 import forge.Command;
 import forge.GameActionUtil;
@@ -85,7 +84,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 c.setTapped(true);
             } else {
                 // ETBTapped static abilities
-                final List<Card> allp = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+                final List<Card> allp = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
                 for (final Card ca : allp) {
                     final ArrayList<StaticAbility> staticAbilities = ca.getStaticAbilities();
                     for (final StaticAbility stAb : staticAbilities) {
@@ -108,7 +107,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 final String[] k = keyword.split(":");
                 addMax = Integer.valueOf(k[2]);
                 if (k[1].equals("Each")) {
-                    for( Player p : Singletons.getModel().getGameState().getPlayers() ){
+                    for( Player p : Singletons.getModel().getGame().getPlayers() ){
                         p.addMaxLandsToPlay(addMax);
                     }
                 } else {
@@ -124,7 +123,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
             if (c.isLand()) {
 
                 // Tectonic Instability
-                final List<Card> tis = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Tectonic Instability");
+                final List<Card> tis = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tectonic Instability"));
                 final Card tisLand = c;
                 for (final Card ti : tis) {
                     final Card source = ti;
@@ -142,7 +141,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                     sb.append(source).append(" - tap all lands ");
                     sb.append(tisLand.getController()).append(" controls.");
                     ability.setStackDescription(sb.toString());
-                    AllZone.getStack().addSimultaneousStackEntry(ability);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
                 }
 
@@ -153,7 +152,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                     final SpellAbility ability = new Ability(source, "") {
                         @Override
                         public void resolve() {
-                            final List<Card> lands = AllZoneUtil.getPlayerLandsInPlay(lesLand.getOwner());
+                            final List<Card> lands = lesLand.getOwner().getLandsInPlay();
                             lesLand.getOwner().sacrificePermanent(source.getName() + " - Select a land to sacrifice",
                                     lands);
                         }
@@ -162,21 +161,21 @@ public class PlayerZoneBattlefield extends PlayerZone {
                     sb.append(source).append(" - ");
                     sb.append(tisLand.getController()).append(" sacrifices a land.");
                     ability.setStackDescription(sb.toString());
-                    final List<Card> pLands = AllZoneUtil.getPlayerLandsInPlay(lesLand.getOwner());
-                    final List<Card> oLands = AllZoneUtil.getPlayerLandsInPlay(lesLand.getOwner().getOpponent());
+                    final List<Card> pLands = lesLand.getOwner().getLandsInPlay();
+                    final List<Card> oLands = lesLand.getOwner().getOpponent().getLandsInPlay();
                     // (pLands - 1) because this land is in play, and the
                     // ability is before it is in play
                     if (oLands.size() <= (pLands.size() - 1)) {
-                        AllZone.getStack().addSimultaneousStackEntry(ability);
+                        Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
                     }
                 }
             } // isLand()
         }
 
-        if (AllZone.getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
-            final String[] effects = AllZone.getStaticEffects().getCardToEffectsList().get(c.getName());
+        if (Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
+            final String[] effects = Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().get(c.getName());
             for (final String effect : effects) {
-                AllZone.getStaticEffects().addStateBasedEffect(effect);
+                Singletons.getModel().getGame().getStaticEffects().addStateBasedEffect(effect);
             }
         }
     } // end add()
@@ -221,7 +220,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 final String[] k = keyword.split(":");
                 addMax = -Integer.valueOf(k[2]);
                 if (k[1].equals("Each")) {
-                    for(Player p: Singletons.getModel().getGameState().getPlayers())
+                    for(Player p: Singletons.getModel().getGame().getPlayers())
                         p.addMaxLandsToPlay(addMax);
                 } else {
                     c.getController().addMaxLandsToPlay(addMax);
@@ -233,12 +232,12 @@ public class PlayerZoneBattlefield extends PlayerZone {
             c.leavesPlay();
         }
 
-        if (AllZone.getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
-            final String[] effects = AllZone.getStaticEffects().getCardToEffectsList().get(c.getName());
+        if (Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
+            final String[] effects = Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().get(c.getName());
             String tempEffect = "";
             for (final String effect : effects) {
                 tempEffect = effect;
-                AllZone.getStaticEffects().removeStateBasedEffect(effect);
+                Singletons.getModel().getGame().getStaticEffects().removeStateBasedEffect(effect);
                 // this is to make sure cards reset correctly
                 final Command comm = GameActionUtil.getCommands().get(tempEffect);
                 comm.execute();

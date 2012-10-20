@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -35,6 +34,7 @@ import forge.card.spellability.Ability;
 import forge.card.spellability.SpellAbility;
 import forge.game.phase.PhaseType;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * <p>
@@ -232,19 +232,19 @@ public abstract class Trigger extends TriggerReplacementBase {
      */
     public final boolean phasesCheck() {
         if (null != validPhases) {
-            if (!validPhases.contains(Singletons.getModel().getGameState().getPhaseHandler().getPhase())) {
+            if (!validPhases.contains(Singletons.getModel().getGame().getPhaseHandler().getPhase())) {
                 return false;
             }
         }
 
         if (this.getMapParams().containsKey("PlayerTurn")) {
-            if (!Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(this.getHostCard().getController())) {
+            if (!Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(this.getHostCard().getController())) {
                 return false;
             }
         }
 
         if (this.getMapParams().containsKey("OpponentTurn")) {
-            if (Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(this.getHostCard().getController())) {
+            if (Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(this.getHostCard().getController())) {
                 return false;
             }
         }
@@ -325,7 +325,7 @@ public abstract class Trigger extends TriggerReplacementBase {
                 right = CardFactoryUtil.xCount(this.getHostCard(), this.getHostCard().getSVar(rightString));
             }
 
-            if (!AllZoneUtil.compare(life, lifeCompare, right)) {
+            if (!Expressions.compare(life, lifeCompare, right)) {
                 return false;
             }
 
@@ -364,7 +364,7 @@ public abstract class Trigger extends TriggerReplacementBase {
             }
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, presentCompare, right)) {
+            if (!Expressions.compare(left, presentCompare, right)) {
                 return false;
             }
 
@@ -403,14 +403,14 @@ public abstract class Trigger extends TriggerReplacementBase {
             }
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, presentCompare, right)) {
+            if (!Expressions.compare(left, presentCompare, right)) {
                 return false;
             }
 
         }
 
         if (this.getMapParams().containsKey("CheckSVar")) {
-            final int sVar = AbilityFactory.calculateAmount(AllZoneUtil.getCardState(this.getHostCard()), this
+            final int sVar = AbilityFactory.calculateAmount(Singletons.getModel().getGame().getCardState(this.getHostCard()), this
                     .getMapParams().get("CheckSVar"), null);
             String comparator = "GE1";
             if (this.getMapParams().containsKey("SVarCompare")) {
@@ -418,9 +418,9 @@ public abstract class Trigger extends TriggerReplacementBase {
             }
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
-            final int operandValue = AbilityFactory.calculateAmount(AllZoneUtil.getCardState(this.getHostCard()),
+            final int operandValue = AbilityFactory.calculateAmount(Singletons.getModel().getGame().getCardState(this.getHostCard()),
                     svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }

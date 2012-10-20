@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.CardCharacteristicName;
 
@@ -262,7 +260,7 @@ public final class AbilityFactoryCopy {
         // TODO - I'm sure someone can do this AI better
 
         final HashMap<String, String> params = af.getMapParams();
-        if (params.containsKey("AtEOT") && !Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.MAIN1)) {
+        if (params.containsKey("AtEOT") && !Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.MAIN1)) {
             return false;
         } else {
             double chance = .4; // 40 percent chance with instant speed stuff
@@ -307,7 +305,7 @@ public final class AbilityFactoryCopy {
         final Target abTgt = sa.getTarget();
 
         if (abTgt != null) {
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             list = CardLists.getValidCards(list, abTgt.getValidTgts(), source.getController(), source);
             list = CardLists.getTargetableCards(list, sa);
             abTgt.resetTargets();
@@ -402,7 +400,7 @@ public final class AbilityFactoryCopy {
                 }
 
                 // start copied Kiki code
-                int multiplier = AllZoneUtil.getTokenDoublersMagnitude(hostCard.getController());
+                int multiplier = hostCard.getController().getTokenDoublersMagnitude();
                 multiplier *= numCopies;
                 final Card[] crds = new Card[multiplier];
 
@@ -412,7 +410,7 @@ public final class AbilityFactoryCopy {
                     if (!c.isToken() || c.isCopiedToken()) {
                         // copy creature and put it onto the battlefield
 
-                        copy = AllZone.getCardFactory().getCard(CardDb.instance().getCard(c), sa.getActivatingPlayer());
+                        copy = Singletons.getModel().getCardFactory().getCard(CardDb.instance().getCard(c), sa.getActivatingPlayer());
 
                         // when copying something stolen:
                         copy.addController(sa.getActivatingPlayer());
@@ -464,7 +462,7 @@ public final class AbilityFactoryCopy {
                     if (c.isFaceDown()) {
                         c.setState(CardCharacteristicName.FaceDown);
                     }
-                    copy = Singletons.getModel().getGameAction().moveToPlay(copy);
+                    copy = Singletons.getModel().getGame().getAction().moveToPlay(copy);
 
                     copy.setCloneOrigin(hostCard);
                     sa.getSourceCard().addClone(copy);
@@ -487,13 +485,13 @@ public final class AbilityFactoryCopy {
                         public void resolve() {
                             // technically your opponent could steal the token
                             // and the token shouldn't be sacrificed
-                            if (AllZoneUtil.isCardInPlay(target[index])) {
+                            if (target[index].isInPlay()) {
                                 if (params.get("AtEOT").equals("Sacrifice")) {
                                     // maybe do a setSacrificeAtEOT, but
                                     // probably not.
-                                    Singletons.getModel().getGameAction().sacrifice(target[index], sa);
+                                    Singletons.getModel().getGame().getAction().sacrifice(target[index], sa);
                                 } else if (params.get("AtEOT").equals("Exile")) {
-                                    Singletons.getModel().getGameAction().exile(target[index]);
+                                    Singletons.getModel().getGame().getAction().exile(target[index]);
                                 }
 
                             }
@@ -506,11 +504,11 @@ public final class AbilityFactoryCopy {
                         @Override
                         public void execute() {
                             sac.setStackDescription(params.get("AtEOT") + " " + target[index] + ".");
-                            AllZone.getStack().addSimultaneousStackEntry(sac);
+                            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(sac);
                         }
                     }; // Command
                     if (params.containsKey("AtEOT")) {
-                        AllZone.getEndOfTurn().addAt(atEOT);
+                        Singletons.getModel().getGame().getEndOfTurn().addAt(atEOT);
                     }
                     // end copied Kiki code
 
@@ -829,7 +827,7 @@ public final class AbilityFactoryCopy {
             for (final SpellAbility chosenSAcopy : chosenSAs) {
                 chosenSAcopy.setActivatingPlayer(controller);
                 for (int i = 0; i < amount; i++) {
-                    AllZone.getCardFactory().copySpellontoStack(card, chosenSAcopy.getSourceCard(), chosenSAcopy, true);
+                    Singletons.getModel().getCardFactory().copySpellontoStack(card, chosenSAcopy.getSourceCard(), chosenSAcopy, true);
                 }
             }
         }
@@ -845,7 +843,7 @@ public final class AbilityFactoryCopy {
 
             chosenSA.setActivatingPlayer(controller);
             for (int i = 0; i < amount; i++) {
-                AllZone.getCardFactory().copySpellontoStack(card, chosenSA.getSourceCard(), chosenSA, true);
+                Singletons.getModel().getCardFactory().copySpellontoStack(card, chosenSA.getSourceCard(), chosenSA, true);
             }
         }
     } // end resolve

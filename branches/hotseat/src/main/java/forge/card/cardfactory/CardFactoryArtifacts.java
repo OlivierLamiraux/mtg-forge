@@ -5,8 +5,6 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.Command;
@@ -135,7 +133,7 @@ class CardFactoryArtifacts {
                     sb.append("choose white Citizen, blue Camarid, black Thrull, red Goblin, or green Saproling.");
                     ability.setStackDescription(sb.toString());
 
-                    AllZone.getStack().addSimultaneousStackEntry(ability);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
                 }
             };
@@ -208,11 +206,11 @@ class CardFactoryArtifacts {
                     } // while
                     GuiChoose.oneOrNone("Revealed cards:", revealed);
                     for (final Card revealedCard : revealed) {
-                        Singletons.getModel().getGameAction().moveToBottomOfLibrary(revealedCard);
+                        Singletons.getModel().getGame().getAction().moveToBottomOfLibrary(revealedCard);
                     }
 
                     if (this.getTargetCard() != null) {
-                        if (AllZoneUtil.isCardInPlay(this.getTargetCard())
+                        if (this.getTargetCard().isInPlay()
                                 && this.getTargetCard().canBeTargetedBy(this)) {
                             this.getTargetCard().addDamage(damage, card);
                         }
@@ -370,7 +368,7 @@ class CardFactoryArtifacts {
                 public void resolve() {
                     // not implemented for compy
                     if (card.getController().isHuman()) {
-                        AllZone.getInputControl().setInput(new Input() {
+                        Singletons.getModel().getMatch().getInput().setInput(new Input() {
                             private static final long serialVersionUID = -2305549394512889450L;
                             private final List<Card> exiled = new ArrayList<Card>();
 
@@ -399,7 +397,7 @@ class CardFactoryArtifacts {
                             public void done() {
                                 // exile those cards
                                 for (final Card c : this.exiled) {
-                                    Singletons.getModel().getGameAction().exile(c);
+                                    Singletons.getModel().getGame().getAction().exile(c);
                                 }
 
                                 // Put that many cards from the top of your
@@ -408,7 +406,7 @@ class CardFactoryArtifacts {
                                 final PlayerZone lib = card.getController().getZone(ZoneType.Library);
                                 int numCards = 0;
                                 while ((lib.size() > 0) && (numCards < this.exiled.size())) {
-                                    Singletons.getModel().getGameAction().moveToHand(lib.get(0));
+                                    Singletons.getModel().getGame().getAction().moveToHand(lib.get(0));
                                     numCards++;
                                 }
 
@@ -420,7 +418,7 @@ class CardFactoryArtifacts {
                                 // top of your library in any order.
                                 while (this.exiled.size() > 0) {
                                     final Card c1 = GuiChoose.one("Put a card on top of your library.", this.exiled);
-                                    Singletons.getModel().getGameAction().moveToLibrary(c1);
+                                    Singletons.getModel().getGame().getAction().moveToLibrary(c1);
                                     this.exiled.remove(c1);
                                 }
 
@@ -483,7 +481,7 @@ class CardFactoryArtifacts {
                                         JOptionPane.INFORMATION_MESSAGE);
                             }
                         } else {
-                            Singletons.getModel().getGameAction().playCardWithoutManaCost(freeCard);
+                            Singletons.getModel().getGame().getAction().playCardWithoutManaCost(freeCard);
                         }
                     } else {
                         final StringBuilder sb = new StringBuilder();
@@ -535,7 +533,7 @@ class CardFactoryArtifacts {
 
                         card.addSpellAbility(freeCast);
                         card.addExtrinsicKeyword("Play with the top card of your library revealed.");
-                        AllZone.getEndOfTurn().addUntil(new Command() {
+                        Singletons.getModel().getGame().getEndOfTurn().addUntil(new Command() {
                             private static final long serialVersionUID = -2860753262177388046L;
 
                             @Override

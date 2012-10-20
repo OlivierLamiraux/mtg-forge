@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 import forge.GameEntity;
 import forge.Singletons;
@@ -33,6 +31,7 @@ import forge.card.spellability.SpellAbility;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * The Class StaticAbility.
@@ -457,7 +456,7 @@ public class StaticAbility {
         if (this.mapParams.containsKey("EffectZone")) {
             if (!this.mapParams.get("EffectZone").equals("All")
                     && !ZoneType.listValueOf(this.mapParams.get("EffectZone"))
-                        .contains(AllZone.getZoneOf(this.hostCard).getZoneType())) {
+                        .contains(Singletons.getModel().getGame().getZoneOf(this.hostCard).getZoneType())) {
                 return false;
             }
         } else {
@@ -482,11 +481,11 @@ public class StaticAbility {
             return false;
         }
 
-        if (this.mapParams.containsKey("PlayerTurn") && !Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(controller)) {
+        if (this.mapParams.containsKey("PlayerTurn") && !Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(controller)) {
             return false;
         }
 
-        if (this.mapParams.containsKey("OpponentTurn") && !Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(controller.getOpponent())) {
+        if (this.mapParams.containsKey("OpponentTurn") && !Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(controller.getOpponent())) {
             return false;
         }
 
@@ -497,7 +496,7 @@ public class StaticAbility {
 
         if (this.mapParams.containsKey("Phases")) {
             List<PhaseType> phases = PhaseType.parseRange(this.mapParams.get("Phases"));
-            if (!phases.contains(Singletons.getModel().getGameState().getPhaseHandler().getPhase())) {
+            if (!phases.contains(Singletons.getModel().getGame().getPhaseHandler().getPhase())) {
                 return false;
             }
         }
@@ -532,7 +531,7 @@ public class StaticAbility {
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
             final int operandValue = AbilityFactory.calculateAmount(this.hostCard, svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }
@@ -546,7 +545,7 @@ public class StaticAbility {
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
             final int operandValue = AbilityFactory.calculateAmount(this.hostCard, svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }
@@ -560,7 +559,7 @@ public class StaticAbility {
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
             final int operandValue = AbilityFactory.calculateAmount(this.hostCard, svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }
@@ -574,7 +573,7 @@ public class StaticAbility {
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
             final int operandValue = AbilityFactory.calculateAmount(this.hostCard, svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }

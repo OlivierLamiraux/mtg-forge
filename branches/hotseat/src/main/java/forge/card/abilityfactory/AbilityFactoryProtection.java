@@ -27,8 +27,6 @@ import javax.swing.JOptionPane;
 
 import com.google.common.base.Predicate;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -249,7 +247,7 @@ public final class AbilityFactoryProtection {
         final Card hostCard = af.getHostCard();
         final ArrayList<String> gains = AbilityFactoryProtection.getProtectionList(hostCard, af.getMapParams());
 
-        List<Card> list = AllZoneUtil.getCreaturesInPlay(ai);
+        List<Card> list = ai.getCreaturesInPlay();
         list = CardLists.filter(list, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
@@ -263,8 +261,8 @@ public final class AbilityFactoryProtection {
                 }
 
                 // will the creature attack (only relevant for sorcery speed)?
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
-                        && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(ai)
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
+                        && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)
                         && CardFactoryUtil.doesCreatureAttackAI(ai, c)) {
                     return true;
                 }
@@ -277,9 +275,9 @@ public final class AbilityFactoryProtection {
                 }
 
                 // is the creature in blocked and the blocker would survive
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS)
-                        && AllZone.getCombat().isAttacking(c) && AllZone.getCombat().isBlocked(c)
-                        && CombatUtil.blockerWouldBeDestroyed(AllZone.getCombat().getBlockers(c).get(0))) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS)
+                        && Singletons.getModel().getGame().getCombat().isAttacking(c) && Singletons.getModel().getGame().getCombat().isBlocked(c)
+                        && CombatUtil.blockerWouldBeDestroyed(Singletons.getModel().getGame().getCombat().getBlockers(c).get(0))) {
                     return true;
                 }
 
@@ -304,7 +302,7 @@ public final class AbilityFactoryProtection {
         final HashMap<String, String> params = af.getMapParams();
         final Card hostCard = af.getHostCard();
         // if there is no target and host card isn't in play, don't activate
-        if ((sa.getTarget() == null) && !AllZoneUtil.isCardInPlay(hostCard)) {
+        if ((sa.getTarget() == null) && !hostCard.isInPlay()) {
             return false;
         }
 
@@ -328,13 +326,13 @@ public final class AbilityFactoryProtection {
         }
 
         // Phase Restrictions
-        if ((AllZone.getStack().size() == 0) && Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_FIRST_STRIKE_DAMAGE)) {
+        if ((Singletons.getModel().getGame().getStack().size() == 0) && Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_FIRST_STRIKE_DAMAGE)) {
             // Instant-speed protections should not be cast outside of combat
             // when the stack is empty
             if (!AbilityFactory.isSorcerySpeed(sa)) {
                 return false;
             }
-        } else if (AllZone.getStack().size() > 0) {
+        } else if (Singletons.getModel().getGame().getStack().size() > 0) {
             // TODO protection something only if the top thing on the stack will
             // kill it via damage or destroy
             return false;
@@ -375,7 +373,7 @@ public final class AbilityFactoryProtection {
      * @return a boolean.
      */
     private static boolean protectTgtAI(final Player ai, final AbilityFactory af, final SpellAbility sa, final boolean mandatory) {
-        if (!mandatory && Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)) {
+        if (!mandatory && Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)) {
             return false;
         }
 
@@ -398,16 +396,16 @@ public final class AbilityFactoryProtection {
          * Or, add protection (to make it unblockable) when Compy is attacking.
          */
 
-        if (AllZone.getStack().size() == 0) {
+        if (Singletons.getModel().getGame().getStack().size() == 0) {
             // If the cost is tapping, don't activate before declare
             // attack/block
             if ((sa.getPayCosts() != null) && sa.getPayCosts().getTap()) {
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
-                        && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(ai)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS)
+                        && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)) {
                     list.remove(sa.getSourceCard());
                 }
-                if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)
-                        && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(ai)) {
+                if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_BLOCKERS)
+                        && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)) {
                     list.remove(sa.getSourceCard());
                 }
             }
@@ -470,7 +468,7 @@ public final class AbilityFactoryProtection {
         final HashMap<String, String> params = af.getMapParams();
         final Card host = af.getHostCard();
 
-        List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         final Target tgt = sa.getTarget();
         list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
 
@@ -745,9 +743,9 @@ public final class AbilityFactoryProtection {
                 if (params.containsKey("AILogic")) {
                     final String logic = params.get("AILogic");
                     if (logic.equals("MostProminentHumanCreatures")) {
-                        List<Card> list = AllZoneUtil.getCreaturesInPlay(ai.getOpponent());
+                        List<Card> list = ai.getOpponent().getCreaturesInPlay();
                         if (list.isEmpty()) {
-                            list = CardLists.filterControlledBy(AllZoneUtil.getCardsInGame(), ai.getOpponent());
+                            list = CardLists.filterControlledBy(Singletons.getModel().getGame().getCardsInGame(), ai.getOpponent());
                         }
                         if (!list.isEmpty()) {
                             choice = CardFactoryUtil.getMostProminentColor(list);
@@ -788,7 +786,7 @@ public final class AbilityFactoryProtection {
             final Card tgtC = tgtCards.get(j);
 
             // only pump things in play
-            if (!AllZoneUtil.isCardInPlay(tgtC)) {
+            if (!tgtC.isInPlay()) {
                 continue;
             }
 
@@ -808,7 +806,7 @@ public final class AbilityFactoryProtection {
 
                     @Override
                     public void execute() {
-                        if (AllZoneUtil.isCardInPlay(tgtC)) {
+                        if (tgtC.isInPlay()) {
                             for (final String gain : gains) {
                                 tgtC.removeExtrinsicKeyword("Protection from " + gain);
                             }
@@ -816,16 +814,16 @@ public final class AbilityFactoryProtection {
                     }
                 };
                 if (params.containsKey("UntilEndOfCombat")) {
-                    AllZone.getEndOfCombat().addUntil(untilEOT);
+                    Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
                 } else {
-                    AllZone.getEndOfTurn().addUntil(untilEOT);
+                    Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
                 }
             }
         }
 
         for (final Card unTgtC : untargetedCards) {
             // only pump things in play
-            if (!AllZoneUtil.isCardInPlay(unTgtC)) {
+            if (!unTgtC.isInPlay()) {
                 continue;
             }
 
@@ -840,7 +838,7 @@ public final class AbilityFactoryProtection {
 
                     @Override
                     public void execute() {
-                        if (AllZoneUtil.isCardInPlay(unTgtC)) {
+                        if (unTgtC.isInPlay()) {
                             for (final String gain : gains) {
                                 unTgtC.removeExtrinsicKeyword("Protection from " + gain);
                             }
@@ -848,9 +846,9 @@ public final class AbilityFactoryProtection {
                     }
                 };
                 if (params.containsKey("UntilEndOfCombat")) {
-                    AllZone.getEndOfCombat().addUntil(untilEOT);
+                    Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
                 } else {
-                    AllZone.getEndOfTurn().addUntil(untilEOT);
+                    Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
                 }
             }
         }
@@ -1032,7 +1030,7 @@ public final class AbilityFactoryProtection {
     private static boolean protectAllCanPlayAI(final Player ai, final AbilityFactory af, final SpellAbility sa) {
         final Card hostCard = af.getHostCard();
         // if there is no target and host card isn't in play, don't activate
-        if ((sa.getTarget() == null) && !AllZoneUtil.isCardInPlay(hostCard)) {
+        if ((sa.getTarget() == null) && !hostCard.isInPlay()) {
             return false;
         }
 
@@ -1192,11 +1190,11 @@ public final class AbilityFactoryProtection {
             valid = params.get("ValidCards");
         }
         if (!valid.equals("")) {
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             list = CardLists.getValidCards(list, valid, sa.getActivatingPlayer(), host);
 
             for (final Card tgtC : list) {
-                if (AllZoneUtil.isCardInPlay(tgtC)) {
+                if (tgtC.isInPlay()) {
                     for (final String gain : gains) {
                         tgtC.addExtrinsicKeyword("Protection from " + gain);
                     }
@@ -1208,7 +1206,7 @@ public final class AbilityFactoryProtection {
 
                             @Override
                             public void execute() {
-                                if (AllZoneUtil.isCardInPlay(tgtC)) {
+                                if (tgtC.isInPlay()) {
                                     for (final String gain : gains) {
                                         tgtC.removeExtrinsicKeyword("Protection from " + gain);
                                     }
@@ -1216,9 +1214,9 @@ public final class AbilityFactoryProtection {
                             }
                         };
                         if (params.containsKey("UntilEndOfCombat")) {
-                            AllZone.getEndOfCombat().addUntil(untilEOT);
+                            Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
                         } else {
-                            AllZone.getEndOfTurn().addUntil(untilEOT);
+                            Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
                         }
                     }
                 }
@@ -1250,9 +1248,9 @@ public final class AbilityFactoryProtection {
                         }
                     };
                     if (params.containsKey("UntilEndOfCombat")) {
-                        AllZone.getEndOfCombat().addUntil(untilEOT);
+                        Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
                     } else {
-                        AllZone.getEndOfTurn().addUntil(untilEOT);
+                        Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
                     }
                 }
             }

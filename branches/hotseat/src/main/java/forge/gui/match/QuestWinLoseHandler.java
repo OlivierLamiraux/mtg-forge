@@ -48,6 +48,7 @@ import forge.quest.QuestEventChallenge;
 import forge.quest.QuestController;
 import forge.quest.QuestEvent;
 import forge.quest.bazaar.QuestItemType;
+import forge.quest.data.QuestPreferences;
 import forge.quest.data.QuestPreferences.QPref;
 import forge.quest.io.ReadPriceList;
 import forge.util.MyRandom;
@@ -89,7 +90,6 @@ public class QuestWinLoseHandler extends ControlWinLose {
     private static final String CONSTRAINTS_TEXT = "w 95%!,, h 180px!, gap 0 0 0 20px";
     private static final String CONSTRAINTS_CARDS = "w 95%!, h 330px!, gap 0 0 0 20px";
 
-    private final transient MatchController match;
     private final transient QuestController qData;
     private final transient QuestEvent qEvent;
 
@@ -97,11 +97,11 @@ public class QuestWinLoseHandler extends ControlWinLose {
      * Instantiates a new quest win lose handler.
      * 
      * @param view0 ViewWinLose object
+     * @param match2 
      */
-    public QuestWinLoseHandler(final ViewWinLose view0) {
-        super(view0);
+    public QuestWinLoseHandler(final ViewWinLose view0, MatchController match2) {
+        super(view0, match2);
         this.view = view0;
-        match = Singletons.getModel().getMatch();
         qData = Singletons.getModel().getQuest();
         qEvent = qData.getCurrentEvent();
         this.wonMatch = match.isWonBy(Singletons.getControl().getLobby().getQuestPlayer());
@@ -128,7 +128,7 @@ public class QuestWinLoseHandler extends ControlWinLose {
         //do per-game actions
             boolean isHumanWinner = match.isWonBy(questPlayer); 
             final List<CardPrinted> anteCards = new ArrayList<CardPrinted>();
-            for( Player p : Singletons.getModel().getGameState().getPlayers() ) {
+            for( Player p : Singletons.getModel().getGame().getPlayers() ) {
                 if (p.getLobbyPlayer().equals(questPlayer) == isHumanWinner) continue;
                 for(Card c : p.getCardsIn(ZoneType.Ante))
                     anteCards.add(CardDb.instance().getCard(c));
@@ -190,7 +190,7 @@ public class QuestWinLoseHandler extends ControlWinLose {
         }
 
         // Unlock new sets?
-        if (this.wonMatch && qData.getAchievements().getWin() > 99 && (qData.getAchievements().getWin() % 100) == 0) {
+        if (this.wonMatch && qData.getAchievements().getWin() > 1 && (qData.getAchievements().getWin() % 50) == 0) {
             unlockSets();
         }
 
@@ -348,13 +348,13 @@ public class QuestWinLoseHandler extends ControlWinLose {
             
 //            final PlayerStatistics aiRating = game.getStatistics(computer.getName());
             PlayerStatistics humanRating = null;
-            for(Entry<LobbyPlayer, PlayerStatistics> aiRating : game ) {
-                if( aiRating.getValue().equals(localHuman)) {
-                    humanRating = aiRating.getValue();
+            for(Entry<LobbyPlayer, PlayerStatistics> kvRating : game ) {
+                if( kvRating.getKey().equals(localHuman)) {
+                    humanRating = kvRating.getValue();
                     continue;
                 }
                 
-                final PlayerOutcome outcome = aiRating.getValue().getOutcome();
+                final PlayerOutcome outcome = kvRating.getValue().getOutcome();
                 final GameLossReason whyAiLost = outcome.lossState;
                 final int altReward = this.getCreditsRewardForAltWin(whyAiLost);
 
@@ -908,17 +908,18 @@ public class QuestWinLoseHandler extends ControlWinLose {
      * @return int
      */
     private int getCreditsRewardForAltWin(final GameLossReason whyAiLost) {
+        QuestPreferences qp = Singletons.getModel().getQuestPreferences(); 
         if ( null == whyAiLost) // Felidar, Helix Pinnacle, etc.
-            return Singletons.getModel().getQuestPreferences().getPreferenceInt(QPref.REWARDS_UNDEFEATED);
+            return qp.getPreferenceInt(QPref.REWARDS_UNDEFEATED);
         switch (whyAiLost) {
         case LifeReachedZero:
             return 0; // nothing special here, ordinary kill
         case Milled:
-            return Singletons.getModel().getQuestPreferences().getPreferenceInt(QPref.REWARDS_MILLED);
+            return qp.getPreferenceInt(QPref.REWARDS_MILLED);
         case Poisoned:
-            return Singletons.getModel().getQuestPreferences().getPreferenceInt(QPref.REWARDS_POISON);
+            return qp.getPreferenceInt(QPref.REWARDS_POISON);
         case SpellEffect: // Door to Nothingness, etc.
-            return Singletons.getModel().getQuestPreferences().getPreferenceInt(QPref.REWARDS_UNDEFEATED);
+            return qp.getPreferenceInt(QPref.REWARDS_UNDEFEATED);
         default:
             return 0;
         }

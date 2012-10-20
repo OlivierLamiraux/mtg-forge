@@ -21,19 +21,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
 import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
-import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
-import forge.game.zone.PlayerZone;
+import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * <p>
@@ -187,7 +185,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
         if (this.getZone() == null) {
             return true;
         }
-        PlayerZone cardZone = AllZone.getZoneOf(c);
+        Zone cardZone = Singletons.getModel().getGame().getZoneOf(c);
         Player activator = sa.getActivatingPlayer();
         if (cardZone == null || !cardZone.is(this.getZone())) {
             // If Card is not in the default activating zone, do some additional checks
@@ -221,17 +219,17 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
     public final boolean checkTimingRestrictions(final Card c, final SpellAbility sa) {
         Player activator = sa.getActivatingPlayer();
 
-        if (this.isPlayerTurn() && !Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(activator)) {
+        if (this.isPlayerTurn() && !Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(activator)) {
             return false;
         }
 
-        if (this.isOpponentTurn() && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(activator)) {
+        if (this.isOpponentTurn() && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(activator)) {
             return false;
         }
 
         if (this.getPhases().size() > 0) {
             boolean isPhase = false;
-            final PhaseType currPhase = Singletons.getModel().getGameState().getPhaseHandler().getPhase();
+            final PhaseType currPhase = Singletons.getModel().getGame().getPhaseHandler().getPhase();
             for (final PhaseType s : this.getPhases()) {
                 if (s == currPhase) {
                     isPhase = true;
@@ -295,7 +293,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             System.out.println(c.getName() + " Did not have activator set in SpellAbilityRestriction.canPlay()");
         }
 
-        if (this.isSorcerySpeed() && !PhaseHandler.canCastSorcery(activator)) {
+        if (this.isSorcerySpeed() && !Player.canCastSorcery(activator)) {
             return false;
         }
 
@@ -356,7 +354,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             }
         }
         if (this.getIsPresent() != null) {
-            List<Card> list = AllZoneUtil.getCardsIn(this.getPresentZone());
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(this.getPresentZone());
 
             list = CardLists.getValidCards(list, this.getIsPresent().split(","), activator, c);
 
@@ -369,7 +367,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             }
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, this.getPresentCompare(), right)) {
+            if (!Expressions.compare(left, this.getPresentCompare(), right)) {
                 return false;
             }
         }
@@ -391,7 +389,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
                 right = Integer.parseInt(this.getLifeAmount().substring(2));
             }
 
-            if (!AllZoneUtil.compare(life, this.getLifeAmount(), right)) {
+            if (!Expressions.compare(life, this.getLifeAmount(), right)) {
                 return false;
             }
         }
@@ -412,7 +410,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             final int svarValue = AbilityFactory.calculateAmount(c, this.getsVarToCheck(), sa);
             final int operandValue = AbilityFactory.calculateAmount(c, this.getsVarOperand(), sa);
 
-            if (!AllZoneUtil.compare(svarValue, this.getsVarOperator(), operandValue)) {
+            if (!Expressions.compare(svarValue, this.getsVarOperator(), operandValue)) {
                 return false;
             }
 

@@ -21,17 +21,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
 import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
-import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * <p>
@@ -194,15 +193,15 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             }
         }
 
-        if (this.isSorcerySpeed() && !PhaseHandler.canCastSorcery(activator)) {
+        if (this.isSorcerySpeed() && !Player.canCastSorcery(activator)) {
             return false;
         }
 
-        if (this.isPlayerTurn() && !Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(activator)) {
+        if (this.isPlayerTurn() && !Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(activator)) {
             return false;
         }
 
-        if (this.isOpponentTurn() && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(activator)) {
+        if (this.isOpponentTurn() && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(activator)) {
             return false;
         }
 
@@ -212,7 +211,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
 
         if (this.getPhases().size() > 0) {
             boolean isPhase = false;
-            final PhaseType currPhase = Singletons.getModel().getGameState().getPhaseHandler().getPhase();
+            final PhaseType currPhase = Singletons.getModel().getGame().getPhaseHandler().getPhase();
             for (final PhaseType s : this.getPhases()) {
                 if (s == currPhase) {
                     isPhase = true;
@@ -227,18 +226,18 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
 
         if (this.isAllM12Empires()) {
             final Player p = sa.getSourceCard().getController();
-            boolean has = AllZoneUtil.isCardInPlay("Crown of Empires", p);
-            has &= AllZoneUtil.isCardInPlay("Scepter of Empires", p);
-            has &= AllZoneUtil.isCardInPlay("Throne of Empires", p);
+            boolean has = p.isCardInPlay("Crown of Empires");
+            has &= p.isCardInPlay("Scepter of Empires");
+            has &= p.isCardInPlay("Throne of Empires");
             if (!has) {
                 return false;
             }
         }
         if (this.isNotAllM12Empires()) {
             final Player p = sa.getSourceCard().getController();
-            boolean has = AllZoneUtil.isCardInPlay("Crown of Empires", p);
-            has &= AllZoneUtil.isCardInPlay("Scepter of Empires", p);
-            has &= AllZoneUtil.isCardInPlay("Throne of Empires", p);
+            boolean has = p.isCardInPlay("Crown of Empires");
+            has &= p.isCardInPlay("Scepter of Empires");
+            has &= p.isCardInPlay("Throne of Empires");
             if (has) {
                 return false;
             }
@@ -256,7 +255,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             if (this.getPresentDefined() != null) {
                 list.addAll(AbilityFactory.getDefinedCards(sa.getSourceCard(), this.getPresentDefined(), sa));
             } else {
-                list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+                list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             }
 
             list = CardLists.getValidCards(list, this.getIsPresent().split(","), sa.getActivatingPlayer(), sa.getSourceCard());
@@ -273,7 +272,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
 
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, this.getPresentCompare(), right)) {
+            if (!Expressions.compare(left, this.getPresentCompare(), right)) {
                 return false;
             }
         }
@@ -295,7 +294,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
                 right = Integer.parseInt(this.getLifeAmount().substring(2));
             }
 
-            if (!AllZoneUtil.compare(life, this.getLifeAmount(), right)) {
+            if (!Expressions.compare(life, this.getLifeAmount(), right)) {
                 return false;
             }
         }
@@ -310,7 +309,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             final int svarValue = AbilityFactory.calculateAmount(sa.getSourceCard(), this.getsVarToCheck(), sa);
             final int operandValue = AbilityFactory.calculateAmount(sa.getSourceCard(), this.getsVarOperand(), sa);
 
-            if (!AllZoneUtil.compare(svarValue, this.getsVarOperator(), operandValue)) {
+            if (!Expressions.compare(svarValue, this.getsVarOperator(), operandValue)) {
                 return false;
             }
 

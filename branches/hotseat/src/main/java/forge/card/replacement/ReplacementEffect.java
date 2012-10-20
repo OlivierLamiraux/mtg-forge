@@ -21,16 +21,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
 import forge.CardUtil;
+import forge.Singletons;
 import forge.card.TriggerReplacementBase;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+import forge.util.Expressions;
 
 /**
  * TODO: Write javadoc for this type.
@@ -97,7 +98,7 @@ public abstract class ReplacementEffect extends TriggerReplacementBase {
                 left = AbilityFactory.calculateAmount(this.hostCard, svarToCheck, sa);
             }
             System.out.println("aiShouldRun?" + left + comparator + compareTo);
-            if (AllZoneUtil.compare(left, comparator, compareTo)) {
+            if (Expressions.compare(left, comparator, compareTo)) {
                 return true;
             }
         } else if (sa != null && sa.doTrigger(false)){
@@ -235,7 +236,7 @@ public abstract class ReplacementEffect extends TriggerReplacementBase {
                 right = CardFactoryUtil.xCount(this.getHostCard(), this.getHostCard().getSVar(rightString));
             }
 
-            if (!AllZoneUtil.compare(life, lifeCompare, right)) {
+            if (!Expressions.compare(life, lifeCompare, right)) {
                 return false;
             }
 
@@ -274,7 +275,7 @@ public abstract class ReplacementEffect extends TriggerReplacementBase {
             }
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, presentCompare, right)) {
+            if (!Expressions.compare(left, presentCompare, right)) {
                 return false;
             }
 
@@ -313,14 +314,14 @@ public abstract class ReplacementEffect extends TriggerReplacementBase {
             }
             final int left = list.size();
 
-            if (!AllZoneUtil.compare(left, presentCompare, right)) {
+            if (!Expressions.compare(left, presentCompare, right)) {
                 return false;
             }
 
         }
 
         if (this.getMapParams().containsKey("CheckSVar")) {
-            final int sVar = AbilityFactory.calculateAmount(AllZoneUtil.getCardState(this.getHostCard()), this
+            final int sVar = AbilityFactory.calculateAmount(Singletons.getModel().getGame().getCardState(this.getHostCard()), this
                     .getMapParams().get("CheckSVar"), null);
             String comparator = "GE1";
             if (this.getMapParams().containsKey("SVarCompare")) {
@@ -328,9 +329,9 @@ public abstract class ReplacementEffect extends TriggerReplacementBase {
             }
             final String svarOperator = comparator.substring(0, 2);
             final String svarOperand = comparator.substring(2);
-            final int operandValue = AbilityFactory.calculateAmount(AllZoneUtil.getCardState(this.getHostCard()),
+            final int operandValue = AbilityFactory.calculateAmount(Singletons.getModel().getGame().getCardState(this.getHostCard()),
                     svarOperand, null);
-            if (!AllZoneUtil.compare(sVar, svarOperator, operandValue)) {
+            if (!Expressions.compare(sVar, svarOperator, operandValue)) {
                 return false;
             }
         }

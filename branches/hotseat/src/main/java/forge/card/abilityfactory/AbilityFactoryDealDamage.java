@@ -25,7 +25,6 @@ import java.util.Random;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -387,7 +386,6 @@ public class AbilityFactoryDealDamage {
         } else {
             dmg = this.getNumDamage(saMe);
         }
-        boolean rr = this.abilityFactory.isSpell();
 
         if (dmg <= 0) {
             return false;
@@ -409,19 +407,18 @@ public class AbilityFactoryDealDamage {
         if (source.getName().equals("Stuffy Doll")) {
             // Now stuffy sits around for blocking
             // TODO(sol): this should also happen if Stuffy is going to die
-            return Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.END_OF_TURN, ai.getOpponent());
+            return Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.END_OF_TURN, ai.getOpponent());
         }
 
         if (this.abilityFactory.isAbility()) {
             final Random r = MyRandom.getRandom(); // prevent run-away
                                                    // activations
-            if (r.nextFloat() <= Math.pow(.9, saMe.getActivationsThisTurn())) {
-                rr = true;
+            if (r.nextFloat() > Math.pow(.9, saMe.getActivationsThisTurn())) {
+                return false;
             }
         }
 
-        final boolean bFlag = this.damageTargetAI(ai, saMe, dmg);
-        if (!bFlag) {
+        if (!this.damageTargetAI(ai, saMe, dmg)) {
             return false;
         }
 
@@ -443,10 +440,10 @@ public class AbilityFactoryDealDamage {
         }
 
         final AbilitySub subAb = saMe.getSubAbility();
-        if (subAb != null) {
-            rr &= subAb.chkAIDrawback();
+        if (subAb != null && !subAb.chkAIDrawback()) {
+            return false;
         }
-        return rr;
+        return true;
     }
 
     /**
@@ -491,8 +488,8 @@ public class AbilityFactoryDealDamage {
 
         if (this.abilityFactory.isSpell()) {
             // If this is a spell, cast it instead of discarding
-            if ((Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.END_OF_TURN) || Singletons.getModel().getGameState().getPhaseHandler().is(PhaseType.MAIN2))
-                    && Singletons.getModel().getGameState().getPhaseHandler().isPlayerTurn(comp) && (hand.size() > comp.getMaxHandSize())) {
+            if ((Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.END_OF_TURN) || Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.MAIN2))
+                    && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(comp) && (hand.size() > comp.getMaxHandSize())) {
                 return true;
             }
         }
@@ -523,6 +520,11 @@ public class AbilityFactoryDealDamage {
      */
     private Card dealDamageChooseTgtC(final Player ai, final SpellAbility saMe, final int d, final boolean noPrevention,
             final Player pl, final boolean mandatory) {
+
+        // wait until stack is empty (prevents duplicate kills)
+        if (!saMe.isTrigger() && !Singletons.getModel().getGame().getStack().isEmpty()) {
+            return null;
+        }
         final Target tgt = saMe.getTarget();
         final Card source = saMe.getSourceCard();
         final HashMap<String, String> params = this.abilityFactory.getMapParams();
@@ -614,7 +616,7 @@ public class AbilityFactoryDealDamage {
     private boolean damageChoosingTargets(final Player ai, final SpellAbility saMe, final Target tgt, final int dmg,
             final boolean isTrigger, final boolean mandatory) {
         final boolean noPrevention = this.abilityFactory.getMapParams().containsKey("NoPrevention");
-        final PhaseHandler phase = Singletons.getModel().getGameState().getPhaseHandler();
+        final PhaseHandler phase = Singletons.getModel().getGame().getPhaseHandler();
 
         // target loop
         tgt.resetTargets();
@@ -904,7 +906,7 @@ public class AbilityFactoryDealDamage {
         for (final Object o : tgts) {
             if (o instanceof Card) {
                 final Card c = (Card) o;
-                if (AllZoneUtil.isCardInPlay(c) && (!targeted || c.canBeTargetedBy(saMe))) {
+                if (c.isInPlay() && (!targeted || c.canBeTargetedBy(saMe))) {
                     if (noPrevention) {
                         c.addDamageWithoutPrevention(dmg, source);
                     } else if (combatDmg) {
@@ -1186,12 +1188,14 @@ public class AbilityFactoryDealDamage {
             }
         }
 
-        // TODO: if damage is dependant on mana paid, maybe have X be human's
-        // max life
+        // TODO: if damage is dependant on mana paid, maybe have X be human's max life
         // Don't kill yourself
-        if (validP.contains("Each")
-                && (ai.getLife() <= ai.predictDamage(dmg, source,
-                        false))) {
+        if (validP.contains("Each") && (ai.getLife() <= ai.predictDamage(dmg, source, false))) {
+            return false;
+        }
+
+        // prevent run-away activations - first time will always return true
+        if (r.nextFloat() > Math.pow(.9, sa.getActivationsThisTurn())) {
             return false;
         }
 
@@ -1201,26 +1205,28 @@ public class AbilityFactoryDealDamage {
             return true;
         }
 
-        // prevent run-away activations - first time will always return true
-        boolean chance = r.nextFloat() <= Math.pow(.6667, sa.getActivationsThisTurn());
+        // wait until stack is empty (prevents duplicate kills)
+        if (!Singletons.getModel().getGame().getStack().isEmpty()) {
+            return false;
+        }
 
         int minGain = 200; // The minimum gain in destroyed creatures
         if (sa.getPayCosts().isReusuableResource()) {
             minGain = 100;
         }
-        // evaluate both lists and pass only if human creatures are more
-        // valuable
+
+        // evaluate both lists and pass only if human creatures are more valuable
         if ((CardFactoryUtil.evaluateCreatureList(computerList) + minGain) >= CardFactoryUtil
                 .evaluateCreatureList(humanList)) {
             return false;
         }
 
         final AbilitySub subAb = sa.getSubAbility();
-        if (subAb != null) {
-            chance &= subAb.chkAIDrawback();
+        if (subAb != null && !subAb.chkAIDrawback()) {
+            return false;
         }
 
-        return ((r.nextFloat() < .6667) && chance);
+        return true;
     }
 
     /**
@@ -1376,7 +1382,7 @@ public class AbilityFactoryDealDamage {
         }
 
         if (params.containsKey("ValidCards")) {
-            list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         }
 
         if (targetPlayer != null) {
@@ -1640,7 +1646,7 @@ public class AbilityFactoryDealDamage {
         final HashMap<String, String> params = af.getMapParams();
         final Card card = sa.getSourceCard();
 
-        List<Card> sources = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+        List<Card> sources = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
         if (params.containsKey("ValidCards")) {
             sources = CardLists.getValidCards(sources, params.get("ValidCards"), card.getController(), card);
         }
@@ -1660,7 +1666,7 @@ public class AbilityFactoryDealDamage {
                 // System.out.println(source+" deals "+dmg+" damage to "+o.toString());
                 if (o instanceof Card) {
                     final Card c = (Card) o;
-                    if (AllZoneUtil.isCardInPlay(c) && (!targeted || c.canBeTargetedBy(sa))) {
+                    if (c.isInPlay() && (!targeted || c.canBeTargetedBy(sa))) {
                         c.addDamage(dmg, source);
                     }
 
@@ -1900,7 +1906,7 @@ public class AbilityFactoryDealDamage {
         Target tgt = sa.getTarget();
         tgt.resetTargets();
 
-        List<Card> aiCreatures = AllZoneUtil.getCreaturesInPlay(ai);
+        List<Card> aiCreatures = ai.getCreaturesInPlay();
         aiCreatures = CardLists.getTargetableCards(aiCreatures, sa);
         aiCreatures = CardLists.filter(aiCreatures, new Predicate<Card>() {
             @Override
@@ -1909,7 +1915,7 @@ public class AbilityFactoryDealDamage {
             }
         });
 
-        List<Card> humCreatures = AllZoneUtil.getCreaturesInPlay(ai.getOpponent());
+        List<Card> humCreatures = ai.getOpponent().getCreaturesInPlay();
         humCreatures = CardLists.getTargetableCards(humCreatures, sa);
 
         final Random r = MyRandom.getRandom();
@@ -1993,8 +1999,8 @@ public class AbilityFactoryDealDamage {
             fighter2 = tgts.get(1);
         }
 
-        if (fighter1 == null || fighter2 == null || !AllZoneUtil.isCardInPlay(fighter1)
-                || !AllZoneUtil.isCardInPlay(fighter2)) {
+        if (fighter1 == null || fighter2 == null || !fighter1.isInPlay()
+                || !fighter2.isInPlay()) {
             return;
         }
 

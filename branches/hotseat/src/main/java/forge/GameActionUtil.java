@@ -31,6 +31,7 @@ import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
 import forge.card.cost.CostDamage;
 import forge.card.cost.CostDiscard;
+import forge.card.cost.CostExile;
 import forge.card.cost.CostPart;
 import forge.card.cost.CostPayLife;
 import forge.card.cost.CostMana;
@@ -104,7 +105,7 @@ public final class GameActionUtil {
             public void execute() {
 
                 if (!c.isCopiedSpell()) {
-                    final List<Card> maelstromNexii = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Maelstrom Nexus");
+                    final List<Card> maelstromNexii = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Maelstrom Nexus"));
 
                     for (final Card nexus : maelstromNexii) {
                         if (CardUtil.getThisTurnCast("Card.YouCtrl", nexus).size() == 1) {
@@ -164,7 +165,7 @@ public final class GameActionUtil {
                                         title.toString(), JOptionPane.YES_NO_OPTION);
 
                                 if (answer == JOptionPane.YES_OPTION) {
-                                    Singletons.getModel().getGameAction().playCardWithoutManaCost(cascadedCard);
+                                    Singletons.getModel().getGame().getAction().playCardWithoutManaCost(cascadedCard);
                                     revealed.remove(cascadedCard);
                                 }
                             } else {
@@ -190,7 +191,7 @@ public final class GameActionUtil {
                         }
                         CardLists.shuffle(revealed);
                         for (final Card bottom : revealed) {
-                            Singletons.getModel().getGameAction().moveToBottomOfLibrary(bottom);
+                            Singletons.getModel().getGame().getAction().moveToBottomOfLibrary(bottom);
                         }
                     }
                 };
@@ -199,7 +200,7 @@ public final class GameActionUtil {
                 ability.setStackDescription(sb.toString());
                 ability.setActivatingPlayer(controller);
 
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         };
@@ -283,7 +284,7 @@ public final class GameActionUtil {
                                                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null,
                                                 possibleValues, possibleValues[0]);
                                         if (q.equals(0)) {
-                                            Singletons.getModel().getGameAction().playCardWithoutManaCost(rippledCards[i]);
+                                            Singletons.getModel().getGame().getAction().playCardWithoutManaCost(rippledCards[i]);
                                             revealed.remove(rippledCards[i]);
                                         }
                                     } else {
@@ -310,7 +311,7 @@ public final class GameActionUtil {
                             }
                             CardLists.shuffle(revealed);
                             for (final Card bottom : revealed) {
-                                Singletons.getModel().getGameAction().moveToBottomOfLibrary(bottom);
+                                Singletons.getModel().getGame().getAction().moveToBottomOfLibrary(bottom);
                             }
                         }
                     };
@@ -318,7 +319,7 @@ public final class GameActionUtil {
                     sb.append(c).append(" - Ripple.");
                     ability.setStackDescription(sb.toString());
 
-                    AllZone.getStack().addSimultaneousStackEntry(ability);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
                 }
             }
@@ -344,10 +345,10 @@ public final class GameActionUtil {
             final Command unpaid) {
         // temporarily disable the Resolve flag, so the user can payMana for the
         // resolving Ability
-        final boolean bResolving = AllZone.getStack().getResolving();
-        AllZone.getStack().setResolving(false);
-        AllZone.getInputControl().setInput(new InputPayManaCostAbility(message, manaCost, paid, unpaid));
-        AllZone.getStack().setResolving(bResolving);
+        final boolean bResolving = Singletons.getModel().getGame().getStack().isResolving();
+        Singletons.getModel().getGame().getStack().setResolving(false);
+        Singletons.getModel().getMatch().getInput().setInput(new InputPayManaCostAbility(message, manaCost, paid, unpaid));
+        Singletons.getModel().getGame().getStack().setResolving(bResolving);
     }
 
     /**
@@ -395,6 +396,7 @@ public final class GameActionUtil {
                     p.payLife(amount, null);
                 } else {
                     hasPaid = false;
+                    break;
                 }
                 remainingParts.remove(part);
             }
@@ -408,6 +410,7 @@ public final class GameActionUtil {
                     p.addDamage(amount, source);
                 } else {
                     hasPaid = false;
+                    break;
                 }
                 remainingParts.remove(part);
             }
@@ -424,13 +427,52 @@ public final class GameActionUtil {
                         source.addCounterFromNonEffect(counterType, amount);
                     } else {
                         hasPaid = false;
-                        AllZone.getGameLog().add("ResolveStack", "Trying to pay upkeep for " + source + " but it can't have "
+                        Singletons.getModel().getGame().getGameLog().add("ResolveStack", "Trying to pay upkeep for " + source + " but it can't have "
                         + counterType.getName() + " counters put on it.", 2);
+                        break;
                     }
                 } else {
                     hasPaid = false;
+                    break;
                 }
                 remainingParts.remove(part);
+            }
+            else if (part instanceof CostExile) {
+                Player p = Singletons.getControl().getPlayer();
+                if ("All".equals(part.getType())) {
+                    if (showYesNoDialog(source, "Do you want to exile all cards in your graveyard?")) {
+                        for (final Card card : p.getCardsIn(ZoneType.Graveyard)) {
+                            Singletons.getModel().getGame().getAction().exile(card);
+                        }
+                    } else {
+                        hasPaid = false;
+                        break;
+                    }
+                    remainingParts.remove(part);
+                } else {
+                    CostExile costExile = (CostExile) part;
+                    ZoneType from = costExile.getFrom();
+                    List<Card> list = p.getCardsIn(from);
+                    list = CardLists.getValidCards(list, part.getType().split(";"), p, source);
+                    final int nNeeded = AbilityFactory.calculateAmount(source, part.getAmount(), ability);
+                    if (list.size() >= nNeeded) {
+                        for (int i = 0; i < nNeeded; i++) {
+
+                            final Card c = GuiChoose.oneOrNone("Exile from " + from, list);
+
+                            if (c != null) {
+                                list.remove(c);
+                                Singletons.getModel().getGame().getAction().exile(c);
+                            } else {
+                                hasPaid = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        hasPaid = false;
+                        break;
+                    }
+                }
             }
         }
         if (!hasPaid) {
@@ -448,30 +490,30 @@ public final class GameActionUtil {
 
         //the following costs need inputs and can't be combined at the moment
         if (costPart instanceof CostSacrifice) {
-            final boolean bResolving = AllZone.getStack().getResolving();
-            AllZone.getStack().setResolving(false);
-            AllZone.getInputControl().setInput(new InputPaySacCost((CostSacrifice) costPart, ability, paid, unpaid));
-            AllZone.getStack().setResolving(bResolving);
+            final boolean bResolving = Singletons.getModel().getGame().getStack().isResolving();
+            Singletons.getModel().getGame().getStack().setResolving(false);
+            Singletons.getModel().getMatch().getInput().setInput(new InputPaySacCost((CostSacrifice) costPart, ability, paid, unpaid));
+            Singletons.getModel().getGame().getStack().setResolving(bResolving);
         }
         else if (costPart instanceof CostReturn) {
-            final boolean bResolving = AllZone.getStack().getResolving();
-            AllZone.getStack().setResolving(false);
-            AllZone.getInputControl().setInput(new InputPayReturnCost((CostReturn) costPart, ability, paid, unpaid));
-            AllZone.getStack().setResolving(bResolving);
+            final boolean bResolving = Singletons.getModel().getGame().getStack().isResolving();
+            Singletons.getModel().getGame().getStack().setResolving(false);
+            Singletons.getModel().getMatch().getInput().setInput(new InputPayReturnCost((CostReturn) costPart, ability, paid, unpaid));
+            Singletons.getModel().getGame().getStack().setResolving(bResolving);
         }
         else if (costPart instanceof CostDiscard) {
-            final boolean bResolving = AllZone.getStack().getResolving();
-            AllZone.getStack().setResolving(false);
-            AllZone.getInputControl().setInput(new InputPayDiscardCost((CostDiscard) costPart, ability, paid, unpaid));
-            AllZone.getStack().setResolving(bResolving);
+            final boolean bResolving = Singletons.getModel().getGame().getStack().isResolving();
+            Singletons.getModel().getGame().getStack().setResolving(false);
+            Singletons.getModel().getMatch().getInput().setInput(new InputPayDiscardCost((CostDiscard) costPart, ability, paid, unpaid));
+            Singletons.getModel().getGame().getStack().setResolving(bResolving);
         }
         else if (costPart instanceof CostMana) {
             // temporarily disable the Resolve flag, so the user can payMana for the
             // resolving Ability
-            final boolean bResolving = AllZone.getStack().getResolving();
-            AllZone.getStack().setResolving(false);
-            AllZone.getInputControl().setInput(new InputPayManaCostAbility(source + "\r\n", ability.getManaCost(), paid, unpaid));
-            AllZone.getStack().setResolving(bResolving);
+            final boolean bResolving = Singletons.getModel().getGame().getStack().isResolving();
+            Singletons.getModel().getGame().getStack().setResolving(false);
+            Singletons.getModel().getMatch().getInput().setInput(new InputPayManaCostAbility(source + "\r\n", ability.getManaCost(), paid, unpaid));
+            Singletons.getModel().getGame().getStack().setResolving(bResolving);
         }
     }
 
@@ -614,14 +656,14 @@ public final class GameActionUtil {
             final Ability ability = new Ability(source, "0") {
                 @Override
                 public void resolve() {
-                    Singletons.getModel().getGameAction().destroy(affected);
+                    Singletons.getModel().getGame().getAction().destroy(affected);
                 }
             };
 
             final Ability ability2 = new Ability(source, "0") {
                 @Override
                 public void resolve() {
-                    Singletons.getModel().getGameAction().destroyNoRegeneration(affected);
+                    Singletons.getModel().getGame().getAction().destroyNoRegeneration(affected);
                 }
             };
 
@@ -633,12 +675,12 @@ public final class GameActionUtil {
                     .getAmountOfKeyword("When CARDNAME is dealt damage, destroy it. It can't be regenerated.");
 
             for (int i = 0; i < amount; i++) {
-                AllZone.getStack().addSimultaneousStackEntry(ability2);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
             }
             final int amount2 = affected.getAmountOfKeyword("When CARDNAME is dealt damage, destroy it.");
 
             for (int i = 0; i < amount2; i++) {
-                AllZone.getStack().addSimultaneousStackEntry(ability);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
             }
         }
     }
@@ -655,7 +697,7 @@ public final class GameActionUtil {
     public static void executeVampiricEffects(final Card c) {
         final ArrayList<String> a = c.getKeyword();
         for (int i = 0; i < a.size(); i++) {
-            if (AllZoneUtil.isCardInPlay(c)
+            if (c.isInPlay()
                     && a.get(i)
                             .toString()
                             .startsWith(
@@ -670,7 +712,7 @@ public final class GameActionUtil {
                         if (kw.contains("+2/+2")) {
                             counter = Counters.P2P2;
                         }
-                        if (AllZoneUtil.isCardInPlay(thisCard)) {
+                        if (thisCard.isInPlay()) {
                             thisCard.addCounter(counter, 1);
                         }
                     }
@@ -685,7 +727,7 @@ public final class GameActionUtil {
                 }
                 ability2.setStackDescription(sb.toString());
 
-                AllZone.getStack().addSimultaneousStackEntry(ability2);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
 
             }
         }
@@ -732,7 +774,7 @@ public final class GameActionUtil {
             sb.append(" sacrifices ").append(damage).append(" nontoken permanents.");
             ability.setStackDescription(sb.toString());
 
-            AllZone.getStack().addSimultaneousStackEntry(ability);
+            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
         }
         
@@ -791,7 +833,7 @@ public final class GameActionUtil {
 
             for (int i = 0; i < keywords.size(); i++) {
                 if (keywords.get(i).startsWith("Poisonous")) {
-                    AllZone.getStack().addSimultaneousStackEntry(ability);
+                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
                 }
 
             }
@@ -829,7 +871,7 @@ public final class GameActionUtil {
                 doubleLife.setStackDescription(aura.getName() + " - " + enchanted.getController()
                         + " doubles his or her life total.");
 
-                AllZone.getStack().addSimultaneousStackEntry(doubleLife);
+                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(doubleLife);
 
             }
         }
@@ -899,7 +941,7 @@ public final class GameActionUtil {
 
                     for (int j = 0; j < max; j++) {
                         final Card c = libList.get(j);
-                        Singletons.getModel().getGameAction().exile(c);
+                        Singletons.getModel().getGame().getAction().exile(c);
                     }
                 }
             }; // ability
@@ -910,7 +952,7 @@ public final class GameActionUtil {
             sb.append("If two or more of those cards have the same name, repeat this process.");
             ability.setStackDescription(sb.toString());
 
-            AllZone.getStack().addSimultaneousStackEntry(ability);
+            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
 
         }
     }
@@ -941,7 +983,7 @@ public final class GameActionUtil {
             produces.put("Plains", "W");
             produces.put("Swamp", "B");
 
-            List<Card> lands = AllZoneUtil.getCardsInGame();
+            List<Card> lands = Singletons.getModel().getGame().getCardsInGame();
             lands = CardLists.filter(lands, Presets.LANDS);
 
             // remove all abilities granted by this Command
@@ -1012,8 +1054,8 @@ public final class GameActionUtil {
             }
             // add +1/+1 to cards
             list.clear();
-            final int num = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Coat of Arms").size();
-            final List<Card> creatures = CardLists.filter(AllZoneUtil.getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.CREATURES);
+            final int num = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Coat of Arms")).size();
+            final List<Card> creatures = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.CREATURES);
 
             for (Card c : creatures) {
                 for (Card c2 : creatures) {
@@ -1037,9 +1079,9 @@ public final class GameActionUtil {
 
         @Override
         public void execute() {
-            final List<Card> alphaStatuses = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Alpha Status");
+            final List<Card> alphaStatuses = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Alpha Status"));
 
-            final List<Card> allCreatures = AllZoneUtil.getCreaturesInPlay();
+            final List<Card> allCreatures = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), Presets.CREATURES);
 
             for (int i = 0; i < this.previouslyPumped.size(); i++) {
                 this.previouslyPumped.get(i).addSemiPermanentAttackBoost(0 - this.previouslyPumpedValue.get(i));
@@ -1074,7 +1116,7 @@ public final class GameActionUtil {
         @Override
         public void execute() {
             // get all creatures
-            final List<Card> cards = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Umbra Stalker");
+            final List<Card> cards = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Umbra Stalker"));
             for (final Card c : cards) {
                 final Player player = c.getController();
                 final List<Card> grave = player.getCardsIn(ZoneType.Graveyard);
@@ -1091,7 +1133,7 @@ public final class GameActionUtil {
 
         @Override
         public void execute() {
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
 
             list = CardLists.filter(list, new Predicate<Card>() {
                 @Override
@@ -1114,7 +1156,7 @@ public final class GameActionUtil {
 
         @Override
         public void execute() {
-            final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Old Man of the Sea");
+            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Old Man of the Sea"));
             for (final Card oldman : list) {
                 if (!oldman.getGainControlTargets().isEmpty()) {
                     if (oldman.getNetAttack() < oldman.getGainControlTargets().get(0).getNetAttack()) {
@@ -1135,7 +1177,7 @@ public final class GameActionUtil {
 
         @Override
         public void execute() {
-            final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Liu Bei, Lord of Shu");
+            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Liu Bei, Lord of Shu"));
 
             if (list.size() > 0) {
                 for (int i = 0; i < list.size(); i++) {
@@ -1174,7 +1216,7 @@ public final class GameActionUtil {
 
         @Override
         public void execute() {
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             list = CardLists.filter(list, new Predicate<Card>() {
                 @Override
                 public boolean apply(final Card c) {
@@ -1192,7 +1234,7 @@ public final class GameActionUtil {
         }
 
         private int countSoundTheCalls() {
-            List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Graveyard, "Sound the Call");
+            List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard), CardPredicates.nameEquals("Sound the Call"));
             return list.size();
         }
 
@@ -1205,7 +1247,7 @@ public final class GameActionUtil {
         @Override
         public void execute() {
             // get all creatures
-            final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Battlefield, "Tarmogoyf");
+            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tarmogoyf"));
 
             for (int i = 0; i < list.size(); i++) {
                 final Card c = list.get(i);
@@ -1216,7 +1258,7 @@ public final class GameActionUtil {
         } // execute()
 
         private int countDiffTypes() {
-            final List<Card> list = AllZoneUtil.getCardsIn(ZoneType.Graveyard);
+            final List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard);
 
             int count = 0;
             for (int q = 0; q < list.size(); q++) {
@@ -1304,7 +1346,7 @@ public final class GameActionUtil {
      */
     public static void doPowerSink(final Player p) {
         // get all lands with mana abilities
-        List<Card> lands = AllZoneUtil.getPlayerLandsInPlay(p);
+        List<Card> lands = p.getLandsInPlay();
         lands = CardLists.filter(lands, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {

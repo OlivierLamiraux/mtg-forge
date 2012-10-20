@@ -21,7 +21,6 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -120,7 +119,7 @@ public class CostSacrifice extends CostPartWithList {
             // choice, it can be Paid even if it's 0
         }
         else {
-            if (!AllZoneUtil.isCardInPlay(source)) {
+            if (!source.isInPlay()) {
                 return false;
             }
             else if (source.isCreature() && activator.hasKeyword("You can't sacrifice creatures to cast spells or activate abilities.")) {
@@ -141,7 +140,7 @@ public class CostSacrifice extends CostPartWithList {
     public final void payAI(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
         this.addListToHash(ability, "Sacrificed");
         for (final Card c : this.getList()) {
-            Singletons.getModel().getGameAction().sacrifice(c, ability);
+            Singletons.getModel().getGame().getAction().sacrifice(c, ability);
         }
     }
 
@@ -164,7 +163,8 @@ public class CostSacrifice extends CostPartWithList {
         }
 
         if (this.getThis()) {
-            CostUtil.setInput(CostSacrifice.sacrificeThis(ability, payment, this));
+            final Input inp = CostSacrifice.sacrificeThis(ability, payment, this);
+            Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
         } else if (amount.equals("All")) {
             this.setList(list);
             CostSacrifice.sacrificeAll(ability, payment, this, list);
@@ -185,7 +185,8 @@ public class CostSacrifice extends CostPartWithList {
                 payment.setPaidManaPart(this);
                 return true;
             }
-            CostUtil.setInput(CostSacrifice.sacrificeFromList(ability, payment, this, list, c));
+            final Input inp = CostSacrifice.sacrificeFromList(ability, payment, this, list, c);
+            Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
         }
 
         return false;
@@ -250,7 +251,7 @@ public class CostSacrifice extends CostPartWithList {
         // TODO Ask First
         for (final Card card : typeList) {
             payment.getAbility().addCostToHashList(card, "Sacrificed");
-            Singletons.getModel().getGameAction().sacrifice(card, sa);
+            Singletons.getModel().getGame().getAction().sacrifice(card, sa);
         }
 
         payment.setPaidManaPart(part);
@@ -307,7 +308,7 @@ public class CostSacrifice extends CostPartWithList {
                 if (typeList.contains(card)) {
                     this.nSacrifices++;
                     part.addToList(card);
-                    Singletons.getModel().getGameAction().sacrifice(card, sa);
+                    Singletons.getModel().getGame().getAction().sacrifice(card, sa);
                     typeList.remove(card);
                     // in case nothing else to sacrifice
                     if (this.nSacrifices == nNeeded) {
@@ -357,7 +358,7 @@ public class CostSacrifice extends CostPartWithList {
             @Override
             public void showMessage() {
                 final Card card = sa.getSourceCard();
-                if (card.getController().isHuman() && AllZoneUtil.isCardInPlay(card)) {
+                if (card.getController().isHuman() && card.isInPlay()) {
                     final StringBuilder sb = new StringBuilder();
                     sb.append(card.getName());
                     sb.append(" - Sacrifice?");
@@ -368,7 +369,7 @@ public class CostSacrifice extends CostPartWithList {
                     if (choice.equals(0)) {
                         part.addToList(card);
                         part.addListToHash(sa, "Sacrificed");
-                        Singletons.getModel().getGameAction().sacrifice(card, sa);
+                        Singletons.getModel().getGame().getAction().sacrifice(card, sa);
                         this.stop();
                         payment.paidCost(part);
                     } else {

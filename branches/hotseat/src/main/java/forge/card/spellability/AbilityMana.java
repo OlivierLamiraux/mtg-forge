@@ -20,9 +20,8 @@ package forge.card.spellability;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import forge.AllZone;
-import forge.AllZoneUtil;
 import forge.Card;
+import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
@@ -239,7 +238,7 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
         runParams.put("Player", player);
         runParams.put("AbilityMana", this);
         runParams.put("Produced", produced);
-        AllZone.getTriggerHandler().runTrigger(TriggerType.TapsForMana, runParams);
+        Singletons.getModel().getGame().getTriggerHandler().runTrigger(TriggerType.TapsForMana, runParams);
 
     } // end produceMana(String)
 
@@ -539,7 +538,7 @@ public class AbilityMana extends AbilityActivated implements java.io.Serializabl
      * @return a boolean.
      */
     public final boolean isUndoable() {
-        return this.undoable && this.getPayCosts().isUndoable() && AllZoneUtil.isCardInPlay(this.getSourceCard());
+        return this.undoable && this.getPayCosts().isUndoable() && this.getSourceCard().isInPlay();
     }
 
     /**

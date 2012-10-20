@@ -17,7 +17,6 @@
  */
 package forge.control.input;
 
-import forge.AllZone;
 import forge.Card;
 import forge.Singletons;
 import forge.game.phase.CombatUtil;
@@ -42,7 +41,7 @@ public class InputCleanup extends Input {
     /** {@inheritDoc} */
     @Override
     public final void showMessage() {
-        final Player active = Singletons.getModel().getGameState().getPhaseHandler().getPlayerTurn(); 
+        final Player active = Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn(); 
         if (active.isComputer()) {
             this.aiCleanupDiscard(active);
             return;
@@ -54,8 +53,8 @@ public class InputCleanup extends Input {
         if (n <= max || max <= -1) {
             CombatUtil.removeAllDamage();
 
-            Singletons.getModel().getGameState().getPhaseHandler().setNeedToNextPhase(true);
-            Singletons.getModel().getGameState().getPhaseHandler().nextPhase(); // TODO keep an eye on this code,
+            Singletons.getModel().getGame().getPhaseHandler().setPlayerMayHavePriority(false);
+            Singletons.getModel().getGame().getPhaseHandler().nextPhase(); // TODO keep an eye on this code,
                                             // see if we can get rid of it.
             return;
         }
@@ -74,7 +73,7 @@ public class InputCleanup extends Input {
     public final void selectCard(final Card card, final PlayerZone zone) {
         if (zone.is(ZoneType.Hand, Singletons.getControl().getPlayer())) {
             card.getController().discard(card, null);
-            if (AllZone.getStack().size() == 0) {
+            if (Singletons.getModel().getGame().getStack().size() == 0) {
                 this.showMessage();
             }
         }
@@ -90,10 +89,10 @@ public class InputCleanup extends Input {
 
         if (ai.getMaxHandSize() != -1) {
             final int numDiscards = size - ai.getMaxHandSize();
-            ai.discard(numDiscards, null, false);
+            ai.discard(numDiscards, null);
         }
         CombatUtil.removeAllDamage();
 
-        Singletons.getModel().getGameState().getPhaseHandler().setNeedToNextPhase(true);
+        Singletons.getModel().getGame().getPhaseHandler().setPlayerMayHavePriority(false);
     }
 }

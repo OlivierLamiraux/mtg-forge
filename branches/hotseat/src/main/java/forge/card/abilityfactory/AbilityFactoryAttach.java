@@ -27,7 +27,6 @@ import java.util.Random;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 
-import forge.AllZoneUtil;
 import forge.Card;
 
 import forge.CardLists;
@@ -99,7 +98,7 @@ public class AbilityFactoryAttach {
                     // The Spell_Permanent (Auras) version of this AF needs to
                     // move the card into play before Attaching
                     this.getSourceCard().addController(this.getActivatingPlayer());
-                    final Card c = Singletons.getModel().getGameAction()
+                    final Card c = Singletons.getModel().getGame().getAction()
                             .moveTo(this.getActivatingPlayer().getZone(ZoneType.Battlefield), this.getSourceCard());
                     this.setSourceCard(c);
                     AbilityFactoryAttach.attachResolve(abilityFactory, this);
@@ -347,7 +346,7 @@ public class AbilityFactoryAttach {
             return null;
         }
 
-        List<Card> list = AllZoneUtil.getCardsIn(tgt.getZone());
+        List<Card> list = Singletons.getModel().getGame().getCardsIn(tgt.getZone());
         list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), attachSource);
         if (params.containsKey("AITgts")) {
             list = CardLists.getValidCards(list, params.get("AITgts"), sa.getActivatingPlayer(), attachSource);
@@ -590,7 +589,7 @@ public class AbilityFactoryAttach {
      * @return true, if is useful keyword
      */
     public static boolean isUsefulAttachKeyword(final String keyword, final Card card, final SpellAbility sa) {
-        final PhaseHandler ph = Singletons.getModel().getGameState().getPhaseHandler();
+        final PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler();
         final Player human = sa.getActivatingPlayer().getOpponent();
         if (!CardUtil.isStackingKeyword(keyword) && card.hasKeyword(keyword)) {
             return false;
@@ -1115,7 +1114,7 @@ public class AbilityFactoryAttach {
             source.setSVar("PayX", Integer.toString(xPay));
         }
 
-        if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
+        if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
                 && !"Curse".equals(af.getMapParams().get("AILogic"))) {
             return false;
         }
@@ -1313,7 +1312,7 @@ public class AbilityFactoryAttach {
                         return;
                     }
 
-                    if (AllZoneUtil.isCardInPlay(crd)) {
+                    if (crd.isInPlay()) {
                         crd.removeController(card);
                     }
 
@@ -1404,7 +1403,7 @@ public class AbilityFactoryAttach {
             if (tgt.canTgtPlayer()) {
                 final ArrayList<Player> players = new ArrayList<Player>();
 
-                for (Player player : Singletons.getModel().getGameState().getPlayers()) {
+                for (Player player : Singletons.getModel().getGame().getPlayers()) {
                     if (player.isValid(tgt.getValidTgts(), aura.getActivatingPlayer(), source)) {
                         players.add(player);
                     }
@@ -1417,7 +1416,7 @@ public class AbilityFactoryAttach {
                     return true;
                 }
             } else {
-                List<Card> list = AllZoneUtil.getCardsIn(tgt.getZone());
+                List<Card> list = Singletons.getModel().getGame().getCardsIn(tgt.getZone());
                 list = CardLists.getValidCards(list, tgt.getValidTgts(), aura.getActivatingPlayer(), source);
 
                 final Object o = GuiChoose.one(source + " - Select a card to attach to.", list);
@@ -1645,7 +1644,7 @@ public class AbilityFactoryAttach {
             source.setSVar("PayX", Integer.toString(xPay));
         }
 
-        if (Singletons.getModel().getGameState().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
+        if (Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_BLOCKERS_INSTANT_ABILITY)
                 && !"Curse".equals(af.getMapParams().get("AILogic"))) {
             return false;
         }
@@ -1711,7 +1710,7 @@ public class AbilityFactoryAttach {
         // If Cast Targets will be checked on the Stack
         for (final Object o : targets) {
             String valid = params.get("UnattachValid");
-            List<Card> unattachList = AllZoneUtil.getCardsIn(ZoneType.Battlefield);
+            List<Card> unattachList = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             unattachList = CardLists.getValidCards(unattachList, valid.split(","), source.getController(), source);
             for (final Card c : unattachList) {
                 AbilityFactoryAttach.handleUnattachment(o, c, af);

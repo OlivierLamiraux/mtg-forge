@@ -1735,7 +1735,14 @@ public class Card extends GameEntity implements Comparable<Card> {
             return new CardColor(this);
         }
         CardColor colors = null;
-        final ArrayList<CardColor> globalChanges = Singletons.getModel().getGame().getColorChanger().getColorChanges();
+        final ArrayList<CardColor> globalChanges;
+        if (Singletons.getModel().getGame() == null) {
+            globalChanges = new ArrayList<CardColor>();
+        }
+        else {
+            globalChanges = Singletons.getModel().getGame().getColorChanger().getColorChanges();
+        }
+
         colors = this.determineColor(globalChanges);
         colors.fixColorless();
         return colors;
@@ -2343,7 +2350,7 @@ public class Card extends GameEntity implements Comparable<Card> {
                     }
                     sbLong.append(" on it.)").append("\r\n");
                 }
-            } else if (keyword.startsWith("Modular") || keyword.startsWith("Soulshift") 
+            } else if (keyword.startsWith("Modular") || keyword.startsWith("Soulshift")
                     || keyword.startsWith("ETBReplacement") || keyword.startsWith("MayEffectFromOpeningHand")) {
                 continue;
             } else if (keyword.startsWith("Provoke")) {
@@ -3669,6 +3676,7 @@ public class Card extends GameEntity implements Comparable<Card> {
         this.sickness = b;
     }
 
+    /** @return boolean */
     public final boolean isFirstTurnControlled() {
         return this.sickness;
     }
@@ -6312,8 +6320,10 @@ public class Card extends GameEntity implements Comparable<Card> {
      * @return a boolean.
      */
     public final boolean isType(String type) {
-        if ( type == null ) return false;
-        
+        if (type == null) {
+            return false;
+        }
+
         type = this.toMixedCase(type);
 
         if (this.typeContains(type)
@@ -6448,7 +6458,7 @@ public class Card extends GameEntity implements Comparable<Card> {
             if (source.getChosenColor().size() == 0) {
                 return false;
             }
-            for(String col : source.getChosenColor()) {
+            for (String col : source.getChosenColor()) {
                 if (!CardUtil.getColors(this).contains(col)) {
                     return false;
                 }
@@ -6458,12 +6468,12 @@ public class Card extends GameEntity implements Comparable<Card> {
                 return false;
             }
             int matched = 0;
-            for(String col : source.getChosenColor()) {
+            for (String col : source.getChosenColor()) {
                 if (CardUtil.getColors(this).contains(col)) {
                     matched++;
                 }
             }
-            if(matched == 0) {
+            if (matched == 0) {
                 return false;
             }
         } else if (property.equals("DoubleFaced")) {
@@ -6930,19 +6940,19 @@ public class Card extends GameEntity implements Comparable<Card> {
                 return false;
             }
         } else if (property.startsWith("dealtDamageToYouThisTurn")) {
-            if ( !this.getDamageHistory().getThisTurnDamaged().contains(sourceController) ) {
+            if (!this.getDamageHistory().getThisTurnDamaged().contains(sourceController)) {
                 return false;
             }
         } else if (property.startsWith("dealtDamageToOppThisTurn")) {
-            if ( !this.getDamageHistory().getThisTurnDamaged().contains(sourceController.getOpponent()) ) {
+            if (!this.getDamageHistory().getThisTurnDamaged().contains(sourceController.getOpponent())) {
                 return false;
             }
         } else if (property.startsWith("controllerWasDealtCombatDamageByThisTurn")) {
-            if ( !this.getDamageHistory().getThisTurnCombatDamaged().contains(sourceController) ) {
+            if (!this.getDamageHistory().getThisTurnCombatDamaged().contains(sourceController)) {
                 return false;
             }
         } else if (property.startsWith("controllerWasDealtDamageByThisTurn")) {
-            if ( !this.getDamageHistory().getThisTurnDamaged().contains(sourceController) ) {
+            if (!this.getDamageHistory().getThisTurnDamaged().contains(sourceController)) {
                 return false;
             }
         } else if (property.startsWith("wasDealtDamageThisTurn")) {
@@ -8824,7 +8834,7 @@ public class Card extends GameEntity implements Comparable<Card> {
                 }
 
                 if (kw.equals("Protection from colored spells")
-                        && (source.isInstant() || source.isSorcery() 
+                        && (source.isInstant() || source.isSorcery()
                                 || (source.isAura() && !source.isInZone(ZoneType.Battlefield)))
                         && !source.isColorless()) {
                     return true;
@@ -9080,7 +9090,8 @@ public class Card extends GameEntity implements Comparable<Card> {
         this.startsGameInPlay = startsGameInPlay;
     }
 
-    public boolean isInPlay() {        
+    /** @return boolean */
+    public boolean isInPlay() {
         if (getController() == null) {
             return false;
         }

@@ -21,9 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import forge.Command;
-import forge.Singletons;
 import forge.game.MatchController;
-import forge.game.phase.PhaseHandler;
 import forge.gui.GuiInput;
 import forge.gui.framework.ICDoc;
 import forge.gui.framework.SDisplayUtil;
@@ -51,13 +49,6 @@ public enum CMessage implements ICDoc {
         @Override
         public void actionPerformed(final ActionEvent evt) {
             inputControl.selectButtonOK();
-
-            final PhaseHandler phaseHandler = Singletons.getModel().getGame().getPhaseHandler(); 
-            if (!phaseHandler.mayPlayerHavePriority()) {
-                // moves to next turn
-                phaseHandler.setPlayerMayHavePriority(true);
-                phaseHandler.nextPhase();
-            }
             VMessage.SINGLETON_INSTANCE.getBtnOK().requestFocusInWindow();
         }
     };

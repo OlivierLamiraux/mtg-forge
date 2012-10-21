@@ -145,8 +145,6 @@ public class MatchController {
 
             CMessage.SINGLETON_INSTANCE.updateGameInfo(this);
             // Update observers
-            currentGame.getStack().updateObservers();
-            input.updateObservers();
             currentGame.getGameLog().updateObservers();
 
             

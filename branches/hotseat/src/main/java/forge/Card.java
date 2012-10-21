@@ -9088,6 +9088,7 @@ public class Card extends GameEntity implements Comparable<Card> {
     }
 
     public void onCleanupPhase(final Player turn) {
+        setDamage(0);
         resetPreventNextDamage();
         resetReceivedDamageFromThisTurn();
         resetDealtDamageToThisTurn();

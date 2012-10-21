@@ -108,6 +108,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      */
     public final void setPlayerTurn(final Player s) {
         this.playerTurn = s;
+        this.setPriority(s);
     }
 
     /**
@@ -134,17 +135,6 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
         return this.pPlayerPriority;
     }
 
-    /**
-     * <p>
-     * setPriorityPlayer.
-     * </p>
-     * 
-     * @param p
-     *            a {@link forge.game.player.Player} object.
-     */
-    public final void setPriorityPlayer(final Player p) {
-        this.pPlayerPriority = p;
-    }
 
     /**
      * <p>
@@ -155,18 +145,6 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      */
     public final Player getFirstPriority() {
         return this.pFirstPriority;
-    }
-
-    /**
-     * <p>
-     * setFirstPriority.
-     * </p>
-     * 
-     * @param p
-     *            a {@link forge.game.player.Player} object.
-     */
-    public final void setFirstPriority(final Player p) {
-        this.pFirstPriority = p;
     }
 
     /**
@@ -432,7 +410,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      */
     public final void nextPhase() {
         
-        this.setPlayerMayHavePriority(false);//  PlayerPriorityAllowed = false;
+        this.setPlayerMayHavePriority(true);//  PlayerPriorityAllowed = false;
 
         // If the Stack isn't empty why is nextPhase being called?
         if (game.getStack().size() != 0) {
@@ -440,67 +418,69 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
             return;
         }
         setPhaseEffects(true);
-        if (!game.isCardInPlay("Upwelling")) {
-            for (Player p : game.getPlayers()) {
-                int burn = p.getManaPool().clearPool();
-                if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_MANABURN)) {
-                    p.loseLife(burn, null);
+
+        for (Player p : game.getPlayers()) {
+            int burn = p.getManaPool().clearPool(true);
+            if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_MANABURN)) {
+                p.loseLife(burn, null);
+            }
+        }
+
+        switch (this.phase) {
+            case UNTAP:
+                this.nCombatsThisTurn = 0;
+                break;
+
+            case COMBAT_DECLARE_ATTACKERS:
+                game.getStack().unfreezeStack();
+                this.nCombatsThisTurn++;
+                break;
+
+            case COMBAT_DECLARE_BLOCKERS:
+                game.getStack().unfreezeStack();
+                break;
+                
+            case COMBAT_END:
+                //SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
+                game.getCombat().reset();
+                this.resetAttackedThisCombat(this.getPlayerTurn());
+                this.bCombat = false;
+                
+                // TODO: ExtraCombat needs to be changed for other spell/abilities
+                // that give extra combat can do it like ExtraTurn stack ExtraPhases
+                if (this.extraCombats > 0) {
+                    final Player player = this.getPlayerTurn();
+                    final Player opp = player.getOpponent();
+
+                    this.bCombat = true;
+                    this.extraCombats--;
+                    game.getCombat().reset();
+                    game.getCombat().setAttackingPlayer(player);
+                    game.getCombat().setDefendingPlayer(opp);
+                    this.phase = PhaseType.COMBAT_BEGIN;
                 }
-            }
+                break;
+                
+            case CLEANUP:
+                this.bPreventCombatDamageThisTurn = false;
+                if (!this.bRepeat) {
+                    this.setPlayerTurn(this.handleNextTurn());
+                }
+                break;
+            default: // no action
         }
 
-        if (this.getPhase() == PhaseType.COMBAT_DECLARE_ATTACKERS) {
-            game.getStack().unfreezeStack();
-            this.nCombatsThisTurn++;
-        } else if (this.getPhase() == PhaseType.UNTAP) {
-            this.nCombatsThisTurn = 0;
-        }
-
-        if (this.getPhase() == PhaseType.COMBAT_END) {
-            //SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
-            game.getCombat().reset();
-            this.resetAttackedThisCombat(this.getPlayerTurn());
-            this.bCombat = false;
-        }
-
-        if (this.phase == PhaseType.CLEANUP) {
-            this.bPreventCombatDamageThisTurn = false;
-            if (!this.bRepeat) {
-                this.setPlayerTurn(this.handleNextTurn());
-            }
-        }
-
-        if (this.is(PhaseType.COMBAT_DECLARE_BLOCKERS)) {
-            game.getStack().unfreezeStack();
-        }
-
-        if (this.is(PhaseType.COMBAT_END) && (this.extraCombats > 0)) {
-            // TODO: ExtraCombat needs to be changed for other spell/abilities
-            // that give extra combat
-            // can do it like ExtraTurn stack ExtraPhases
-
-            final Player player = this.getPlayerTurn();
-            final Player opp = player.getOpponent();
-
-            this.bCombat = true;
-            this.extraCombats--;
-            game.getCombat().reset();
-            game.getCombat().setAttackingPlayer(player);
-            game.getCombat().setDefendingPlayer(opp);
-            this.phase = PhaseType.COMBAT_DECLARE_ATTACKERS;
+        if (this.bRepeat) { // for when Cleanup needs to repeat itself
+            this.bRepeat = false;
         } else {
-            if (!this.bRepeat) { // for when Cleanup needs to repeat itself
-                this.phase = phase.getNextPhase();
-            } else {
-                this.bRepeat = false;
-            }
+            this.phase = phase.getNextPhase();
         }
 
         game.getGameLog().add("Phase", this.getPlayerTurn() + " " + this.getPhase().Name, 6);
 
         // **** Anything BELOW Here is actually in the next phase. Maybe move
         // this to handleBeginPhase
-        if (this.getPhase() == PhaseType.UNTAP) {
+        if (this.phase == PhaseType.UNTAP) {
             this.turn++;
             game.getGameLog().add("Turn", "Turn " + this.turn + " (" + this.getPlayerTurn() + ")", 0);
         }
@@ -510,11 +490,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
         // When consecutively skipping phases (like in combat) this section
         // pushes through that block
         this.updateObservers();
-
-        if (!this.mayPlayerHavePriority()) {
-            this.setPlayerMayHavePriority(true);
-            this.nextPhase();
-        }
+        // it no longer does.
     }
 
     /**
@@ -766,20 +742,22 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
         // the firstAction is the player who gained Priority First in this segment
         // of Priority
 
-        if (firstAction.equals(actingPlayer)) {
-            // pass the priority to other player
-            this.setPriorityPlayer(game.getNextPlayerAfter(actingPlayer));
-            Singletons.getModel().getMatch().getInput().resetInput();
-        } else {
-            if (game.getStack().size() == 0) {
-                // end phase
+        Player nextPlayer = game.getNextPlayerAfter(actingPlayer);
+        if (firstAction.equals(nextPlayer)) {
+            if (game.getStack().isEmpty()) {
+                this.setPriority(this.getPlayerTurn()); // this needs to be set early as we exit the phase
+                // end phase 
                 setPlayerMayHavePriority(true);
-                this.pPlayerPriority = this.getPlayerTurn(); // this needs to be
-                                                             // set early
-                // as we exit the phase
+                nextPhase();
+                return;
             } else if (!game.getStack().hasSimultaneousStackEntries()) {
                 game.getStack().resolveStack();
             }
+        } else {
+            // pass the priority to other player
+            this.pPlayerPriority = nextPlayer;
+            Singletons.getModel().getMatch().getInput().resetInput();
+
         }
         game.getStack().chooseOrderOfSimultaneousStackEntryAll();        
     }

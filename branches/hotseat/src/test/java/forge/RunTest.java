@@ -2,7 +2,6 @@ package forge;
 
 import org.testng.annotations.Test;
 
-import forge.card.cardfactory.CardFactoryInterface;
 import forge.game.phase.CombatUtil;
 
 /**

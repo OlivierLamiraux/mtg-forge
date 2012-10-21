@@ -25,7 +25,6 @@ import forge.game.phase.PhaseType;
 import forge.game.player.ComputerAIInput;
 import forge.game.player.Player;
 import forge.game.zone.MagicStack;
-import forge.gui.match.CMatchUI;
 import forge.util.MyObservable;
 
 /**
@@ -68,7 +67,7 @@ public class InputControl extends MyObservable implements java.io.Serializable {
      */
     public final void setInput(final Input in) {
         boolean isInputEmpty = this.input == null || this.input instanceof InputPassPriority;
-        
+        System.out.println(in.getClass().getName());
         if (!this.game.getStack().isResolving() && isInputEmpty) {
             this.input = in;
         } else {
@@ -202,7 +201,7 @@ public class InputControl extends MyObservable implements java.io.Serializable {
             stack.freezeStack();
 
             if (playerTurn.isHuman() && !playerTurn.getController().mayAutoPass(phase)) {
-                game.getCombat().initiatePossibleDefenders(playerTurn.getOpponent());
+                game.getCombat().initiatePossibleDefenders(playerTurn.getOpponents());
                 return new InputAttack();
             }
         } else if (phase == PhaseType.COMBAT_DECLARE_BLOCKERS) {

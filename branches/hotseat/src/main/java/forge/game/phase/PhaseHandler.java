@@ -408,7 +408,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      * nextPhase.
      * </p>
      */
-    public final void nextPhase() {
+    private final void nextPhase() {
         
         this.setPlayerMayHavePriority(true);//  PlayerPriorityAllowed = false;
 

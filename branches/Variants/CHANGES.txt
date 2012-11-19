@@ -1,0 +1,95 @@
+Forge Beta: 1#-##-2012 ver 1.3.2
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+
+11### cards in total.
+
+
+
+
+--
+
+On several occasions people have noticed that the forge deck editor and/or quest mode card shop would not open or display. We have also received reports that some of the tabs/panels in the deck editor are missing. Try deleting the file named "editor_preferred.xml" which is found in the "res/layouts" folder. This should force forge to then use the "editor_default.xml" file instead.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with eachother. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+It seems like the front face of double faced cards aren't triggering properly, but the back face and single faced cards are.
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there are two remaining issues that we hope will be addressed in the near future.
+
+1. Leave play triggers don't work correct for clones.
+2. Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+We are now using a different system for our snapshot and beta releases. Unfortunately, this new system builds a jar file which does not accurately display the SVN revision number.
+
+Forge may not be fully java 7 compatible at this time. We recommend that people downgrade to java 6.
+
+--
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+Fixes/Features:
+
+- Cleared out the changes.txt file, now ready for new material.
+- CheckStyle.
+- Tweaked doTriggerAINoCost of AF DamageAll.
+- Tweaked shouldPumpCard.
+- CheckStyle.
+- Fixed Squandered Resources.
+- Fixed optional Replacement effects not firing again after "No" is chosen once (experimental).
+- Little script updates.
+- When a game is restarted, set lands played back to 0.
+- remove unused imports
+- InputSelectManyCards uses only overloads syntax. made abstract
+- Fixed AF Mana used on subabilities.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- CheckStyle.
+- More Improvements of AI for Auras with "AILogic$ Curse".
+- Fixing accidental submission of potential Sideboard code
+- Changed the "spend only <color> mana on X" mechanism from using a SVar to using an ability parameter (first step towards implementing e.g. Soul Burn).
+- Fixed AI code meddling with damage replacements.
+- Fixed ConcurrentModificationException in InputMulligan.
+- Fixed InputSelectMany.
+- Improved ChooseSource AI.
+- Fixed a shouldPumpCard call switching P/T.
+- fixed NPE bug in initialize of colorX in InputPayManaX class
+- added code to allow AI to make Charm choice
+- modified inputUntapUpToNType so same card cannot be chosen more than once
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Sound System: improved the performance of the sound system by synchronizing certain sounds that tend to occur multiple times in rapid succession (damage, life loss, bury a creature) so that only one can play at a time.
+- CheckStyle.
+- Added some LQ pic URLs.
+- added ability to loop over defined cards to RepeatEachEffect. added InGraveyard to Card.hasProperty.
+- Added a LQ pic URL.
+- Fixed Steel Hellkite.
+- ChangeZoneAll with destination Library will now let you choose the order.
+- Fixed spell description for Hypnotic Cloud
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+
+
+Many people helped with this version. A special thank you goes out to them. (Attempted to list names alphabetically):
+
+
+
+
+Added the following cards:
+
+Island Sanctuary
+Chronomantic Escape
+Kamahl's Sledge
+Crypt Rats
+Crimson Hellkite
+Equal Treatment
+Terastodon
+Demonfire
+Mirror of Fate
+
+
+end

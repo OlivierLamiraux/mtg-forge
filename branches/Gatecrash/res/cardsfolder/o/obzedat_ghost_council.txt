@@ -11,7 +11,7 @@ SVar:TrigExile:AB$ ChangeZone | Cost$ 0 | Defined$ Self | Origin$ Battlefield | 
 SVar:DBDelaytrig:DB$ Effect | Name$ Obzedat Effect | Triggers$ TrigEOT | SVars$ ObzedatReturn,ObzedatPump,ObzedatCleanup | References$ TrigEOT,ObzedatReturn,ObzedatPump,ObzedatCleanup | RememberObjects$ Self | Duration$ Permanent
 SVar:TrigEOT:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ You | Execute$ ObzedatReturn | TriggerDescription$ Return CARDNAME to the battlefield under it's owner's control. It gains haste.
 SVar:ObzedatReturn:AB$ ChangeZone | Cost$ 0 | Defined$ Remembered | Origin$ Exile | Destination$ Battlefield | SubAbility$ ObzedatPump
-SVar:ObzedatPump:DB$ Pump | Defined$ Remembered | KW$ Haste | SubAbility$ ObzedatCleanup
+SVar:ObzedatPump:DB$ Pump | Defined$ Remembered | KW$ Haste | Permanent$ True | SubAbility$ ObzedatCleanup
 SVar:ObzedatCleanup:DB$ ChangeZone | Defined$ Self | Origin$ Command | Destination$ Exile
 SVar:Rarity:Mythic
 SVar:Picture:http://www.wizards.com/global/images/magic/general/obzedat_ghost_council.jpg

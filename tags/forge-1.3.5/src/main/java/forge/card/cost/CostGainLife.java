@@ -1,0 +1,209 @@
+/*
+ * Forge: Play Magic: the Gathering.
+ * Copyright (C) 2011  Forge Team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package forge.card.cost;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import forge.Card;
+import forge.card.abilityfactory.AbilityFactory;
+import forge.card.spellability.SpellAbility;
+import forge.game.player.Player;
+import forge.gui.GuiChoose;
+
+/**
+ * The Class CostGainLife.
+ */
+public class CostGainLife extends CostPart {
+    private int lastPaidAmount = 0;
+
+    /**
+     * Gets the last paid amount.
+     * 
+     * @return the last paid amount
+     */
+    public final int getLastPaidAmount() {
+        return this.lastPaidAmount;
+    }
+
+    /**
+     * Sets the last paid amount.
+     * 
+     * @param paidAmount
+     *            the new last paid amount
+     */
+    public final void setLastPaidAmount(final int paidAmount) {
+        this.lastPaidAmount = paidAmount;
+    }
+
+    /**
+     * Instantiates a new cost gain life.
+     * 
+     * @param amount
+     *            the amount
+     */
+    public CostGainLife(final String amount) {
+        this.setAmount(amount);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see forge.card.cost.CostPart#toString()
+     */
+    @Override
+    public final String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Have an opponent gain ").append(this.getAmount()).append(" life");
+        return sb.toString();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see forge.card.cost.CostPart#refund(forge.Card)
+     */
+    @Override
+    public void refund(final Card source) {
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * forge.card.cost.CostPart#canPay(forge.card.spellability.SpellAbility,
+     * forge.Card, forge.Player, forge.card.cost.Cost)
+     */
+    @Override
+    public final boolean canPay(final SpellAbility ability, final Card source, final Player activator, final Cost cost) {
+        final Integer amount = this.convertAmount();
+        boolean oppCanGainLife = false;
+        if (amount != null) {
+            for (final Player opp : activator.getOpponents()) {
+                if (opp.canGainLife()) {
+                    oppCanGainLife = true;
+                    break;
+                }
+            }
+        }
+
+        return oppCanGainLife;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see forge.card.cost.CostPart#payAI(forge.card.spellability.SpellAbility,
+     * forge.Card, forge.card.cost.Cost_Payment)
+     */
+    @Override
+    public final void payAI(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
+        final List<Player> oppsThatCanGainLife = new ArrayList<Player>();
+        for (final Player opp : ai.getOpponents()) {
+            if (opp.canGainLife()) {
+                oppsThatCanGainLife.add(opp);
+            }
+        }
+        oppsThatCanGainLife.get(0).gainLife(this.getLastPaidAmount(), null);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * forge.card.cost.CostPart#payHuman(forge.card.spellability.SpellAbility,
+     * forge.Card, forge.card.cost.Cost_Payment)
+     */
+    @Override
+    public final boolean payHuman(final SpellAbility ability, final Card source, final CostPayment payment) {
+        final String amount = this.getAmount();
+        final Player activator = ability.getActivatingPlayer();
+        final int life = activator.getLife();
+
+        Integer c = this.convertAmount();
+        if (c == null) {
+            final String sVar = ability.getSVar(amount);
+            // Generalize this
+            if (sVar.equals("XChoice")) {
+                c = CostUtil.chooseXValue(source, ability,  life);
+            } else {
+                c = AbilityFactory.calculateAmount(source, amount, ability);
+            }
+        }
+
+        final List<Player> oppsThatCanGainLife = new ArrayList<Player>();
+        for (final Player opp : activator.getOpponents()) {
+            if (opp.canGainLife()) {
+                oppsThatCanGainLife.add(opp);
+            }
+        }
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(source.getName()).append(" - Choose an opponent to gain ").append(c).append(" life:");
+
+        final Player chosenToGain = GuiChoose.oneOrNone(sb.toString(), oppsThatCanGainLife);
+        if (null == chosenToGain) {
+            payment.setCancel(true);
+            payment.getRequirements().finishPaying();
+            return false;
+        } else {
+            final Player chosen = chosenToGain;
+            chosen.gainLife(c, null);
+            this.setLastPaidAmount(c);
+            payment.setPaidManaPart(this);
+        }
+        return true;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * forge.card.cost.CostPart#decideAIPayment(forge.card.spellability.SpellAbility
+     * , forge.Card, forge.card.cost.Cost_Payment)
+     */
+    @Override
+    public final boolean decideAIPayment(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
+
+
+        Integer c = this.convertAmount();
+        if (c == null) {
+            final String sVar = ability.getSVar(this.getAmount());
+            // Generalize this
+            if (sVar.equals("XChoice")) {
+                return false;
+            } else {
+                c = AbilityFactory.calculateAmount(source, this.getAmount(), ability);
+            }
+        }
+
+        final List<Player> oppsThatCanGainLife = new ArrayList<Player>();
+        for (final Player opp : ai.getOpponents()) {
+            if (opp.canGainLife()) {
+                oppsThatCanGainLife.add(opp);
+            }
+        }
+
+        if (oppsThatCanGainLife.size() == 0) {
+            return false;
+        }
+        this.setLastPaidAmount(c);
+        return true;
+    }
+}

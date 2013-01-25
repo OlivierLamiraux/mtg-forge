@@ -1,4 +1,4 @@
-Name:Aetherize
+Name:AEtherize
 ManaCost:3 U
 Types:Instant
 Text:no text

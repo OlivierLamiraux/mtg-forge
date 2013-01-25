@@ -7,4 +7,4 @@ SVar:DBPump:DB$ Pump | Cost$ 0 | Defined$ Targeted | KW$ HIDDEN This card doesn'
 SVar:Cipher:DB$ Encode | Defined$ Self | ConditionCheckSVar$ IsEncoded | ConditionSVarCompare$ EQ0
 SVar:IsEncoded:Number$0
 SVar:Picture:http://www.wizards.com/global/images/magic/general/hands_of_binding.jpg
-End 
+End

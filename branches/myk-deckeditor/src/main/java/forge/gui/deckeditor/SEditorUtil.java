@@ -86,7 +86,7 @@ public final class SEditorUtil  {
      * @return rounded result (int)
      */
     public static int calculatePercentage(final int x0, final int y0) {
-        return (int) Math.round((double) x0 / (double) y0 * 100);
+        return (int) Math.round((double) (x0 * 100) / (double) y0);
     }
 
     public static <T extends InventoryItem> void setLabelTextSum(JLabel label, final ItemPoolView<T> deck, Predicate<CardRules> predicate) {

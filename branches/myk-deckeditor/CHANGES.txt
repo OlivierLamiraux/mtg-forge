@@ -1,0 +1,458 @@
+Forge Beta: 01-##-2013 ver 1.3.6
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+11### cards in total.
+
+
+Many of the new Gatecrash cards are now scripted and are included in this snapshot build for you to playtest. It looks like 240 of the 249 cards are now implemented. This includes cards that are new to Forge and cards that are reprints of existing cards. This is a work in progress.
+
+At this time Forge will only download the Gatecrash low quality pitures. The Gatecrash set pictures are not yet available and it may take a few weeks for the to become available.
+
+We have the start of a new Planechase game variant in place but this is not finished at this time.
+
+--
+
+A second Quest World, Jamuraa, has been added to Forge. When playing Quest mode, it is now possible to 'Travel' between the regular Quest environment and the two Worlds, Shandalar and Jamuraa, both of which include special formats, opponents and challenges. Or you can start a new Quest in any of them.
+
+Like Shandalar, Jamuraa is a fantasy world. Its peaceful existence has recently been wrecked by a planar conjunction that shattered the barriers between Jamuraa and the infernal planes known as Jahim, Saqar, and Jahannam. The demon planeswalkers who rule those planes, and their hellish sister, Lilith, are now extending their influence over Jamuraa and gradually destroying the whole continent. Your task is to fight their minions and ultimately challenge the four demons - but beware, their destructive might is unfathomable!
+
+From a technical perspective, the following sets are available to the player in Jamuraa: 
+5th Edition, Arabian Nights, Mirage, Visions, Weatherlight.
+
+Jamuraa contains:
+- 81 opponent decks, broken down as follows: 13 'easy' decks, 17 'medium' decks, 31 'hard' decks, and 20 'very hard' decks.
+- 9 challenges, including the 4 demon planeswalkers (the 3 demon rulers and Lilith) and 5 other special scenarios set in Jamuraa. All challenges are repeatable. All are fairly hard, and the 4 demon challenges are especially fiendish.
+For the most part, the opponent duel and challenge decks are built with the same format restrictions as your own cardpool, and some of the easiest opponent decks were in fact based on a limited cardpool. But there will be exceptions, especially in the hard/very hard decks and challenges, which can be more like Vintage/T1 decks than pure Mirage + 5th Edition decks. There will be older cards here and there, and maybe even a random Tempest card or two (although these are extremely scarce!). 
+Hint: if you find the later 'Vintage' opponent decks unfair or near-impossible to beat with your 5th Edition/Mirage block cards, you can Travel to Shandalar and collect some old power cards there, and then return to Jamuraa. Just remember to complete your challenges before traveling. 
+
+--
+
+This version of forge includes a few sound files for the new sound effect system. While we have several sounds assigned to a few of the available events there are a number of events that do not yet have a assigned sound file. This should be considered a work in progress and we could use some help in finding interesting sounds that we can add to forge.
+
+The sound files need to be in wav or au format, wav appears to be more wide spread but the code can handle either format. The sound files need to be copy right free and they should be in the public domain.
+
+You can either record your own sounds if you have the necessary equipment or you may be able to find an appropriate sound on a web site such as this site:
+
+http://www.freesound.org/browse/
+
+You should note that sound files can be large sized and we would like to avoid this if possible. A good size to shoot for would be 50 K or less. There is a freeware sound editor that may have versions for all operating systems. This app is named Audacity.
+
+We have a forge forum topic at the Collectible Card Games Headquarters web site that is devoted to finding sounds for this new sound system. Please visit this topic and contribute a sound or two. We can use your help and assistance. :)
+
+http://www.slightlymagic.net/forum/viewtopic.php?f=26&t=8570
+
+--
+
+On several occasions people have noticed that the forge deck editor and/or quest mode card shop would not open or display. We have also received reports that some of the tabs/panels in the deck editor are missing. Try deleting the file named "editor_preferred.xml" which is found in the "res/layouts" folder. This should force forge to then use the "editor_default.xml" file instead.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with eachother. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+It seems like the front face of double faced cards aren't triggering properly, but the back face and single faced cards are.
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there are two remaining issues that we hope will be addressed in the near future.
+
+1. Leave play triggers don't work correct for clones.
+2. Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+We are now using a different system for our snapshot and beta releases. Unfortunately, this new system builds a jar file which does not accurately display the SVN revision number.
+
+Forge is likely to be compatible with Java 7 at this time. Some people have used forge with Java 7 and have not reported any problems that are related to Java 7. If you would like to upgrade to Java 7 and have held off because of Forge then you may upgrade as we do not think that it will cause an incompatibility type of problem at this time. We will continue to try to maintain compatibility with Java 6 for the foreseeable future.
+
+--
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+Fixes/Features:
+
+- Cleared out the changes.txt file, now ready for new material.
+- Fixed "CounterType$ Any" in AF CounterRemove.
+- fixing issues with zero mana cost (such as suspend of Lotus Bloom)
+- GameAction playXXXX now require a player parameter
+- playCard method split into several simplier ones.
+- merging r18995-r19086 from Trunk into GTC branch
+- Computer and human flashback zones were mixed up
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Fixing CC of Crosswinds
+- a correct handling lotus bloom and its suspension
+- removed duplicate in GameAction
+- fixes crash when Rupture Spire ETB
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Removed an in-play card that could cause problems in a Jamuraa challenge.
+- Updating PerSetTracking.py to ignore specific sets
+- Some improvements to the structure of PerSetTracking.py 
+- Stats about Standard Format printed, similar to Distinct
+- Cloud key giving unsuitable options (http://www.slightlymagic.net/forum/viewtopic.php?p=107918)
+- Fixing issue with Mana Abilities and Undoable timing
+- Convert Undiscovered Paradise to script
+- Initial Planechase commit
+- Deck format checkbox also disables checks for limited and quest modes
+- Added can't be blocked by creature token keyword. Made mandatory choice box return null is choice list is null or empty.
+- Fix for AI demorphing creatures by Making sure preTFD is set properly when Morph spell resolves
+- NPE checks for fresh Forge install with no quests created
+- Fix for Turnabout
+- NOTE Apparently the "TargetedPlayerCtrl" property doesn't actually work. It seems like 14 other scripts use this property
+- Activating player is not always the player revealing cards. Added parameter to set number of cards to reveal.
+- Modified encode effect to require a creature under activator's control before exile choice.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Fixed the Deathly Dominion precon Set code
+- Made the Generate option for planar decks actually generate a planar deck and not a scheme deck!
+- fixes 15 warnings eclipse showed up
+- Fixed the trigger description of Phantasmal Sphere
+- Costs: removed isUndoable, isReusable backing fields, appropiate values are returned by method overloads in classes
+- Costs: joined all CostGainLife implementations. Syntax is: GainLife<LifeAmount/Player.Selector/[cntPlayers|*]> asterisk in last parameter means "all players".
+- Changed a lot of methods to pass GameState as a parameter rather than get it from Singletons.*
+- updated scritps with new GainLife syntax
+- fixing "play land" name popping for abilities that were not related to lands
+- CostPart.java got autoformatted
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Fixed issues with blocking triggers
+- merging r19087-19136 from Trunk into GTC branch
+- Unified variant deck editor initial commit (Does not work 100% yet)
+- Fixed new Planar deck editor
+- More options to challenge rewards:
+* Duplicate card of player's choice
+* A specific card and edition
+* n% chance for a given reward
+- Added oracles for planes
+- Fixed cost description of Grimgrin, Corpse-Born
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Second iteration of the new challenge rewards code. Put the card chooser into a new class. Currently its only type option is "duplicate", new types may be added later.
+- Cleaned up unused imports.
+- Converted Flash of Defiance to an effect
+- Added a card restriction "IsNotImprinted"
+- myk's code contributions (vol. 1)
+* adds tooltips for the filter checkboxes (issue 657)
+* ensures the filter checkboxes are always in the same order
+* puts all labels and checkboxes in "official" order from the mtg rules book:
+* color order: WHITE, BLUE, BLACK, RED, GREEN, COLORLESS, MULTICOLOR
+* type order: LAND, ARTIFACT, CREATURE, ENCHANTMENT, PLANESWALKER, INSTANT, SORCERY
+- myk's (vol 1.1) code improvements to filter enums
+- Technical improvements to the new challenge rewards code.
+- Added "InEnchantedYard" (used in Death's Approach)
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Changed the Jamuraa challenge rewards to use the new features.
+- Replaced the Beta rewards with Unlimited Edition.
+- myk patch 1.2 - refactoring of filter enums as per Max mtg's suggestions
+- myk patch 2: reapply card filters on deck editor controller change (issue 652)
+- myk patch 3: make deck editor columns resizable; fix NPE when tables are empty and header is clicked
+- patch 4: fix filter checkboxes not wrapping on initial display (issue 653)
+- myk patch 5: save/restore state of quest plant/pet widgets
+* saved quest data when pet settings are modified
+* moved the selectedPets map from QuestController to QuestData (since it now gets persisted); also renamed it petSlots for clarity
+* incremented the quest file format version
+* added code to bring older file formats up to date
+* finally, while researching how the data is saved, I noticed that saveData() can be called from multiple threads. I made the method synchronized to prevent file corruption
+- AI separation from game: playSpellAbilities does not play them, only choice is made.
+- InputControl is invariant of player type
+- forge.game.ai created - just a small step towards AI isolation
+- Moved some methods from ComputerUtil to AiController, made them instanced (non-static)
+- renamed AiAttackController
+- AiController returns a single SA to play.
+- fixed payment for cards with 2/Color (eg Reaper King)
+- Fixed Cursebreak
+- Fixed cardname of AEtherize
+- updates to handle Glaring spotlight
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+- Arranging AI methods by functionality: move mana-related and cost-related methods to respective static CoupterUtilXXXX classes
+- Added more functionality to quest rewards, a second type of QuestRewardCardChooser that allows the player to select a card from a limited pool. The code is still somewhat experimental, if there are problems, let me know.
+- Undid accidental commit of an earlier QuestController.java.
+- Further minor fix.
+- show tooltips in the deck editor when narrow cells truncate their contents
+- merging r19137-19177 from Trunk into GTC branch
+- Merged revision(s) 19179-19184 from trunk/res/cardsfolder:
+- Reintegrated Gatecrash cardfolder branch into Trunk. Updated setdata.txt and setInfoScript.py for Gatecrash
+- passPriority is called from PlayerController, to avoid priority being passed by players who don't have it.
+- show explanatory tooltips for edition set abbreviations in the card editor
+- Made 5 cards ready for multiplayer
+- Minor cleanup of earlier commit; made variables final or unmodifiable where applicable.
+- Converted several cards with etb replacement effects
+- The rules predicated needs an AND, not an OR.
+- Added missing preset IS_LAND predicate parsing to BoosterUtils.
+- players won't be asked to discard in cleanup phase of other players
+- A QuestRewardCardChooser description can start with a space now.
+- Deck editors now use a single filechooser for import/export, one which filters out non-.dck files.
+- Made planechase submenu correctly report which players used a default planar deck.
+- Removed duplicate Planechase 2012 setdata entry
+- Made Fireball ready for multiplayer
+- removed old Target syntax (Tgt$)
+- in abilityFactory target parsing code extracted as a single method
+- due to getDefinedCards return type generalization, a lot of classes had to declare variables as List (not arraylist)
+- RippleAbility, CascadeAbility are now nested classes (previously they were inlined)
+- Fixed Arrows of Justice
+- Added a fluff piece to the changes.txt file.
+- Added the recent commit logs to changes.txt. Preparing for the snapshot build release.
+
+
+Many people helped with this version. A special thank you goes out to them. (Attempted to list names alphabetically):
+
+
+
+
+Added the following Planes:
+
+Academy at Tolaria West
+Fields of Summer
+Goldmeadow
+Krosa
+Lethe Lake
+Llanowar
+Panopticon
+Raven's Run
+The Fourth Sphere
+The Great Forest
+The Hippodrome
+
+
+Added the following Phenomenons:
+
+Mutual Epiphany
+
+
+Added the following cards:
+
+Lairwatch Giant
+Shimatsu the Bloodcloaked
+Parallectric Feedback
+Dwarven Catapult
+Hive Mind
+
+
+Added the following new Gatecrash cards:
+
+Aetherize
+Alms Beast
+Angelic Skirmisher
+Assemble the Legion
+Basilica Guards
+Biomass Mutation
+Blind Obedience
+Borborygmos Enraged
+Boros Charm
+Boros Elite
+Boros Guildgate
+Boros Keyrune
+Burning-Tree Emissary
+Call of the Nightwing
+Clan Defiance
+Cloudfin Raptor
+Consuming Aberration
+Crocanura
+Crypt Ghast
+Deathpact Angel
+Dimir Charm
+Dimir Guildgate
+Dimir Keyrune
+Domri Rade
+Drakewing Krasis
+Duskmantle Guildmage
+Elusive Krasis
+Enter the Infinite
+Experiment One
+Fathom Mage
+Firemane Avenger
+Five-Alarm Fire
+Foundry Champion
+Frontline Medic
+Gateway Shade
+Ghor-Clan Rampager
+Giant Adephage
+Gideon, Champion of Justice
+Gridlock
+Gruul Guildgate
+Gruul Keyrune
+Hands of Binding
+Hellkite Tyrant
+Hellraiser Goblin
+High Priest of Penance
+Illusionist's Bracers
+Lazav, Dimir Mastermind
+Leyline Phantom
+Mind Grind
+Mystic Genesis
+Obzedat, Ghost Council
+Orzhov Guildgate
+Orzhov Keyrune
+Pit Fight
+Prime Speaker Zegana
+Rapid Hybridization
+Realmwright
+Rubblehulk
+Shambleshark
+Simic Charm
+Simic Fluxmage
+Simic Guildgate
+Simic Keyrune
+Skarrg Goliath
+Skarrg Guildmage
+Skullcrack
+Spark Trooper
+Stolen Identity
+Sunhome Guildmage
+Syndic of Tithes
+Thespian's Stage
+Tin Street Market
+Treasury Thrull
+Undercity Plague
+Urban Evolution
+Viashino Shanktail
+Whispering Madness
+Zhur-Taa Swine
+
+Firefist Striker
+Thrull Parasite
+Gruul Charm
+Merciless Eviction
+Ground Assault
+Truefire Paladin
+Diluvian Primordial
+Legion Loyalist
+Lord of the Void
+Luminate Primordial
+Molten Primordial
+Murder Investigation
+Ogre Slumlord
+Sepulchral Primordial
+Undercity Informer
+Biovisionary
+Vizkopa Confessor
+Gruul Ragebeast
+Gyre Sage
+Slaughterhorn
+Zameck Guildmage
+Duskmantle Seer
+Miming Slime
+Serene Remembrance
+Unexpected Results
+Angelic Edict
+Shielded Passage
+Totally Lost
+Armored Transport
+Millennial Gargoyle
+Razortip Whip
+Riot Gear
+Shattering Blow
+Skyblinder Staff
+Aerial Maneuver
+Court Street Denizen
+Daring Skyjek
+Debtor's Pulpit
+Dutiful Thrull
+Guildscorn Ward
+Hold the Gates
+Holy Mantle
+Arrow of Justice
+Boros Reckoner
+Coerced Confession
+Deathcult Rogue
+Gift of Orzhova
+Immortal Servitude
+Merfolk of the Depths
+Rubblebelt Raiders
+Adaptive Snapjaw
+Alpha Authority
+Burst of Strength
+Crowned Ceratok
+Disciple of the Old Ways
+Forced Adaptation
+Greenside Watcher
+Scab-Clan Charger
+Spire Tracer
+Tower Defense
+Wasteland Viper
+Wildwood Rebirth
+Vizkopa Guildmage
+Wojek Halberdiers
+Skinbrand Goblin
+Structural Collapse
+Towering Thunderfist
+Warmind Infantry
+Wojek Halberdiers
+Wrecking Ogre
+Knight of Obligation
+Knight Watch
+Nav Squad Commandos
+Urbis Protector
+Zarichi Tiger
+Clinging Anemones
+Keymaster Rogue
+Scatter Arc
+Spell Rupture
+Nimbus Swimmer
+One Thousand Lashes
+Ordruun Veteran
+Orzhov Charm
+Paranoid Delusions
+Primal Visitation
+Psychic Strike
+Purge the Profane
+Hydroform
+Kingpin's Pet
+Martial Glory
+Mortus Strider
+Ruination Wurm
+Cartel Aristocrat
+Dinrova Horror
+Executioner's Swing
+Guardian of the Gateless
+Hindervines
+Ivy Lane Denizen
+Predator's Rapport
+Rust Scarab
+Massive Raid
+Mugging
+Ripscale Predator
+Skinbrand Goblin
+Basilica Screecher
+Bomber Corps
+Crackling Perimeter
+Foundry Street Denizen
+Furious Resistance
+Gutter Skulk
+Homing Lightning
+Madcap Skills
+Mark for Death
+Syndicate Enforcer
+Balustrade Spy
+Corpse Blockade
+Devour Flesh
+Horror of the Dim
+Illness in the Ranks
+Shadow Alley Denizen
+Agoraphobia
+Sapphire Drake
+Frilled Oculus
+Last Thoughts
+Metropolis Sprite
+Mindeye Drake
+Sage's Row Denizen
+Skygames
+Sylvan Primordial
+Verdant Haven
+Voidwalk
+Way of the Thief
+Incursion Specialist
+Fortress Cyclops
+Slate Street Ruffian
+Smog Elemental
+Wight of Precinct Six
+Grisly Spectacle
+Mental Vapors
+Midnight Recovery
+Shadow Slice
+Death's Approach
+Dying Wish
+Master Biomancer
+Glaring Spotlight
+
+
+end

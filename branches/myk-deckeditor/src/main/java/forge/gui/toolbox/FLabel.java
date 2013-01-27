@@ -51,7 +51,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
      * <code>new FLabel.Builder().method1(foo).method2(bar).method3(baz)...</code>
      * <br>and then call build() to make the label (don't forget that part).
     */
-    public static class Builder extends FLabel {
+    public static class Builder {
         //========== Default values for FLabel are set here.
         private double  bldIconScaleFactor  = 0.8;
         private int     bldFontStyle        = Font.PLAIN;

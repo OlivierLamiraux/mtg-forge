@@ -1,12 +1,15 @@
 package forge.gui.deckeditor.views;
 
+import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
@@ -24,6 +27,9 @@ import javax.swing.KeyStroke;
 
 import net.miginfocom.swing.MigLayout;
 import forge.Command;
+import forge.Singletons;
+import forge.card.CardEdition;
+import forge.card.EditionCollection;
 import forge.gui.WrapLayout;
 import forge.gui.deckeditor.SEditorUtil;
 import forge.gui.deckeditor.controllers.CCardCatalog;
@@ -31,6 +37,7 @@ import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.IVDoc;
+import forge.gui.home.quest.DialogChooseSets;
 import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FSkin;
 import forge.gui.toolbox.FSpinner;
@@ -224,7 +231,50 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                     }
                 });
                 popup.add(fmt);
-                addMenuItem(popup, "Edition (set) restriction...", true, null, null);
+                addMenuItem(popup, "Edition (set) restriction...", true, null, new Command() {
+                    @Override
+                    public void execute() {
+                        final List<String> setCodes = new ArrayList<String>();
+                        new DialogChooseSets(setCodes, new Runnable() {
+                            @Override
+                            public void run() {
+                                if (setCodes.isEmpty()) {
+                                    return;
+                                }
+                                
+                                EditionCollection editions = Singletons.getModel().getEditions();
+                                StringBuilder label = new StringBuilder("Sets:");
+                                StringBuilder tooltip = new StringBuilder("Sets:");
+                                
+                                boolean truncated = false;
+                                for (String code : setCodes)
+                                {
+                                    CardEdition edition = editions.get(code);
+
+                                    // don't let the full label get too long
+                                    if (32 > label.length()) {
+                                        label.append(" ").append(code).append(",");
+                                    } else {
+                                        truncated = true;
+                                    }
+                                    
+                                    // full info in the tooltip
+                                    tooltip.append(" ").append(edition.getName()).append(" (").append(code).append("),");
+                                }
+                                
+                                // chop off last commas
+                                label.delete(label.length() - 1, label.length());
+                                tooltip.delete(tooltip.length() - 1, tooltip.length());
+                                
+                                if (truncated) {
+                                    label.append("...");
+                                }
+                                
+                                addRestriction(buildGenericRestriction(label.toString(), tooltip.toString()), null);
+                            }
+                        });
+                    }
+                });
                 addMenuItem(popup, "CMC restriction", !alreadyRestricted(RestrictionKeys.CMC), null, new Command() {
                     @Override
                     public void execute() {
@@ -511,6 +561,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnl.setOpaque(false);
         pnl.setBorder(BorderFactory.createMatteBorder(1, 2, 1, 2, FSkin.getColor(FSkin.Colors.CLR_TEXT)));
         
+        final Container parent = pnlRestrictions.getParent();
+        
         pnl.add(content, "h 30!, center");
         pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).cmdClick(new Command() {
             @Override
@@ -520,7 +572,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                     restrictionSet.remove(key);
                 }
                 pnlRestrictions.validate();
-                pnlRestrictions.getParent().validate();
+                parent.validate();
+                parent.repaint();
             }
         }).build(), "top");
 
@@ -529,7 +582,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             restrictionSet.add(key);
         }
         pnlRestrictions.validate();
-        pnlRestrictions.getParent().validate();
+        parent.validate();
+        parent.repaint();
     }
     
     private JComponent buildRangeRestriction(String label, int left, int right) {

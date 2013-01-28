@@ -21,7 +21,7 @@ import forge.Singletons;
  * TODO: Write javadoc for this type.
  *
  */
-public class DialogCustomFormat extends JDialog {
+public class DialogChooseSets extends JDialog {
 
     private static final long serialVersionUID = 3155211532871888181L;
     private JScrollPane scrollPane;
@@ -29,6 +29,7 @@ public class DialogCustomFormat extends JDialog {
     private final JButton btnCancel = new JButton("Cancel");
     private final JPanel buttonPanel = new JPanel();
     private final List<String> customFormat;
+    private final Runnable onOk;
     private final List<JCheckBox> choices = new ArrayList<JCheckBox>();
 
 
@@ -39,9 +40,11 @@ public class DialogCustomFormat extends JDialog {
      *  GameFormatQuest, the user-defined format to update
      * 
      */
-    public DialogCustomFormat(List<String> userFormat) {
+    public DialogChooseSets(List<String> userFormat, Runnable onOk) {
 
         customFormat = userFormat;
+        this.onOk = onOk;
+        
         if (customFormat == null) {
             throw new RuntimeException("Null GameFormatQuest in DialogCustomFormat");
         }
@@ -66,7 +69,6 @@ public class DialogCustomFormat extends JDialog {
         int getIdx = 0;
 
         JPanel p = new JPanel();
-        p.setSize(600, 400);
         p.setLayout(new GridLayout(rows, columns, 10, 0));
 
         for (int row = 0; row < rows; row++) {
@@ -75,7 +77,7 @@ public class DialogCustomFormat extends JDialog {
                 JCheckBox box;
                 if (getIdx < numEditions) {
                     CardEdition edition = getIdx < numEditions ? editions.get(getIdx) : null;
-                    box = new JCheckBox(edition.getName());
+                    box = new JCheckBox(String.format("%s (%s)", edition.getName(), edition.getCode()));
                     box.setName(edition.getCode());
                     box.setSelected(customFormat.contains(edition.getCode()));
                     choices.add(box);
@@ -109,7 +111,7 @@ public class DialogCustomFormat extends JDialog {
 
       this.setSize(600, 450);
       this.setLocationRelativeTo(null);
-      this.setTitle("Choose sets for custom format:");
+      this.setTitle("Choose sets");
       this.setVisible(true);
 
     }
@@ -145,6 +147,10 @@ public class DialogCustomFormat extends JDialog {
             if (box.isSelected()) {
                 customFormat.add(box.getName());
             }
+        }
+        
+        if (null != onOk) {
+            onOk.run();
         }
     }
 }

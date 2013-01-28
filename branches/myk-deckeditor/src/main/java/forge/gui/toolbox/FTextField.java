@@ -17,8 +17,8 @@ public class FTextField extends JTextField {
      * Uses the Builder pattern to facilitate/encourage inline styling.
      * Credit to Effective Java 2 (Joshua Bloch).
      * Methods in builder can be chained. To declare:
-     * <code>new FLabel.Builder().method1(foo).method2(bar).method3(baz)...</code>
-     * <br>and then call build() to make the label (don't forget that part).
+     * <code>new FTextField.Builder().method1(foo).method2(bar).method3(baz)...</code>
+     * <br>and then call build() to make the widget (don't forget that part).
     */
     public static class Builder {
         //========== Default values for FTextField are set here.

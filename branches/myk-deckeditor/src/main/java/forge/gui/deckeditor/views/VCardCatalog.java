@@ -1,7 +1,5 @@
 package forge.gui.deckeditor.views;
 
-import java.awt.Color;
-
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
@@ -10,8 +8,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.border.MatteBorder;
 
 import net.miginfocom.swing.MigLayout;
 import forge.gui.WrapLayout;
@@ -23,6 +19,7 @@ import forge.gui.framework.EDocID;
 import forge.gui.framework.IVDoc;
 import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FSkin;
+import forge.gui.toolbox.FSpinner;
 import forge.gui.toolbox.FTextField;
 
 /** 
@@ -348,13 +345,13 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnl.setBorder(BorderFactory.createLineBorder(FSkin.getColor(FSkin.Colors.CLR_BORDERS)));
         
         // TODO: restrict text fields to two digits
-        pnl.add(new FTextField.Builder().maxLength(2).build(), "w 30!");
+        pnl.add(new FSpinner.Builder().maxValue(99).build(), "w 45!");
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
         pnl.add(new FLabel.Builder().text(label).fontSize(11).build());
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(new FTextField.Builder().maxLength(2).build(), "w 30!");
+        pnl.add(new FSpinner.Builder().maxValue(99).build(), "w 45!");
         
-        pnl.add(new FLabel.Builder().text("X").fontSize(8).fontVAlign(SwingConstants.TOP).hoverable(true).build(), "gapbottom push");
+        pnl.add(new FLabel.Builder().text("X").fontSize(8).hoverable(true).build(), "gapbottom push");
 
         return pnl;
     }

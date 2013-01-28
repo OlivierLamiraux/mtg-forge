@@ -68,6 +68,7 @@ import forge.game.zone.PlayerZoneBattlefield;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
+import forge.gui.GuiDialog;
 import forge.properties.ForgePreferences.FPref;
 import forge.util.MyRandom;
 
@@ -157,8 +158,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             ZoneType.Sideboard));
 
 
-    private final PlayerController controller;
-
     protected final LobbyPlayer lobbyPlayer;
     protected final GameState game;
 
@@ -178,7 +177,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * @param myPoisonCounters
      *            a int.
      */
-    public Player(LobbyPlayer lobbyPlayer0, GameState game0, PlayerController pc) {
+    public Player(LobbyPlayer lobbyPlayer0, GameState game0) {
         lobbyPlayer = lobbyPlayer0;
         game = game0;
         for (final ZoneType z : Player.ALL_ZONES) {
@@ -188,9 +187,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             this.zones.put(z, toPut);
         }
         this.setName(lobbyPlayer.getName());
-        pc.setPlayer(this);
-        controller = pc;
-        
     }
 
     public final PlayerStatistics getStats() {
@@ -1662,19 +1658,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * discard.
      * </p>
      * 
-     * @param sa
-     *            a {@link forge.card.spellability.SpellAbility} object.
-     * @return a {@link forge.CardList} object.
-     */
-    public final void discard(final SpellAbility sa) {
-        this.discard(1, sa);
-    }
-
-    /**
-     * <p>
-     * discard.
-     * </p>
-     * 
      * @param c
      *            a {@link forge.Card} object.
      * @param sa
@@ -3079,9 +3062,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * TODO: Write javadoc for this method.
      * @return
      */
-    public PlayerController getController() {
-        return controller;
-    }
+    public abstract PlayerController getController();
 
     /**
      * <p>
@@ -3126,7 +3107,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             final Card crd = vaults.get(0);
 
             if (isHuman()) {
-                if (GameActionUtil.showYesNoDialog(crd, "Untap " + crd + "?")) {
+                if (GuiDialog.confirm(crd, "Untap " + crd + "?")) {
                     crd.untap();
                     return true;
                 }

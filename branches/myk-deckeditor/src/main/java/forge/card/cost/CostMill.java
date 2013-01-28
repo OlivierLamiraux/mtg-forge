@@ -23,14 +23,15 @@ import java.util.List;
 
 import forge.Card;
 
-import forge.GameActionUtil;
 import forge.Singletons;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.spellability.SpellAbility;
 import forge.game.GameState;
+import forge.game.player.AIPlayer;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
+import forge.gui.GuiDialog;
 
 /**
  * This is for the "Mill" Cost. Putting cards from the top of your library into
@@ -82,7 +83,7 @@ public class CostMill extends CostPartWithList {
      * , forge.Card, forge.card.cost.Cost_Payment)
      */
     @Override
-    public final boolean decideAIPayment(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
+    public final boolean decideAIPayment(final AIPlayer ai, final SpellAbility ability, final Card source, final CostPayment payment) {
         this.resetList();
 
         Integer c = this.convertAmount();
@@ -112,7 +113,7 @@ public class CostMill extends CostPartWithList {
      * forge.Card, forge.card.cost.Cost_Payment)
      */
     @Override
-    public final void payAI(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment, final GameState game) {
+    public final void payAI(final AIPlayer ai, final SpellAbility ability, final Card source, final CostPayment payment, final GameState game) {
         for (final Card c : this.getList()) {
             Singletons.getModel().getGame().getAction().moveToGraveyard(c);
         }
@@ -151,7 +152,7 @@ public class CostMill extends CostPartWithList {
         final StringBuilder sb = new StringBuilder();
         sb.append("Mill ").append(c).append(" cards from your library?");
 
-        final boolean doMill = GameActionUtil.showYesNoDialog(source, sb.toString());
+        final boolean doMill = GuiDialog.confirm(source, sb.toString());
         if (doMill) {
             this.resetList();
             final Iterator<Card> itr = list.iterator();

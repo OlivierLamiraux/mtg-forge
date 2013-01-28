@@ -7,12 +7,15 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import forge.Command;
 import forge.gui.WrapLayout;
 import forge.gui.deckeditor.SEditorUtil;
 import forge.gui.deckeditor.controllers.CCardCatalog;
@@ -63,7 +66,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
 
     private final JPanel pnlRestrictions = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 5));
-    private final JLabel btnAddRestriction = new FLabel.Builder()
+    private final FLabel btnAddRestriction = new FLabel.Builder()
             .fontSize(14)
             .text("Add restriction")
             .tooltip("Filter shown cards by various properties")
@@ -121,6 +124,20 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlStats.add(lblInstant, constraints);
         pnlStats.add(lblSorcery, constraints);
 
+        btnAddRestriction.setCommand(new Command() {
+            @Override
+            public void execute() {
+                JPopupMenu popup = new JPopupMenu("Popup");
+                popup.add(new JMenuItem("Format restriction"));
+                popup.add(new JMenuItem("Edition (set) restriction"));
+                popup.add(new JMenuItem("CMC restriction"));
+                popup.add(new JMenuItem("Power restriction"));
+                popup.add(new JMenuItem("Toughness restriction"));
+                popup.add(new JMenuItem("World restriction"));
+                // show on the button?  
+                popup.show(btnAddRestriction, 0, 0);              }
+        });
+        
         pnlRestrictions.setOpaque(false);
         pnlRestrictions.add(btnAddRestriction, "h 30!, gap 0 0 5px 5px");
         pnlRestrictions.add(buildRestriction(buildGenericRestriction("Shandalar world", "2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED")), "h 30!");

@@ -18,11 +18,12 @@
 package forge.card.cost;
 
 import forge.Card;
-import forge.GameActionUtil;
 import forge.card.abilityfactory.AbilityFactory;
 import forge.card.spellability.SpellAbility;
 import forge.game.GameState;
+import forge.game.player.AIPlayer;
 import forge.game.player.Player;
+import forge.gui.GuiDialog;
 
 /**
  * The Class CostPayLife.
@@ -90,7 +91,7 @@ public class CostDamage extends CostPart {
      * forge.Card, forge.card.cost.Cost_Payment)
      */
     @Override
-    public final void payAI(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment, final GameState game) {
+    public final void payAI(final AIPlayer ai, final SpellAbility ability, final Card source, final CostPayment payment, final GameState game) {
         ability.getActivatingPlayer().addDamage(this.getLastPaidAmount(), source);
     }
 
@@ -121,7 +122,7 @@ public class CostDamage extends CostPart {
         final StringBuilder sb = new StringBuilder();
         sb.append(source.getName()).append(" - Pay ").append(c).append(" Life?");
 
-        if (GameActionUtil.showYesNoDialog(source, sb.toString()) && activator.canPayLife(c)) {
+        if (GuiDialog.confirm(source, sb.toString()) && activator.canPayLife(c)) {
             activator.addDamage(c, source);
             this.setLastPaidAmount(c);
             payment.setPaidManaPart(this);
@@ -141,7 +142,7 @@ public class CostDamage extends CostPart {
      * , forge.Card, forge.card.cost.Cost_Payment)
      */
     @Override
-    public final boolean decideAIPayment(final Player ai, final SpellAbility ability, final Card source, final CostPayment payment) {
+    public final boolean decideAIPayment(final AIPlayer ai, final SpellAbility ability, final Card source, final CostPayment payment) {
         Integer c = this.convertAmount();
 
         if (c == null) {

@@ -7,6 +7,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -128,13 +129,22 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             @Override
             public void execute() {
                 JPopupMenu popup = new JPopupMenu("Popup");
-                popup.add(new JMenuItem("Format restriction"));
-                popup.add(new JMenuItem("Edition (set) restriction"));
+                JMenu fmt = new JMenu("Format restriction");
+                fmt.add(new JMenuItem("Standard"));
+                fmt.add(new JMenuItem("Modern"));
+                fmt.add(new JMenuItem("Extended"));
+                fmt.add(new JMenuItem("Vintage"));
+                fmt.add(new JMenuItem("Legacy"));
+                popup.add(fmt);
+                popup.add(new JMenuItem("Edition (set) restriction..."));
                 popup.add(new JMenuItem("CMC restriction"));
                 popup.add(new JMenuItem("Power restriction"));
                 popup.add(new JMenuItem("Toughness restriction"));
-                popup.add(new JMenuItem("World restriction"));
-                // show on the button?  
+                JMenu world = new JMenu("Quest world restriction");
+                world.add(new JMenuItem("Main"));
+                world.add(new JMenuItem("Shandalar"));
+                world.add(new JMenuItem("Jamuraa"));
+                popup.add(world);
                 popup.show(btnAddRestriction, 0, 0);              }
         });
         

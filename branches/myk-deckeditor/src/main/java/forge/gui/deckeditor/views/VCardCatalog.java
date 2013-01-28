@@ -6,7 +6,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -290,12 +289,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         });
         
         pnlSearch.setOpaque(false);
-        pnlSearch.add(btnAddRestriction, "center");
+        pnlSearch.add(btnAddRestriction, "center, width pref+4");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
-        pnlSearch.add(lblName);
-        pnlSearch.add(lblType);
-        pnlSearch.add(lblText);
+        pnlSearch.add(lblName, "width pref+4");
+        pnlSearch.add(lblType, "width pref+4");
+        pnlSearch.add(lblText, "width pref+4");
 
         pnlRestrictions.setOpaque(false);
 

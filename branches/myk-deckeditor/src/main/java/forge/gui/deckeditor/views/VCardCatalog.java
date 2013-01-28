@@ -3,6 +3,8 @@ package forge.gui.deckeditor.views;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,22 +64,22 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     // Total and color count labels
     private final JPanel pnlStats = new JPanel();
-    private final JLabel lblTotal = buildLabel(SEditorUtil.ICO_TOTAL, false, "Total Card Count");
-    private final JLabel lblBlack = buildLabel(SEditorUtil.ICO_BLACK, true, "Black Card Count");
-    private final JLabel lblBlue = buildLabel(SEditorUtil.ICO_BLUE, true, "Blue Card Count");
-    private final JLabel lblGreen = buildLabel(SEditorUtil.ICO_GREEN, true, "Green Card Count");
-    private final JLabel lblRed = buildLabel(SEditorUtil.ICO_RED, true, "Red Card Count");
-    private final JLabel lblWhite = buildLabel(SEditorUtil.ICO_WHITE, true, "White Card Count");
-    private final JLabel lblColorless = buildLabel(SEditorUtil.ICO_COLORLESS, true, "Colorless Card Count");
+    private final FLabel lblTotal = buildLabel(SEditorUtil.ICO_TOTAL, false, "Total Card Count");
+    private final FLabel lblBlack = buildLabel(SEditorUtil.ICO_BLACK, true, "Black Card Count");
+    private final FLabel lblBlue = buildLabel(SEditorUtil.ICO_BLUE, true, "Blue Card Count");
+    private final FLabel lblGreen = buildLabel(SEditorUtil.ICO_GREEN, true, "Green Card Count");
+    private final FLabel lblRed = buildLabel(SEditorUtil.ICO_RED, true, "Red Card Count");
+    private final FLabel lblWhite = buildLabel(SEditorUtil.ICO_WHITE, true, "White Card Count");
+    private final FLabel lblColorless = buildLabel(SEditorUtil.ICO_COLORLESS, true, "Colorless Card Count");
 
     // Card type labels
-    private final JLabel lblArtifact = buildLabel(SEditorUtil.ICO_ARTIFACT, true, "Artifact Card Count");
-    private final JLabel lblCreature = buildLabel(SEditorUtil.ICO_CREATURE, true, "Creature Card Count");
-    private final JLabel lblEnchantment = buildLabel(SEditorUtil.ICO_ENCHANTMENT, true, "Enchantment Card Count");
-    private final JLabel lblInstant = buildLabel(SEditorUtil.ICO_INSTANT, true, "Instant Card Count");
-    private final JLabel lblLand = buildLabel(SEditorUtil.ICO_LAND, true, "Land Card Count");
-    private final JLabel lblPlaneswalker = buildLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
-    private final JLabel lblSorcery = buildLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
+    private final FLabel lblArtifact = buildLabel(SEditorUtil.ICO_ARTIFACT, true, "Artifact Card Count");
+    private final FLabel lblCreature = buildLabel(SEditorUtil.ICO_CREATURE, true, "Creature Card Count");
+    private final FLabel lblEnchantment = buildLabel(SEditorUtil.ICO_ENCHANTMENT, true, "Enchantment Card Count");
+    private final FLabel lblInstant = buildLabel(SEditorUtil.ICO_INSTANT, true, "Instant Card Count");
+    private final FLabel lblLand = buildLabel(SEditorUtil.ICO_LAND, true, "Land Card Count");
+    private final FLabel lblPlaneswalker = buildLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
+    private final FLabel lblSorcery = buildLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
 
     private final JLabel lblTitle = new FLabel.Builder().fontSize(14).build();
 
@@ -128,6 +130,29 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlStats.setOpaque(false);
         pnlStats.setLayout(new MigLayout("insets 0, gap 5px, ax center, wrap 7"));
 
+        lblTotal.setCommand(new Command() {
+            private boolean lastToggle = true;
+            
+            @Override
+            public void execute() {
+                lastToggle = !lastToggle;
+                lblWhite.setSelected(lastToggle);
+                lblBlue.setSelected(lastToggle);
+                lblBlack.setSelected(lastToggle);
+                lblRed.setSelected(lastToggle);
+                lblGreen.setSelected(lastToggle);
+                lblColorless.setSelected(lastToggle);
+
+                lblLand.setSelected(lastToggle);
+                lblArtifact.setSelected(lastToggle);
+                lblCreature.setSelected(lastToggle);
+                lblEnchantment.setSelected(lastToggle);
+                lblPlaneswalker.setSelected(lastToggle);
+                lblInstant.setSelected(lastToggle);
+                lblSorcery.setSelected(lastToggle);
+            }
+        });
+        
         final String constraints = "w 57px!, h 20px!";
         pnlStats.add(lblTotal, constraints);
         pnlStats.add(lblWhite, constraints);
@@ -240,13 +265,32 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             }
         });
         
+        txfSearch.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // TODO: apply filter
+            }
+        });
+        
+        txfSearch.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                //if (e.getKeyChar() == '\n') {
+                    //if (e.isControlDown()) {
+                        //addRestriction(buildSearchRestriction(e.isShiftDown()), null);
+                        addRestriction(buildGenericRestriction("keyChar: " + e.getKeyChar() + "( " + (int)e.getKeyChar() + "); meta:" + e.isMetaDown() + "; ctrl:" + e.isControlDown() + "; action:" + e.isActionKey(), null), null);
+                    //}
+                //}
+            }
+        });
+        
         pnlSearch.setOpaque(false);
         pnlSearch.add(btnAddRestriction, "center");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
-        pnlSearch.add(new FLabel.Builder().text("Name").selectable(true).selected(true).hoverable(true).opaque(true).build());
-        pnlSearch.add(new FLabel.Builder().text("Type").selectable(true).selected(true).hoverable(true).opaque(true).build());
-        pnlSearch.add(new FLabel.Builder().text("Text").selectable(true).selected(true).hoverable(true).opaque(true).build());
+        pnlSearch.add(lblName);
+        pnlSearch.add(lblType);
+        pnlSearch.add(lblText);
 
         pnlRestrictions.setOpaque(false);
 
@@ -439,15 +483,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     //========== Other methods
 
-    private JLabel buildLabel(final ImageIcon icon0, final boolean selectable, final String tooltip) {
-        final JLabel lbl = new FLabel.Builder().text("0")
+    private FLabel buildLabel(final ImageIcon icon0, final boolean selectable, final String tooltip) {
+        return new FLabel.Builder().text("0")
+                .tooltip(tooltip)
                 .icon(icon0).iconScaleAuto(false)
-                .fontSize(11).selectable(selectable)
+                .fontSize(11).selectable(selectable).selected(selectable)
                 .hoverable(true).build();
-        
-        lbl.setToolTipText(tooltip);
-        
-        return lbl;
     }
 
     private boolean canSearch() {
@@ -506,9 +547,11 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         sb.append(": '");
         sb.append(txfSearch.getText());
         sb.append("' in:");
-        if (lblName.getSelected()) { sb.append(" name"); }
-        if (lblType.getSelected()) { sb.append(" type"); }
-        if (lblText.getSelected()) { sb.append(" text"); }
+        if (lblName.getSelected()) { sb.append(" name,"); }
+        if (lblType.getSelected()) { sb.append(" type,"); }
+        if (lblText.getSelected()) { sb.append(" text,"); }
+        sb.delete(sb.length() - 1, sb.length()); // chop off last comma
+        
         return new FLabel.Builder().text(sb.toString()).fontSize(11).build();
     }
 

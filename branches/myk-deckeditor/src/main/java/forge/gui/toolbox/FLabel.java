@@ -61,10 +61,12 @@ public class FLabel extends JLabel implements ILocalRepaint {
         private Point   bldIconInsets       = new Point(0, 0);
 
         private boolean bldSelectable       = false;
+        private boolean bldSelected         = false;
         private boolean bldHoverable        = false;
         private boolean bldOpaque           = false;
         private boolean bldIconInBackground = false;
         private boolean bldIconScaleAuto    = true;
+        private boolean reactOnMouseDown    = false;
 
         private String  bldText, bldToolTip;
         private ImageIcon bldIcon;
@@ -103,6 +105,14 @@ public class FLabel extends JLabel implements ILocalRepaint {
         /**@param b0 &emsp; boolean
          * @return {@link forge.gui.toolbox.Builder} */
         public Builder selectable(final boolean b0) { this.bldSelectable = b0; return this; }
+        
+        /**@param b0 &emsp; boolean
+         * @return {@link forge.gui.toolbox.Builder} */
+        public Builder selected(final boolean b0) { this.bldSelected = b0; return this; }
+        
+        /**@param b0 &emsp; boolean that controls when the label responds to mouse events
+         * @return {@link forge.gui.toolbox.Builder} */
+        public Builder reactOnMouseDown(final boolean b0) { this.reactOnMouseDown = b0; return this; }
 
         /**@param c0 &emsp; {@link forge.Command} to execute if clicked
          * @return {@link forge.gui.toolbox.Builder} */
@@ -158,6 +168,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
         this.iconInBackground = b0.bldIconInBackground;
         this.iconScaleAuto = b0.bldIconScaleAuto;
         this.selectable = b0.bldSelectable;
+        this.selected = b0.bldSelected;
         this.iconAlignX = b0.bldIconAlignX;
         this.iconInsets = b0.bldIconInsets;
 
@@ -165,6 +176,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
         this.setFontSize(b0.bldFontSize);
         this.setIconAlpha(b0.bldIconAlpha);
         this.setCommand(b0.bldCmd);
+        this.setReactOnMouseDown(b0.reactOnMouseDown);
         this.setFontAlign(b0.bldFontAlign);
         this.setToolTipText(b0.bldToolTip);
         this.setHoverable(b0.bldHoverable);
@@ -199,7 +211,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
     private int fontStyle, iconAlignX;
     private int iw, ih;
     private boolean selectable, selected, hoverable, hovered, opaque,
-        iconInBackground, iconScaleAuto;
+        iconInBackground, iconScaleAuto, reactOnMouseDown;
     private Point iconInsets;
 
     // Various variables used in image rendering.
@@ -243,19 +255,35 @@ public class FLabel extends JLabel implements ILocalRepaint {
     private final MouseAdapter madEvents = new MouseAdapter() {
         @Override
         public void mouseEntered(final MouseEvent e) {
-            hovered = true; repaintSelf();
+            if (hoverable) {
+                hovered = true; repaintSelf();
+            }
         }
 
         @Override
         public void mouseExited(final MouseEvent e) {
-            hovered = false; repaintSelf();
+            if (hoverable) {
+                hovered = false; repaintSelf();
+            }
         }
+        
+        private void _doMouseAction() {
+            if (cmdClick != null && FLabel.this.isEnabled()) { cmdClick.execute(); }
+            if (selectable) { setSelected(!selected); }
+        }
+        
+        @Override
+        public void mousePressed(MouseEvent e) {
+            if (reactOnMouseDown) {
+                _doMouseAction();
+            }
+        }
+        
         @Override
         public void mouseClicked(final MouseEvent e) {
-            if (cmdClick != null && FLabel.this.isEnabled()) { cmdClick.execute(); }
-            if (!selectable) { return; }
-            if (selected) { setSelected(false); }
-            else { setSelected(true); }
+            if (!reactOnMouseDown) {
+                _doMouseAction();
+            }
         }
     };
 
@@ -275,6 +303,10 @@ public class FLabel extends JLabel implements ILocalRepaint {
         repaintSelf();
     }
 
+    public boolean getSelected() {
+        return this.selected;
+    }
+    
     /** Sets alpha if icon is in background.
      * @param f0 &emsp; float */
     // NOT public; must be set when label is built.
@@ -354,6 +386,10 @@ public class FLabel extends JLabel implements ILocalRepaint {
     /** @param c0 &emsp; {@link forge.Command} on click */
     public void setCommand(final Command c0) {
         this.cmdClick = c0;
+    }
+
+    public void setReactOnMouseDown(boolean b0) {
+        this.reactOnMouseDown = b0;
     }
 
     @Override

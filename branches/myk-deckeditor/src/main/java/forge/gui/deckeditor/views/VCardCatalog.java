@@ -1,10 +1,13 @@
 package forge.gui.deckeditor.views;
 
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -39,6 +42,20 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     /** */
     SINGLETON_INSTANCE;
 
+    private enum RestrictionKeys {
+        STANDARD,
+        MODERN,
+        EXTENDED,
+        VINTAGE,
+        LEGACY,
+        CMC,
+        POWER,
+        TOUGHNESS,
+        MAIN,
+        SHANDALAR,
+        JAMURAA
+    }
+    
     // Fields used with interface IVDoc
     private DragCell parentCell;
     private final DragTab tab = new DragTab("Card Catalog");
@@ -66,14 +83,6 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
 
-    private final JPanel pnlRestrictions = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 5));
-    private final FLabel btnAddRestriction = new FLabel.Builder()
-            .fontSize(14)
-            .text("Add restriction")
-            .tooltip("Filter shown cards by various properties")
-            .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_PLUS))
-            .iconScaleAuto(false).hoverable(true).build();
-    
     private final JPanel pnlAddButtons =
             new JPanel(new MigLayout("insets 0, gap 0, ax center, hidemode 3"));
 
@@ -91,14 +100,25 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_PLUS))
             .iconScaleAuto(false).hoverable(true).build();
 
-    private final JPanel pnlSearch = new JPanel(new MigLayout("insets 0, gap 5px, ax left"));
+    private final JPanel pnlSearch = new JPanel(new MigLayout("insets 0, gap 5px, center"));
+    private final FLabel btnAddRestriction = new FLabel.Builder()
+            .text("Filter by")
+            .tooltip("Filter shown cards by various properties")
+            .hoverable(true).opaque(true).reactOnMouseDown(true).build();
     private final JTextField txfSearch = new FTextField.Builder().build();
+    private final FLabel lblName = new FLabel.Builder().text("Name").selectable(true).selected(true).hoverable(true).opaque(true).build();
+    private final FLabel lblType = new FLabel.Builder().text("Type").selectable(true).selected(true).hoverable(true).opaque(true).build();
+    private final FLabel lblText = new FLabel.Builder().text("Text").selectable(true).selected(true).hoverable(true).opaque(true).build();
+    private final JPanel pnlRestrictions = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 5));
+    
+    private final Set<RestrictionKeys> restrictionSet = new HashSet<RestrictionKeys>();
     
     private JTable tblCards = null;
     private final JScrollPane scroller = new JScrollPane();
 
     //========== Constructor
     /** */
+    @SuppressWarnings("serial")
     private VCardCatalog() {
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
@@ -125,48 +145,110 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlStats.add(lblInstant, constraints);
         pnlStats.add(lblSorcery, constraints);
 
-        btnAddRestriction.setCommand(new Command() {
-            @Override
-            public void execute() {
-                JPopupMenu popup = new JPopupMenu("Popup");
-                JMenu fmt = new JMenu("Format restriction");
-                fmt.add(new JMenuItem("Standard"));
-                fmt.add(new JMenuItem("Modern"));
-                fmt.add(new JMenuItem("Extended"));
-                fmt.add(new JMenuItem("Vintage"));
-                fmt.add(new JMenuItem("Legacy"));
-                popup.add(fmt);
-                popup.add(new JMenuItem("Edition (set) restriction..."));
-                popup.add(new JMenuItem("CMC restriction"));
-                popup.add(new JMenuItem("Power restriction"));
-                popup.add(new JMenuItem("Toughness restriction"));
-                JMenu world = new JMenu("Quest world restriction");
-                world.add(new JMenuItem("Main"));
-                world.add(new JMenuItem("Shandalar"));
-                world.add(new JMenuItem("Jamuraa"));
-                popup.add(world);
-                popup.show(btnAddRestriction, 0, 0);              }
-        });
-        
-        pnlRestrictions.setOpaque(false);
-        pnlRestrictions.add(btnAddRestriction, "h 30!, gap 0 0 5px 5px");
-        pnlRestrictions.add(buildRestriction(buildGenericRestriction("Shandalar world", "2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED")), "h 30!");
-        pnlRestrictions.add(buildRestriction(buildRangeRestriction("CMC", 2, 4)), "h 30!");
-        pnlRestrictions.add(buildRestriction(buildGenericRestriction("Without 'flying' in text", null)), "h 30!");
         pnlAddButtons.setOpaque(false);
         pnlAddButtons.add(btnAdd, "w 30%!, h 30px!, gap 0 0 5px 5px");
         pnlAddButtons.add(btnAdd4, "w 30%!, h 30px!, gap 5% 5% 5px 5px");
         
+        btnAddRestriction.setCommand(new Command() {
+            @Override
+            public void execute() {
+                JPopupMenu popup = new JPopupMenu("Popup");
+                addMenuItem(popup, "Current search string", canSearch(), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildSearchRestriction(false), null);
+                    }
+                });
+                addMenuItem(popup, "Inverse of current search string", canSearch(), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildSearchRestriction(true), null);
+                    }
+                });
+                JMenu fmt = new JMenu("Format restriction");
+                addMenuItem(fmt, "Standard", !alreadyRestricted(RestrictionKeys.STANDARD), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Standard format", "Restricted to sets: ISD, DKA, AVR, M13, RTR, GTC"), RestrictionKeys.STANDARD);
+                    }
+                });
+                addMenuItem(fmt, "Modern", !alreadyRestricted(RestrictionKeys.MODERN), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Modern format", "Restricted to sets: 8ED, MRD, DST, 5DN, CHK, BOK, SOK, 9ED, RAV, GPT, DIS, CSP, TSP, PLC, FUT, 10E, LRW, EVE, SHM, MOR, ALA, CFX, ARB, M10, ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Ancestral Vision; Ancient Den; Bitterblossom; Blazing Shoal; Chrome Mox; Cloudpost; Dark Depths; Dread Return; Glimpse of Nature; Golgari Grave-Troll; Great Furnace; Green Sun's Zenith; Hypergenesis; Jace, the Mind Sculptor; Mental Misstep; Ponder; Preordain; Punishing Fire; Rite of Flame; Seat of the Synod; Sensei's Divining Top; Stoneforge Mystic; Skullclamp; Sword of the Meek; Tree of Tales; Umezawa's Jitte; Vault of Whispers; Wild Nacatl"), RestrictionKeys.MODERN);
+                    }
+                });
+                addMenuItem(fmt, "Extended", !alreadyRestricted(RestrictionKeys.EXTENDED), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Extended format", "Restricted to sets: ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Stoneforge Mystic; Jace, the Mind Sculptor; Ponder; Preordain; Mental Misstep"), RestrictionKeys.EXTENDED);
+                    }
+                });
+                addMenuItem(fmt, "Vintage", !alreadyRestricted(RestrictionKeys.VINTAGE), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Vintage format", "Banned cards: Amulet of Quoz; Bronze Tablet; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Falling Star; Jeweled Bird; Rebirth; Shahrazad; Tempest Efreet; Timmerian Fiends"), RestrictionKeys.VINTAGE);
+                    }
+                });
+                addMenuItem(fmt, "Legacy", !alreadyRestricted(RestrictionKeys.LEGACY), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Legacy format", "Banned cards: Amulet of Quoz; Ancestral Recall; Balance; Bazaar of Baghdad; Black Lotus; Black Vise; Bronze Tablet; Channel; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Demonic Consultation; Demonic Tutor; Earthcraft; Falling Star; Fastbond; Flash; Frantic Search; Goblin Recruiter; Gush; Hermit Druid; Imperial Seal; Jeweled Bird; Land Tax; Library of Alexandria; Mana Crypt; Mana Drain; Mana Vault; Memory Jar; Mind Twist; Mind's Desire; Mishra's Workshop; Mox Emerald; Mox Jet; Mox Pearl; Mox Ruby; Mox Sapphire; Mystical Tutor; Necropotence; Oath of Druids; Rebirth; Shahrazad; Skullclamp; Sol Ring; Strip Mine; Survival of the Fittest; Tempest Efreet; Time Vault; Time Walk; Timetwister; Timmerian Fiends; Tinker; Tolarian Academy; Vampiric Tutor; Wheel of Fortune; Windfall; Worldgorger Dragon; Yawgmoth's Bargain; Yawgmoth's Will; Mental Misstep"), RestrictionKeys.LEGACY);
+                    }
+                });
+                popup.add(fmt);
+                addMenuItem(popup, "Edition (set) restriction...", true, null);
+                addMenuItem(popup, "CMC restriction", !alreadyRestricted(RestrictionKeys.CMC), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildRangeRestriction("CMC", 0, 10), RestrictionKeys.CMC);
+                    }
+                });
+                addMenuItem(popup, "Power restriction", !alreadyRestricted(RestrictionKeys.POWER), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildRangeRestriction("Power", 0, 10), RestrictionKeys.POWER);
+                    }
+                });
+                addMenuItem(popup, "Toughness restriction", !alreadyRestricted(RestrictionKeys.TOUGHNESS), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildRangeRestriction("Toughness", 0, 10), RestrictionKeys.TOUGHNESS);
+                    }
+                });
+                JMenu world = new JMenu("Quest world restriction");
+                addMenuItem(world, "Main", !alreadyRestricted(RestrictionKeys.MAIN), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Main world", "Restricted to sets: (TODO: get custom format)"), RestrictionKeys.MAIN);
+                    }
+                });
+                addMenuItem(world, "Shandalar", !alreadyRestricted(RestrictionKeys.SHANDALAR), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Shandalar world", "Restricted to sets: 2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED"), RestrictionKeys.SHANDALAR);
+                    }
+                });
+                addMenuItem(world, "Jamuraa", !alreadyRestricted(RestrictionKeys.JAMURAA), new Command() {
+                    @Override
+                    public void execute() {
+                        addRestriction(buildGenericRestriction("Jamuraa world", "Restricted to sets: 5ED, ARN, MIR, VIS, WTH"), RestrictionKeys.JAMURAA);
+                    }
+                });
+                popup.add(world);
+                popup.show(btnAddRestriction, 0, 0);
+            }
+        });
+        
         pnlSearch.setOpaque(false);
-        JComboBox withWithoutCombo = new JComboBox();
-        withWithoutCombo.addItem("With");
-        withWithoutCombo.addItem("Without");
-        pnlSearch.add(withWithoutCombo, "ay center");
+        pnlSearch.add(btnAddRestriction, "center");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
-        pnlSearch.add(new FLabel.Builder().text("Name").selectable(true).hoverable(true).build());
-        pnlSearch.add(new FLabel.Builder().text("Type").selectable(true).hoverable(true).build());
-        pnlSearch.add(new FLabel.Builder().text("Text").selectable(true).hoverable(true).build());
+        pnlSearch.add(new FLabel.Builder().text("Name").selectable(true).selected(true).hoverable(true).opaque(true).build());
+        pnlSearch.add(new FLabel.Builder().text("Type").selectable(true).selected(true).hoverable(true).opaque(true).build());
+        pnlSearch.add(new FLabel.Builder().text("Text").selectable(true).selected(true).hoverable(true).opaque(true).build());
+
+        pnlRestrictions.setOpaque(false);
 
         pnlHeader.setOpaque(false);
         pnlHeader.add(lblTitle, "w 100%!, h 100%!");
@@ -223,10 +305,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         parentBody.setLayout(new MigLayout("insets 0, gap 0, wrap, hidemode 3"));
         parentBody.add(pnlHeader, "w 98%!, h 30px!, gap 1% 0 1% 10px");
         parentBody.add(pnlStats, "w 96%, h 50px!, gap 2% 0 1% 1%");
-        parentBody.add(pnlRestrictions, "w 96%, gapright push");
-        parentBody.add(pnlAddButtons, "w 96%!, gap 2% 0 0 0");
-        parentBody.add(pnlSearch, "w 96%, h 30px!, gaptop push");
-        parentBody.add(scroller, "w 98%!, h 100% - 35px, gap 1% 0 1% 1%");
+        parentBody.add(pnlAddButtons, "w 96%!, gapleft 1%");
+        parentBody.add(pnlSearch, "w 96%, gapleft 1%");
+        parentBody.add(pnlRestrictions, "w 96%, gapleft 1%, gapright push");
+        parentBody.add(scroller, "w 98%!, h 100% - 35px, gap 1% 0 0 1%");
     }
 
     //========== Overridden from ITableContainer
@@ -368,18 +450,43 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return lbl;
     }
 
-    private JPanel buildRestriction(JComponent content) {
-        JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
+    private boolean canSearch() {
+        return !txfSearch.getText().isEmpty() &&
+                (lblName.isSelected() || lblType.isSelected() || lblText.isSelected());
+    }
+    
+    private boolean alreadyRestricted(RestrictionKeys key) {
+        return restrictionSet.contains(key);
+    }
+    
+    @SuppressWarnings("serial")
+    private void addRestriction(JComponent content, final RestrictionKeys key) {
+        final JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
 
         pnl.setOpaque(false);
         pnl.setBorder(BorderFactory.createMatteBorder(1, 2, 1, 2, FSkin.getColor(FSkin.Colors.CLR_TEXT)));
         
         pnl.add(content, "h 30!, center");
-        pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).build(), "top");
+        pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).cmdClick(new Command() {
+            @Override
+            public void execute() {
+                pnlRestrictions.remove(pnl);
+                if (null != key) {
+                    restrictionSet.remove(key);
+                }
+                pnlRestrictions.validate();
+                pnlRestrictions.getParent().validate();
+            }
+        }).build(), "top");
 
-        return pnl;
+        pnlRestrictions.add(pnl, "h 30!");
+        if (null != key) {
+            restrictionSet.add(key);
+        }
+        pnlRestrictions.validate();
+        pnlRestrictions.getParent().validate();
     }
-
+    
     private JComponent buildRangeRestriction(String label, int left, int right) {
         JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
         pnl.setOpaque(false);
@@ -393,7 +500,41 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return pnl;
     }
 
+    private JComponent buildSearchRestriction(boolean invert) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(invert ? "Without" : "Contains");
+        sb.append(": '");
+        sb.append(txfSearch.getText());
+        sb.append("' in:");
+        if (lblName.getSelected()) { sb.append(" name"); }
+        if (lblType.getSelected()) { sb.append(" type"); }
+        if (lblText.getSelected()) { sb.append(" text"); }
+        return new FLabel.Builder().text(sb.toString()).fontSize(11).build();
+    }
+
     private JComponent buildGenericRestriction(String title, String tooltip) {
         return new FLabel.Builder().text(title).fontSize(11).tooltip(tooltip).build();
+    }
+
+    private JMenuItem createMenuItem(String label, boolean enabled, final Command onClick) {
+        JMenuItem item = new JMenuItem(label);
+        item.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                if (null != onClick) {
+                    onClick.execute();
+                }
+            }
+        });
+        item.setEnabled(enabled);
+        return item;
+    }
+    
+    private void addMenuItem(JPopupMenu parent, String label, boolean enabled, Command onClick) {
+        parent.add(createMenuItem(label, enabled, onClick));
+    }
+    
+    private void addMenuItem(JMenuItem parent, String label, boolean enabled, Command onClick) {
+        parent.add(createMenuItem(label, enabled, onClick));
     }
 }

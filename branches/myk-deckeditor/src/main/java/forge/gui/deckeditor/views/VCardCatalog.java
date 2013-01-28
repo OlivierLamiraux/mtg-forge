@@ -1,10 +1,12 @@
 package forge.gui.deckeditor.views;
 
 import java.awt.FlowLayout;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,6 +21,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 
 import net.miginfocom.swing.MigLayout;
 import forge.Command;
@@ -178,83 +181,83 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             @Override
             public void execute() {
                 JPopupMenu popup = new JPopupMenu("Popup");
-                addMenuItem(popup, "Current search string", canSearch(), new Command() {
+                addMenuItem(popup, "Current search string", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildSearchRestriction(false), null);
                     }
                 });
-                addMenuItem(popup, "Inverse of current search string", canSearch(), new Command() {
+                addMenuItem(popup, "Inverse of current search string", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK), new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildSearchRestriction(true), null);
                     }
                 });
                 JMenu fmt = new JMenu("Format restriction");
-                addMenuItem(fmt, "Standard", !alreadyRestricted(RestrictionKeys.STANDARD), new Command() {
+                addMenuItem(fmt, "Standard", !alreadyRestricted(RestrictionKeys.STANDARD), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Standard format", "Restricted to sets: ISD, DKA, AVR, M13, RTR, GTC"), RestrictionKeys.STANDARD);
                     }
                 });
-                addMenuItem(fmt, "Modern", !alreadyRestricted(RestrictionKeys.MODERN), new Command() {
+                addMenuItem(fmt, "Modern", !alreadyRestricted(RestrictionKeys.MODERN), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Modern format", "Restricted to sets: 8ED, MRD, DST, 5DN, CHK, BOK, SOK, 9ED, RAV, GPT, DIS, CSP, TSP, PLC, FUT, 10E, LRW, EVE, SHM, MOR, ALA, CFX, ARB, M10, ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Ancestral Vision; Ancient Den; Bitterblossom; Blazing Shoal; Chrome Mox; Cloudpost; Dark Depths; Dread Return; Glimpse of Nature; Golgari Grave-Troll; Great Furnace; Green Sun's Zenith; Hypergenesis; Jace, the Mind Sculptor; Mental Misstep; Ponder; Preordain; Punishing Fire; Rite of Flame; Seat of the Synod; Sensei's Divining Top; Stoneforge Mystic; Skullclamp; Sword of the Meek; Tree of Tales; Umezawa's Jitte; Vault of Whispers; Wild Nacatl"), RestrictionKeys.MODERN);
                     }
                 });
-                addMenuItem(fmt, "Extended", !alreadyRestricted(RestrictionKeys.EXTENDED), new Command() {
+                addMenuItem(fmt, "Extended", !alreadyRestricted(RestrictionKeys.EXTENDED), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Extended format", "Restricted to sets: ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Stoneforge Mystic; Jace, the Mind Sculptor; Ponder; Preordain; Mental Misstep"), RestrictionKeys.EXTENDED);
                     }
                 });
-                addMenuItem(fmt, "Vintage", !alreadyRestricted(RestrictionKeys.VINTAGE), new Command() {
+                addMenuItem(fmt, "Vintage", !alreadyRestricted(RestrictionKeys.VINTAGE), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Vintage format", "Banned cards: Amulet of Quoz; Bronze Tablet; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Falling Star; Jeweled Bird; Rebirth; Shahrazad; Tempest Efreet; Timmerian Fiends"), RestrictionKeys.VINTAGE);
                     }
                 });
-                addMenuItem(fmt, "Legacy", !alreadyRestricted(RestrictionKeys.LEGACY), new Command() {
+                addMenuItem(fmt, "Legacy", !alreadyRestricted(RestrictionKeys.LEGACY), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Legacy format", "Banned cards: Amulet of Quoz; Ancestral Recall; Balance; Bazaar of Baghdad; Black Lotus; Black Vise; Bronze Tablet; Channel; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Demonic Consultation; Demonic Tutor; Earthcraft; Falling Star; Fastbond; Flash; Frantic Search; Goblin Recruiter; Gush; Hermit Druid; Imperial Seal; Jeweled Bird; Land Tax; Library of Alexandria; Mana Crypt; Mana Drain; Mana Vault; Memory Jar; Mind Twist; Mind's Desire; Mishra's Workshop; Mox Emerald; Mox Jet; Mox Pearl; Mox Ruby; Mox Sapphire; Mystical Tutor; Necropotence; Oath of Druids; Rebirth; Shahrazad; Skullclamp; Sol Ring; Strip Mine; Survival of the Fittest; Tempest Efreet; Time Vault; Time Walk; Timetwister; Timmerian Fiends; Tinker; Tolarian Academy; Vampiric Tutor; Wheel of Fortune; Windfall; Worldgorger Dragon; Yawgmoth's Bargain; Yawgmoth's Will; Mental Misstep"), RestrictionKeys.LEGACY);
                     }
                 });
                 popup.add(fmt);
-                addMenuItem(popup, "Edition (set) restriction...", true, null);
-                addMenuItem(popup, "CMC restriction", !alreadyRestricted(RestrictionKeys.CMC), new Command() {
+                addMenuItem(popup, "Edition (set) restriction...", true, null, null);
+                addMenuItem(popup, "CMC restriction", !alreadyRestricted(RestrictionKeys.CMC), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildRangeRestriction("CMC", 0, 10), RestrictionKeys.CMC);
                     }
                 });
-                addMenuItem(popup, "Power restriction", !alreadyRestricted(RestrictionKeys.POWER), new Command() {
+                addMenuItem(popup, "Power restriction", !alreadyRestricted(RestrictionKeys.POWER), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildRangeRestriction("Power", 0, 10), RestrictionKeys.POWER);
                     }
                 });
-                addMenuItem(popup, "Toughness restriction", !alreadyRestricted(RestrictionKeys.TOUGHNESS), new Command() {
+                addMenuItem(popup, "Toughness restriction", !alreadyRestricted(RestrictionKeys.TOUGHNESS), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildRangeRestriction("Toughness", 0, 10), RestrictionKeys.TOUGHNESS);
                     }
                 });
                 JMenu world = new JMenu("Quest world restriction");
-                addMenuItem(world, "Main", !alreadyRestricted(RestrictionKeys.MAIN), new Command() {
+                addMenuItem(world, "Main", !alreadyRestricted(RestrictionKeys.MAIN), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Main world", "Restricted to sets: (TODO: get custom format)"), RestrictionKeys.MAIN);
                     }
                 });
-                addMenuItem(world, "Shandalar", !alreadyRestricted(RestrictionKeys.SHANDALAR), new Command() {
+                addMenuItem(world, "Shandalar", !alreadyRestricted(RestrictionKeys.SHANDALAR), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Shandalar world", "Restricted to sets: 2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED"), RestrictionKeys.SHANDALAR);
                     }
                 });
-                addMenuItem(world, "Jamuraa", !alreadyRestricted(RestrictionKeys.JAMURAA), new Command() {
+                addMenuItem(world, "Jamuraa", !alreadyRestricted(RestrictionKeys.JAMURAA), null, new Command() {
                     @Override
                     public void execute() {
                         addRestriction(buildGenericRestriction("Jamuraa world", "Restricted to sets: 5ED, ARN, MIR, VIS, WTH"), RestrictionKeys.JAMURAA);
@@ -272,15 +275,17 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             }
         });
         
+        // add restriction shortcut
         txfSearch.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyTyped(KeyEvent e) {
-                //if (e.getKeyChar() == '\n') {
-                    //if (e.isControlDown()) {
-                        //addRestriction(buildSearchRestriction(e.isShiftDown()), null);
-                        addRestriction(buildGenericRestriction("keyChar: " + e.getKeyChar() + "( " + (int)e.getKeyChar() + "); meta:" + e.isMetaDown() + "; ctrl:" + e.isControlDown() + "; action:" + e.isActionKey(), null), null);
-                    //}
-                //}
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 10) {
+                    if (e.isControlDown() || e.isMetaDown()) {
+                        if (canSearch()) {
+                            addRestriction(buildSearchRestriction(e.isShiftDown()), null);
+                        }
+                    }
+                }
             }
         });
         
@@ -559,7 +564,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return new FLabel.Builder().text(title).fontSize(11).tooltip(tooltip).build();
     }
 
-    private JMenuItem createMenuItem(String label, boolean enabled, final Command onClick) {
+    private JMenuItem createMenuItem(String label, boolean enabled, KeyStroke accelerator, final Command onClick) {
         JMenuItem item = new JMenuItem(label);
         item.addActionListener(new ActionListener() {
             @Override
@@ -570,14 +575,15 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             }
         });
         item.setEnabled(enabled);
+        item.setAccelerator(accelerator);
         return item;
     }
     
-    private void addMenuItem(JPopupMenu parent, String label, boolean enabled, Command onClick) {
-        parent.add(createMenuItem(label, enabled, onClick));
+    private void addMenuItem(JPopupMenu parent, String label, boolean enabled, KeyStroke accelerator, Command onClick) {
+        parent.add(createMenuItem(label, enabled, accelerator, onClick));
     }
     
-    private void addMenuItem(JMenuItem parent, String label, boolean enabled, Command onClick) {
-        parent.add(createMenuItem(label, enabled, onClick));
+    private void addMenuItem(JMenuItem parent, String label, boolean enabled, KeyStroke accelerator, Command onClick) {
+        parent.add(createMenuItem(label, enabled, accelerator, onClick));
     }
 }

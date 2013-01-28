@@ -166,7 +166,6 @@ public class FLabel extends JLabel implements ILocalRepaint {
         this.setIconAlpha(b0.bldIconAlpha);
         this.setCommand(b0.bldCmd);
         this.setFontAlign(b0.bldFontAlign);
-        this.setText(b0.bldText);
         this.setToolTipText(b0.bldToolTip);
         this.setHoverable(b0.bldHoverable);
 
@@ -176,8 +175,6 @@ public class FLabel extends JLabel implements ILocalRepaint {
         // Non-custom display properties
         this.setForeground(clrText);
         this.setBackground(clrInactive);
-        this.setVerticalTextPosition(SwingConstants.CENTER);
-        this.setVerticalAlignment(SwingConstants.CENTER);
 
         // Resize adapter
         this.removeComponentListener(cadResize);

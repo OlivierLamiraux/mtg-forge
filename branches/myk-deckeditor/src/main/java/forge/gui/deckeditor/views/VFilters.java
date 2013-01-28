@@ -1,7 +1,5 @@
 package forge.gui.deckeditor.views;
 
-import java.awt.Insets;
-
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -39,8 +37,8 @@ public enum VFilters implements IVDoc<CFilters> {
     private final DragTab tab = new DragTab("Filters");
 
     // Text filter components
-    private final JTextField txfContains = new FTextField();
-    private final JTextField txfWithout = new FTextField();
+    private final JTextField txfContains = new FTextField.Builder().build();
+    private final JTextField txfWithout = new FTextField.Builder().build();
     private final JLabel lblContains = new FLabel.Builder()
         .text("Contains:").fontSize(14).build();
     private final JLabel lblWithout = new FLabel.Builder()
@@ -110,23 +108,6 @@ public enum VFilters implements IVDoc<CFilters> {
                 FSkin.getColor(FSkin.Colors.CLR_BORDERS)));
         lblIntervals.setBorder(new MatteBorder(0, 0, 1, 0,
                 FSkin.getColor(FSkin.Colors.CLR_BORDERS)));
-
-        // Text search
-        txfContains.setMargin(new Insets(5, 5, 5, 5));
-        txfContains.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
-        txfContains.setOpaque(true);
-        txfContains.setEditable(true);
-        txfContains.setFocusable(true);
-        txfContains.setOpaque(true);
-        txfContains.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
-
-        txfWithout.setMargin(new Insets(5, 5, 5, 5));
-        txfWithout.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
-        txfWithout.setOpaque(true);
-        txfWithout.setEditable(true);
-        txfWithout.setFocusable(true);
-        txfWithout.setOpaque(true);
-        txfWithout.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
 
         pnlText.setOpaque(false);
         pnlText.add(lblText, "w 210px!, h 25px!");

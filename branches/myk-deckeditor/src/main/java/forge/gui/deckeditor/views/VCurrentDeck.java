@@ -1,7 +1,5 @@
 package forge.gui.deckeditor.views;
 
-import java.awt.Insets;
-
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -101,7 +99,7 @@ public enum VCurrentDeck implements IVDoc<CCurrentDeck>, ITableContainer {
             .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_EDIT))
             .iconScaleAuto(false).hoverable(true).build();
 
-    private final JTextField txfTitle = new FTextField();
+    private final JTextField txfTitle = new FTextField.Builder().text("[New Deck]").build();
 
     private final JPanel pnlRemove = new JPanel();
     private final JPanel pnlHeader = new JPanel();
@@ -132,16 +130,6 @@ public enum VCurrentDeck implements IVDoc<CCurrentDeck>, ITableContainer {
     //========== Constructor
 
     private VCurrentDeck() {
-        // Title text area
-        txfTitle.setText("[New Deck]");
-        txfTitle.setMargin(new Insets(5, 5, 5, 5));
-        txfTitle.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
-        txfTitle.setOpaque(true);
-        txfTitle.setEditable(true);
-        txfTitle.setFocusable(true);
-        txfTitle.setOpaque(true);
-        txfTitle.setBackground(FSkin.getColor(FSkin.Colors.CLR_THEME2));
-
         // Header area
         pnlHeader.setOpaque(false);
         pnlHeader.setLayout(new MigLayout("insets 0, gap 0, ax center, hidemode 3"));

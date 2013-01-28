@@ -1,8 +1,11 @@
 package forge.gui.deckeditor.views;
 
+import java.awt.FlowLayout;
+
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -59,7 +62,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
 
-    private final JPanel pnlRestrictions = new JPanel(new WrapLayout());
+    private final JPanel pnlRestrictions = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 5));
     private final JLabel btnAddRestriction = new FLabel.Builder()
             .fontSize(14)
             .text("Add restriction")
@@ -119,10 +122,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlStats.add(lblSorcery, constraints);
 
         pnlRestrictions.setOpaque(false);
-        pnlRestrictions.add(btnAddRestriction, "w 30%!, h 30px!, gap 0 0 5px 5px");
-        pnlRestrictions.add(new FLabel.Builder().text("restriction 1").build());
-        pnlRestrictions.add(buildRangeRestriction("Toughness"));
-        pnlRestrictions.add(new FLabel.Builder().text("restriction 3").build());
+        pnlRestrictions.add(btnAddRestriction, "h 30!, gap 0 0 5px 5px");
+        pnlRestrictions.add(buildRestriction(buildGenericRestriction("Shandalar world", "2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED")), "h 30!");
+        pnlRestrictions.add(buildRestriction(buildRangeRestriction("CMC", 2, 4)), "h 30!");
+        pnlRestrictions.add(buildRestriction(buildGenericRestriction("Without 'flying' in text", null)), "h 30!");
         pnlAddButtons.setOpaque(false);
         pnlAddButtons.add(btnAdd, "w 30%!, h 30px!, gap 0 0 5px 5px");
         pnlAddButtons.add(btnAdd4, "w 30%!, h 30px!, gap 5% 5% 5px 5px");
@@ -338,21 +341,32 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return lbl;
     }
 
-    private JPanel buildRangeRestriction(String label) {
-        JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
+    private JPanel buildRestriction(JComponent content) {
+        JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
 
         pnl.setOpaque(false);
-        pnl.setBorder(BorderFactory.createLineBorder(FSkin.getColor(FSkin.Colors.CLR_BORDERS)));
+        pnl.setBorder(BorderFactory.createMatteBorder(1, 2, 1, 2, FSkin.getColor(FSkin.Colors.CLR_TEXT)));
         
-        // TODO: restrict text fields to two digits
-        pnl.add(new FSpinner.Builder().maxValue(99).build(), "w 45!");
+        pnl.add(content, "h 30!, center");
+        pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).build(), "top");
+
+        return pnl;
+    }
+
+    private JComponent buildRangeRestriction(String label, int left, int right) {
+        JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
+        pnl.setOpaque(false);
+        
+        pnl.add(new FSpinner.Builder().maxValue(99).initialValue(left).build(), "w 45!");
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
         pnl.add(new FLabel.Builder().text(label).fontSize(11).build());
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(new FSpinner.Builder().maxValue(99).build(), "w 45!");
+        pnl.add(new FSpinner.Builder().maxValue(99).initialValue(right).build(), "w 45!");
         
-        pnl.add(new FLabel.Builder().text("X").fontSize(8).hoverable(true).build(), "gapbottom push");
-
         return pnl;
+    }
+
+    private JComponent buildGenericRestriction(String title, String tooltip) {
+        return new FLabel.Builder().text(title).fontSize(11).tooltip(tooltip).build();
     }
 }

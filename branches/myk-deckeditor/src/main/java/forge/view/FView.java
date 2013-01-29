@@ -50,7 +50,8 @@ public enum FView {
     // The content panel is placed in the layered pane.
     private final JPanel pnlContent = new JPanel();
     // An insets panel neatly maintains a space from the edges of the window and
-    // whatever layout is happening, without having to explicitly define a margin each time.
+    // whatever layout is happening, without having to explicitly define a
+    // margin each time.
     private FPanel pnlInsets;
     // Preview panel is what is shown when a drag cell is being moved around
     private final JPanel pnlPreview = new PreviewPanel();
@@ -84,13 +85,12 @@ public enum FView {
         // Note: when adding new panels here, keep in mind that the layered pane
         // has a null layout, so new components will be W0 x H0 pixels - gotcha!
         // FControl has a method called "sizeComponents" which will fix this.
-        lpnDocument.add(TargetingOverlay.SINGLETON_INSTANCE.getPanel(), TARGETING_LAYER);
+        lpnDocument.add(TargetingOverlay.SINGLETON_INSTANCE.getPanel(), JLayeredPane.MODAL_LAYER);
 
         pnlInsets.add(pnlContent, BorderLayout.CENTER);
         pnlInsets.setBackgroundTexture(FSkin.getIcon(FSkin.Backgrounds.BG_TEXTURE));
         pnlInsets.setCornerDiameter(0);
-        pnlInsets.setBorder(new EmptyBorder(
-                SLayoutConstants.BORDER_T, SLayoutConstants.BORDER_T, 0, 0));
+        pnlInsets.setBorder(new EmptyBorder(SLayoutConstants.BORDER_T, SLayoutConstants.BORDER_T, 0, 0));
 
         pnlContent.setOpaque(false);
         pnlContent.setLayout(null);
@@ -108,11 +108,11 @@ public enum FView {
 
         // All is ready to go - fire up home screen and discard splash frame.
         Singletons.getControl().changeState(FControl.HOME_SCREEN);
-        //CMainMenu.SINGLETON_INSTANCE.selectPrevious();
+        // CMainMenu.SINGLETON_INSTANCE.selectPrevious();
 
         FView.this.frmSplash.dispose();
         FView.this.frmSplash = null;
-         
+
         // Allow OS to set location. Hopefully this doesn't cause issues
         frmDocument.setLocationByPlatform(true);
         frmDocument.setVisible(true);
@@ -160,13 +160,19 @@ public enum FView {
         return clone;
     }
 
-    /** @param pnl0 &emsp; {@link forge.gui.framework.DragCell} */
+    /**
+     * @param pnl0
+     *            &emsp; {@link forge.gui.framework.DragCell}
+     */
     public void addDragCell(final DragCell pnl0) {
         allCells.add(pnl0);
         pnlContent.add(pnl0);
     }
 
-    /** @param pnl0 &emsp; {@link forge.gui.framework.DragCell} */
+    /**
+     * @param pnl0
+     *            &emsp; {@link forge.gui.framework.DragCell}
+     */
     public void removeDragCell(final DragCell pnl0) {
         allCells.remove(pnl0);
         pnlContent.remove(pnl0);
@@ -178,14 +184,18 @@ public enum FView {
         pnlContent.removeAll();
     }
 
-    /** PreviewPanel shows where a dragged component could
-     * come to rest when the mouse is released.<br>
-     * This class is an unfortunate necessity to overcome
-     * translucency issues for preview panel. */
+    /**
+     * PreviewPanel shows where a dragged component could come to rest when the
+     * mouse is released.<br>
+     * This class is an unfortunate necessity to overcome translucency issues
+     * for preview panel.
+     */
     @SuppressWarnings("serial")
     class PreviewPanel extends JPanel {
-        /** PreviewPanel shows where a dragged component could
-         * come to rest when the mouse is released. */
+        /**
+         * PreviewPanel shows where a dragged component could come to rest when
+         * the mouse is released.
+         */
         public PreviewPanel() {
             super();
             setOpaque(false);

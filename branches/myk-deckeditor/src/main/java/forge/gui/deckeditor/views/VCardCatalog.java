@@ -14,6 +14,7 @@ import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -90,9 +91,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     private final FLabel lblPlaneswalker = buildLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
     private final FLabel lblSorcery = buildLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
 
-    private final JLabel lblTitle = new FLabel.Builder().fontSize(14).build();
-
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
+    private final JLabel lblTitle = new FLabel.Builder().fontSize(14).build();
 
     private final JPanel pnlAddButtons =
             new JPanel(new MigLayout("insets 0, gap 0, ax center, hidemode 3"));
@@ -116,6 +116,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             .text("Filter by")
             .tooltip("Filter shown cards by various properties")
             .hoverable(true).opaque(true).reactOnMouseDown(true).build();
+    private final JComboBox cbSearchMode = new JComboBox();
     private final JTextField txfSearch = new FTextField.Builder().build();
     private final FLabel lblName = new FLabel.Builder().text("Name").selectable(true).selected(true).hoverable(true).opaque(true).build();
     private final FLabel lblType = new FLabel.Builder().text("Type").selectable(true).selected(true).hoverable(true).opaque(true).build();
@@ -187,16 +188,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             @Override
             public void execute() {
                 JPopupMenu popup = new JPopupMenu("Popup");
-                addMenuItem(popup, "Current search string", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), new Command() {
+                addMenuItem(popup, "Current text search", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), new Command() {
                     @Override
                     public void execute() {
-                        addRestriction(buildSearchRestriction(false), null);
-                    }
-                });
-                addMenuItem(popup, "Inverse of current search string", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + KeyEvent.SHIFT_DOWN_MASK), new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildSearchRestriction(true), null);
+                        addRestriction(buildSearchRestriction(), null);
                     }
                 });
                 JMenu fmt = new JMenu("Format restriction");
@@ -331,7 +326,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 if (e.getKeyCode() == 10) {
                     if (e.isControlDown() || e.isMetaDown()) {
                         if (canSearch()) {
-                            addRestriction(buildSearchRestriction(e.isShiftDown()), null);
+                            addRestriction(buildSearchRestriction(), null);
                         }
                     }
                 }
@@ -340,6 +335,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         pnlSearch.setOpaque(false);
         pnlSearch.add(btnAddRestriction, "center, width pref+4");
+        cbSearchMode.addItem("With");
+        cbSearchMode.addItem("Without");
+        pnlSearch.add(cbSearchMode, "center");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
         pnlSearch.add(lblName, "width pref+4");
@@ -401,7 +399,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     public void populate() {
         JPanel parentBody = parentCell.getBody();
         parentBody.setLayout(new MigLayout("insets 0, gap 0, wrap, hidemode 3"));
-        parentBody.add(pnlHeader, "w 98%!, h 30px!, gap 1% 0 1% 10px");
+        parentBody.add(pnlHeader, "w 98%!, h 30px!, gap 1% 1% 0 0");
         parentBody.add(pnlStats, "w 96%, h 50px!, gap 2% 0 1% 1%");
         parentBody.add(pnlAddButtons, "w 96%!, gapleft 1%");
         parentBody.add(pnlSearch, "w 96%, gapleft 1%");
@@ -599,9 +597,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return pnl;
     }
 
-    private JComponent buildSearchRestriction(boolean invert) {
+    private JComponent buildSearchRestriction() {
         StringBuilder sb = new StringBuilder();
-        sb.append(invert ? "Without" : "Contains");
+        sb.append(0 == cbSearchMode.getSelectedIndex() ? "Contains" : "Without");
         sb.append(": '");
         sb.append(txfSearch.getText());
         sb.append("' in:");

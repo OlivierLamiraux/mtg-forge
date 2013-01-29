@@ -482,8 +482,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         int lineLen = 0;
         
         // use HTML tooltips so we can insert line breaks
-        List<String> sets = format.getAllowedSetCodes();
-        if (sets.isEmpty()) {
+        List<String> sets = null == format ? null : format.getAllowedSetCodes();
+        if (null == sets || sets.isEmpty()) {
             tooltip.append(" All");
         } else {
             for (String code : sets) {
@@ -503,8 +503,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             tooltip.delete(tooltip.length() - 1, tooltip.length());
         }
 
-        List<String> bannedCards = format.getBannedCardNames();
-        if (!bannedCards.isEmpty()) {
+        List<String> bannedCards = null == format ? null : format.getBannedCardNames();
+        if (null != bannedCards && !bannedCards.isEmpty()) {
             tooltip.append("<br>Banned:");
             
             for (String cardName : bannedCards) {
@@ -533,7 +533,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             // assumes that no world other than the main world will have a null format
             format = Singletons.getModel().getQuest().getMainFormat();
         }
-        return buildFormatRestriction(world.getName() + " world", format);
+        return buildFormatRestriction(world.getName(), format);
     }
     
     private JMenuItem createMenuItem(String label, boolean enabled, KeyStroke accelerator, final Command onClick) {

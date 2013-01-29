@@ -100,6 +100,8 @@ public class DialogChooseSets extends JDialog {
           }
       });
       buttonPanel.add(btnOK, BorderLayout.WEST);
+      getRootPane().setDefaultButton(btnOK);
+      
       btnCancel.addActionListener(new ActionListener() {
           @Override
           public void actionPerformed(final ActionEvent arg0) {

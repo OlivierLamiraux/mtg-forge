@@ -49,6 +49,7 @@ import forge.gui.toolbox.FSkin;
 import forge.gui.toolbox.FSpinner;
 import forge.gui.toolbox.FTextField;
 import forge.quest.QuestWorld;
+import forge.quest.data.GameFormatQuest;
 import forge.util.Pair;
 
 /** 
@@ -263,7 +264,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 popup.add(range);
                 JMenu world = new JMenu("Quest world");
                 for (final QuestWorld w : Singletons.getModel().getWorlds()) {
-                    addMenuItem(world, w.getName() + " world", !isActive(activeWorlds, w), null, new Command() {
+                    addMenuItem(world, w.getName(), !isActive(activeWorlds, w), null, new Command() {
                         @Override
                         public void execute() {
                             addRestriction(buildWorldRestriction(w), activeWorlds, w);
@@ -527,7 +528,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     }
     
     private JComponent buildWorldRestriction(QuestWorld world) {
-        return buildFormatRestriction(world.getName(), world.getFormat());
+        GameFormatQuest format = world.getFormat();
+        if (null == format) {
+            // assumes that no world other than the main world will have a null format
+            format = Singletons.getModel().getQuest().getMainFormat();
+        }
+        return buildFormatRestriction(world.getName() + " world", format);
     }
     
     private JMenuItem createMenuItem(String label, boolean enabled, KeyStroke accelerator, final Command onClick) {

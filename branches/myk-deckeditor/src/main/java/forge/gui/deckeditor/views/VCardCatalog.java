@@ -8,8 +8,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
@@ -31,6 +35,7 @@ import forge.Command;
 import forge.Singletons;
 import forge.card.CardEdition;
 import forge.card.EditionCollection;
+import forge.game.GameFormat;
 import forge.gui.WrapLayout;
 import forge.gui.deckeditor.SEditorUtil;
 import forge.gui.deckeditor.controllers.CCardCatalog;
@@ -43,6 +48,8 @@ import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FSkin;
 import forge.gui.toolbox.FSpinner;
 import forge.gui.toolbox.FTextField;
+import forge.quest.QuestWorld;
+import forge.util.Pair;
 
 /** 
  * Assembles Swing components of card catalog in deck editor.
@@ -54,56 +61,42 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     /** */
     SINGLETON_INSTANCE;
 
-    private enum RestrictionKeys {
-        STANDARD,
-        MODERN,
-        EXTENDED,
-        VINTAGE,
-        LEGACY,
-        CMC,
-        POWER,
-        TOUGHNESS,
-        MAIN,
-        SHANDALAR,
-        JAMURAA
-    }
-    
     // Fields used with interface IVDoc
     private DragCell parentCell;
     private final DragTab tab = new DragTab("Card Catalog");
 
-    // Total and color count labels
-    private final JPanel pnlStats = new JPanel();
-    private final FLabel lblTotal = buildLabel(SEditorUtil.ICO_TOTAL, false, "Total Card Count");
-    private final FLabel lblBlack = buildLabel(SEditorUtil.ICO_BLACK, true, "Black Card Count");
-    private final FLabel lblBlue = buildLabel(SEditorUtil.ICO_BLUE, true, "Blue Card Count");
-    private final FLabel lblGreen = buildLabel(SEditorUtil.ICO_GREEN, true, "Green Card Count");
-    private final FLabel lblRed = buildLabel(SEditorUtil.ICO_RED, true, "Red Card Count");
-    private final FLabel lblWhite = buildLabel(SEditorUtil.ICO_WHITE, true, "White Card Count");
-    private final FLabel lblColorless = buildLabel(SEditorUtil.ICO_COLORLESS, true, "Colorless Card Count");
-
-    // Card type labels
-    private final FLabel lblArtifact = buildLabel(SEditorUtil.ICO_ARTIFACT, true, "Artifact Card Count");
-    private final FLabel lblCreature = buildLabel(SEditorUtil.ICO_CREATURE, true, "Creature Card Count");
-    private final FLabel lblEnchantment = buildLabel(SEditorUtil.ICO_ENCHANTMENT, true, "Enchantment Card Count");
-    private final FLabel lblInstant = buildLabel(SEditorUtil.ICO_INSTANT, true, "Instant Card Count");
-    private final FLabel lblLand = buildLabel(SEditorUtil.ICO_LAND, true, "Land Card Count");
-    private final FLabel lblPlaneswalker = buildLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
-    private final FLabel lblSorcery = buildLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
-
+    // panel where special instructions appear
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
     private final JLabel lblTitle = new FLabel.Builder().fontSize(14).build();
 
+    // Total and color count labels/filter toggles
+    private final JPanel pnlStats = new JPanel();
+    private final FLabel lblTotal = buildToggleLabel(SEditorUtil.ICO_TOTAL, false, "Total Card Count");
+    private final FLabel lblBlack = buildToggleLabel(SEditorUtil.ICO_BLACK, true, "Black Card Count");
+    private final FLabel lblBlue = buildToggleLabel(SEditorUtil.ICO_BLUE, true, "Blue Card Count");
+    private final FLabel lblGreen = buildToggleLabel(SEditorUtil.ICO_GREEN, true, "Green Card Count");
+    private final FLabel lblRed = buildToggleLabel(SEditorUtil.ICO_RED, true, "Red Card Count");
+    private final FLabel lblWhite = buildToggleLabel(SEditorUtil.ICO_WHITE, true, "White Card Count");
+    private final FLabel lblColorless = buildToggleLabel(SEditorUtil.ICO_COLORLESS, true, "Colorless Card Count");
+
+    // Card type labels
+    private final FLabel lblArtifact = buildToggleLabel(SEditorUtil.ICO_ARTIFACT, true, "Artifact Card Count");
+    private final FLabel lblCreature = buildToggleLabel(SEditorUtil.ICO_CREATURE, true, "Creature Card Count");
+    private final FLabel lblEnchantment = buildToggleLabel(SEditorUtil.ICO_ENCHANTMENT, true, "Enchantment Card Count");
+    private final FLabel lblInstant = buildToggleLabel(SEditorUtil.ICO_INSTANT, true, "Instant Card Count");
+    private final FLabel lblLand = buildToggleLabel(SEditorUtil.ICO_LAND, true, "Land Card Count");
+    private final FLabel lblPlaneswalker = buildToggleLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
+    private final FLabel lblSorcery = buildToggleLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
+
+    // card transfer buttons
     private final JPanel pnlAddButtons =
             new JPanel(new MigLayout("insets 0, gap 0, ax center, hidemode 3"));
-
     private final JLabel btnAdd = new FLabel.Builder()
             .fontSize(14)
             .text("Add card")
             .tooltip("Add selected card to current deck (or double click the row)")
             .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_PLUS))
             .iconScaleAuto(false).hoverable(true).build();
-
     private final JLabel btnAdd4 = new FLabel.Builder()
             .fontSize(14)
             .text("Add 4 of card")
@@ -111,6 +104,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_PLUS))
             .iconScaleAuto(false).hoverable(true).build();
 
+    // restriction button and search widgets
     private final JPanel pnlSearch = new JPanel(new MigLayout("insets 0, gap 5px, center"));
     private final FLabel btnAddRestriction = new FLabel.Builder()
             .text("Filter by")
@@ -123,11 +117,25 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     private final FLabel lblText = new FLabel.Builder().text("Text").selectable(true).selected(true).hoverable(true).opaque(true).build();
     private final JPanel pnlRestrictions = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 5));
     
-    private final Set<RestrictionKeys> restrictionSet = new HashSet<RestrictionKeys>();
+    // restriction widgets
+    public static enum RangeTypes {
+        CMC,
+        POWER,
+        TOUGHNESS,
+        OWNED;
+        
+        public String toLabelString() {
+            if (this == CMC) { return toString(); }
+            return toString().substring(0, 1) + toString().substring(1).toLowerCase(Locale.ENGLISH);
+        }
+    }
+    private final Map<RangeTypes, Pair<FSpinner, FSpinner>> spinners = new HashMap<RangeTypes, Pair<FSpinner, FSpinner>>();
     
+    // card table
     private JTable tblCards = null;
     private final JScrollPane scroller = new JScrollPane();
 
+    
     //========== Constructor
     /** */
     @SuppressWarnings("serial")
@@ -191,40 +199,18 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 addMenuItem(popup, "Current text search", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), new Command() {
                     @Override
                     public void execute() {
-                        addRestriction(buildSearchRestriction(), null);
+                        addRestriction(buildSearchRestriction(), null, null);
                     }
                 });
                 JMenu fmt = new JMenu("Format restriction");
-                addMenuItem(fmt, "Standard", !alreadyRestricted(RestrictionKeys.STANDARD), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Standard format", "Restricted to sets: ISD, DKA, AVR, M13, RTR, GTC"), RestrictionKeys.STANDARD);
-                    }
-                });
-                addMenuItem(fmt, "Modern", !alreadyRestricted(RestrictionKeys.MODERN), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Modern format", "Restricted to sets: 8ED, MRD, DST, 5DN, CHK, BOK, SOK, 9ED, RAV, GPT, DIS, CSP, TSP, PLC, FUT, 10E, LRW, EVE, SHM, MOR, ALA, CFX, ARB, M10, ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Ancestral Vision; Ancient Den; Bitterblossom; Blazing Shoal; Chrome Mox; Cloudpost; Dark Depths; Dread Return; Glimpse of Nature; Golgari Grave-Troll; Great Furnace; Green Sun's Zenith; Hypergenesis; Jace, the Mind Sculptor; Mental Misstep; Ponder; Preordain; Punishing Fire; Rite of Flame; Seat of the Synod; Sensei's Divining Top; Stoneforge Mystic; Skullclamp; Sword of the Meek; Tree of Tales; Umezawa's Jitte; Vault of Whispers; Wild Nacatl"), RestrictionKeys.MODERN);
-                    }
-                });
-                addMenuItem(fmt, "Extended", !alreadyRestricted(RestrictionKeys.EXTENDED), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Extended format", "Restricted to sets: ZEN, WWK, ROE, M11, SOM, MBS, NPH, M12, ISD, DKA, AVR, M13, RTR, GTC; Banned cards: Stoneforge Mystic; Jace, the Mind Sculptor; Ponder; Preordain; Mental Misstep"), RestrictionKeys.EXTENDED);
-                    }
-                });
-                addMenuItem(fmt, "Vintage", !alreadyRestricted(RestrictionKeys.VINTAGE), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Vintage format", "Banned cards: Amulet of Quoz; Bronze Tablet; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Falling Star; Jeweled Bird; Rebirth; Shahrazad; Tempest Efreet; Timmerian Fiends"), RestrictionKeys.VINTAGE);
-                    }
-                });
-                addMenuItem(fmt, "Legacy", !alreadyRestricted(RestrictionKeys.LEGACY), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Legacy format", "Banned cards: Amulet of Quoz; Ancestral Recall; Balance; Bazaar of Baghdad; Black Lotus; Black Vise; Bronze Tablet; Channel; Chaos Orb; Contract from Below; Darkpact; Demonic Attorney; Demonic Consultation; Demonic Tutor; Earthcraft; Falling Star; Fastbond; Flash; Frantic Search; Goblin Recruiter; Gush; Hermit Druid; Imperial Seal; Jeweled Bird; Land Tax; Library of Alexandria; Mana Crypt; Mana Drain; Mana Vault; Memory Jar; Mind Twist; Mind's Desire; Mishra's Workshop; Mox Emerald; Mox Jet; Mox Pearl; Mox Ruby; Mox Sapphire; Mystical Tutor; Necropotence; Oath of Druids; Rebirth; Shahrazad; Skullclamp; Sol Ring; Strip Mine; Survival of the Fittest; Tempest Efreet; Time Vault; Time Walk; Timetwister; Timmerian Fiends; Tinker; Tolarian Academy; Vampiric Tutor; Wheel of Fortune; Windfall; Worldgorger Dragon; Yawgmoth's Bargain; Yawgmoth's Will; Mental Misstep"), RestrictionKeys.LEGACY);
-                    }
-                });
+                for (final GameFormat f : Singletons.getModel().getFormats()) {
+                    addMenuItem(fmt, f.getName(), !isActive(activeFormats, f), null, new Command() {
+                        @Override
+                        public void execute() {
+                            addRestriction(buildFormatRestriction(f.toString(), f), activeFormats, f);
+                        }
+                    });
+                }
                 popup.add(fmt);
                 addMenuItem(popup, "Edition (set) restriction...", true, null, new Command() {
                     @Override
@@ -237,76 +223,51 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                                     return;
                                 }
                                 
-                                EditionCollection editions = Singletons.getModel().getEditions();
-                                StringBuilder label = new StringBuilder("Sets:");
-                                StringBuilder tooltip = new StringBuilder("Sets:");
+                                GameFormat f = new GameFormat(null, setCodes, null);
                                 
+                                StringBuilder label = new StringBuilder("Sets:");
                                 boolean truncated = false;
                                 for (String code : setCodes)
                                 {
-                                    CardEdition edition = editions.get(code);
-
                                     // don't let the full label get too long
                                     if (32 > label.length()) {
-                                        label.append(" ").append(code).append(",");
+                                        label.append(" ").append(code).append(";");
                                     } else {
                                         truncated = true;
+                                        break;
                                     }
-                                    
-                                    // full info in the tooltip
-                                    tooltip.append(" ").append(edition.getName()).append(" (").append(code).append("),");
                                 }
                                 
-                                // chop off last commas
+                                // chop off last semicolons
                                 label.delete(label.length() - 1, label.length());
-                                tooltip.delete(tooltip.length() - 1, tooltip.length());
                                 
                                 if (truncated) {
                                     label.append("...");
                                 }
                                 
-                                addRestriction(buildGenericRestriction(label.toString(), tooltip.toString()), null);
+                                addRestriction(buildFormatRestriction(label.toString(), f), null, null);
                             }
                         });
                     }
                 });
-                addMenuItem(popup, "CMC restriction", !alreadyRestricted(RestrictionKeys.CMC), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildRangeRestriction("CMC", 0, 10), RestrictionKeys.CMC);
-                    }
-                });
-                addMenuItem(popup, "Power restriction", !alreadyRestricted(RestrictionKeys.POWER), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildRangeRestriction("Power", 0, 10), RestrictionKeys.POWER);
-                    }
-                });
-                addMenuItem(popup, "Toughness restriction", !alreadyRestricted(RestrictionKeys.TOUGHNESS), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildRangeRestriction("Toughness", 0, 10), RestrictionKeys.TOUGHNESS);
-                    }
-                });
+                for (final RangeTypes t : RangeTypes.values()) {
+                    addMenuItem(popup, t.toLabelString() + " restriction", !isActive(activeRanges, t), null, new Command() {
+                        @Override
+                        public void execute() {
+                            Pair<FSpinner, FSpinner> s = spinners.get(t);
+                            addRestriction(buildRangeRestriction(t, s.a, 0, s.b, 10), activeRanges, t);
+                        }
+                    });
+                }
                 JMenu world = new JMenu("Quest world restriction");
-                addMenuItem(world, "Main", !alreadyRestricted(RestrictionKeys.MAIN), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Main world", "Restricted to sets: (TODO: get custom format)"), RestrictionKeys.MAIN);
-                    }
-                });
-                addMenuItem(world, "Shandalar", !alreadyRestricted(RestrictionKeys.SHANDALAR), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Shandalar world", "Restricted to sets: 2ED, ARN, ATQ, 3ED, LEG, DRK, 4ED"), RestrictionKeys.SHANDALAR);
-                    }
-                });
-                addMenuItem(world, "Jamuraa", !alreadyRestricted(RestrictionKeys.JAMURAA), null, new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildGenericRestriction("Jamuraa world", "Restricted to sets: 5ED, ARN, MIR, VIS, WTH"), RestrictionKeys.JAMURAA);
-                    }
-                });
+                for (final QuestWorld w : Singletons.getModel().getWorlds()) {
+                    addMenuItem(world, w.getName(), !isActive(activeWorlds, w), null, new Command() {
+                        @Override
+                        public void execute() {
+                            addRestriction(buildWorldRestriction(w), activeWorlds, w);
+                        }
+                    });
+                }
                 popup.add(world);
                 popup.show(btnAddRestriction, 0, 0);
             }
@@ -326,7 +287,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 if (e.getKeyCode() == 10) {
                     if (e.isControlDown() || e.isMetaDown()) {
                         if (canSearch()) {
-                            addRestriction(buildSearchRestriction(), null);
+                            addRestriction(buildSearchRestriction(), null, null);
                         }
                     }
                 }
@@ -348,53 +309,41 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
         pnlHeader.setOpaque(false);
         pnlHeader.add(lblTitle, "w 100%!, h 100%!");
+        
+        // fill spinner map
+        for (RangeTypes t : RangeTypes.values()) {
+            spinners.put(t, new Pair<FSpinner, FSpinner>(
+                    new FSpinner.Builder().maxValue(99).build(), new FSpinner.Builder().maxValue(99).build()));
+        }
     }
 
     //========== Overridden from IVDoc
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#getDocumentID()
-     */
     @Override
     public EDocID getDocumentID() {
         return EDocID.EDITOR_CATALOG;
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#getTabLabel()
-     */
     @Override
     public DragTab getTabLabel() {
         return tab;
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#getLayoutControl()
-     */
     @Override
     public CCardCatalog getLayoutControl() {
         return CCardCatalog.SINGLETON_INSTANCE;
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#setParentCell(forge.gui.framework.DragCell)
-     */
     @Override
     public void setParentCell(DragCell cell0) {
         this.parentCell = cell0;
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#getParentCell()
-     */
     @Override
     public DragCell getParentCell() {
         return this.parentCell;
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.IVDoc#populate()
-     */
     @Override
     public void populate() {
         JPanel parentBody = parentCell.getBody();
@@ -408,139 +357,42 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     }
 
     //========== Overridden from ITableContainer
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#setTableView()
-     */
     @Override
     public void setTableView(final JTable tbl0) {
         this.tblCards = tbl0;
         scroller.setViewportView(tblCards);
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblTotal()
-     */
-    @Override
-    public JLabel getLblTotal() { return lblTotal; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblBlack()
-     */
-    @Override
-    public JLabel getLblBlack() { return lblBlack; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblBlue()
-     */
-    @Override
-    public JLabel getLblBlue() { return lblBlue; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblGreen()
-     */
-    @Override
-    public JLabel getLblGreen() { return lblGreen; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblRed()
-     */
-    @Override
-    public JLabel getLblRed() { return lblRed; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblWhite()
-     */
-    @Override
-    public JLabel getLblWhite() { return lblWhite; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblColorless()
-     */
-    @Override
-    public JLabel getLblColorless() { return lblColorless; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblArtifact()
-     */
-    @Override
-    public JLabel getLblArtifact() { return lblArtifact; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblEnchantment()
-     */
-    @Override
-    public JLabel getLblEnchantment() { return lblEnchantment; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblCreature()
-     */
-    @Override
-    public JLabel getLblCreature() { return lblCreature; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblSorcery()
-     */
-    @Override
-    public JLabel getLblSorcery() { return lblSorcery; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblInstant()
-     */
-    @Override
-    public JLabel getLblInstant() { return lblInstant; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblPlaneswalker()
-     */
-    @Override
-    public JLabel getLblPlaneswalker() { return lblPlaneswalker; }
-
-    /* (non-Javadoc)
-     * @see forge.gui.deckeditor.views.ITableContainer#getLblLand()
-     */
-    @Override
-    public JLabel getLblLand() { return lblLand; }
+    @Override public JLabel getLblTotal()        { return lblTotal;        }
+    @Override public JLabel getLblBlack()        { return lblBlack;        }
+    @Override public JLabel getLblBlue()         { return lblBlue;         }
+    @Override public JLabel getLblGreen()        { return lblGreen;        }
+    @Override public JLabel getLblRed()          { return lblRed;          }
+    @Override public JLabel getLblWhite()        { return lblWhite;        }
+    @Override public JLabel getLblColorless()    { return lblColorless;    }
+    @Override public JLabel getLblArtifact()     { return lblArtifact;     }
+    @Override public JLabel getLblEnchantment()  { return lblEnchantment;  }
+    @Override public JLabel getLblCreature()     { return lblCreature;     }
+    @Override public JLabel getLblSorcery()      { return lblSorcery;      }
+    @Override public JLabel getLblInstant()      { return lblInstant;      }
+    @Override public JLabel getLblPlaneswalker() { return lblPlaneswalker; }
+    @Override public JLabel getLblLand()         { return lblLand;         }
 
     //========== Accessor/mutator methods
-
-    /** @return {@link javax.swing.JLabel} */
-    public JLabel getLblTitle() {
-        return lblTitle;
-    }
-
-    /** @return {@link javax.swing.JLabel} */
-    public JLabel getBtnAdd() {
-        return btnAdd;
-    }
-
-    /** @return {@link javax.swing.JLabel} */
-    public JLabel getBtnAdd4() {
-        return btnAdd4;
-    }
-
-    /** @return {@link javax.swing.JPanel} */
-    public JPanel getPnlHeader() {
-        return pnlHeader;
-    }
-
-    /** @return {@link javax.swing.JPanel} */
-    public JPanel getPnlStats() {
-        return pnlStats;
-    }
-
-    /** @return {@link javax.swing.JPanel} */
-    public JPanel getPnlAddButtons() {
-        return pnlAddButtons;
-    }
+    public JPanel getPnlHeader()     { return pnlHeader;     }
+    public JLabel getLblTitle()      { return lblTitle;      }
+    public JPanel getPnlAddButtons() { return pnlAddButtons; }
+    public JLabel getBtnAdd()        { return btnAdd;        }
+    public JLabel getBtnAdd4()       { return btnAdd4;       }
 
     //========== Other methods
-
-    private FLabel buildLabel(final ImageIcon icon0, final boolean selectable, final String tooltip) {
-        return new FLabel.Builder().text("0")
-                .tooltip(tooltip)
+    private FLabel buildToggleLabel(final ImageIcon icon0, final boolean selectable, final String tooltip) {
+        return new FLabel.Builder()
                 .icon(icon0).iconScaleAuto(false)
-                .fontSize(11).selectable(selectable).selected(selectable)
-                .hoverable(true).build();
+                .text("0").fontSize(11)
+                .tooltip(tooltip)
+                .hoverable(true).selectable(selectable).selected(selectable)
+                .build();
     }
 
     private boolean canSearch() {
@@ -548,12 +400,16 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 (lblName.isSelected() || lblType.isSelected() || lblText.isSelected());
     }
     
-    private boolean alreadyRestricted(RestrictionKeys key) {
-        return restrictionSet.contains(key);
+    Set<GameFormat> activeFormats = new HashSet<GameFormat>();
+    Set<QuestWorld> activeWorlds = new HashSet<QuestWorld>();
+    Set<RangeTypes> activeRanges = EnumSet.noneOf(RangeTypes.class);
+    
+    private <T> boolean isActive(Set<T> activeSet, T key) {
+        return activeSet.contains(key);
     }
     
     @SuppressWarnings("serial")
-    private void addRestriction(JComponent content, final RestrictionKeys key) {
+    private <T> void addRestriction(JComponent content, final Set<T> activeSet,final T key) {
         final JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
 
         pnl.setOpaque(false);
@@ -567,7 +423,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             public void execute() {
                 pnlRestrictions.remove(pnl);
                 if (null != key) {
-                    restrictionSet.remove(key);
+                    activeSet.remove(key);
                 }
                 pnlRestrictions.validate();
                 parent.validate();
@@ -577,22 +433,24 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
         pnlRestrictions.add(pnl, "h 30!");
         if (null != key) {
-            restrictionSet.add(key);
+            activeSet.add(key);
         }
         pnlRestrictions.validate();
         parent.validate();
         parent.repaint();
     }
     
-    private JComponent buildRangeRestriction(String label, int left, int right) {
+    private JComponent buildRangeRestriction(RangeTypes type, FSpinner spnLeft, int valLeft, FSpinner spnRight, int valRight) {
         JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
         pnl.setOpaque(false);
         
-        pnl.add(new FSpinner.Builder().maxValue(99).initialValue(left).build(), "w 45!");
+        spnLeft.setValue(valLeft);
+        spnRight.setValue(valRight);
+        pnl.add(spnLeft, "w 45!");
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(new FLabel.Builder().text(label).fontSize(11).build());
+        pnl.add(new FLabel.Builder().text(type.toString().substring(0, 1) + type.toString().substring(1).toLowerCase(Locale.ENGLISH)).fontSize(11).build());
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(new FSpinner.Builder().maxValue(99).initialValue(right).build(), "w 45!");
+        pnl.add(spnRight, "w 45!");
         
         return pnl;
     }
@@ -613,10 +471,61 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         return new FLabel.Builder().text(sb.toString()).fontSize(11).build();
     }
 
-    private JComponent buildGenericRestriction(String title, String tooltip) {
-        return new FLabel.Builder().text(title).fontSize(11).tooltip(tooltip).build();
-    }
+    private JComponent buildFormatRestriction(String displayName, GameFormat format) {
+        EditionCollection editions = Singletons.getModel().getEditions();
+        StringBuilder tooltip = new StringBuilder("Sets:");
+        
+        int lastLen = 0;
+        int lineLen = 0;
+        
+        List<String> sets = format.getAllowedSetCodes();
+        if (sets.isEmpty()) {
+            tooltip.append(" All");
+        } else {
+            for (String code : sets) {
+                // don't let a single line get too long
+                if (50 < lineLen) {
+                    tooltip.append("\n");
+                    lastLen += lineLen;
+                    lineLen = 0;
+                }
+                
+                CardEdition edition = editions.get(code);
+                tooltip.append(" ").append(edition.getName()).append(" (").append(code).append(");");
+                lineLen = tooltip.length() - lastLen;
+            }
+            
+            // chop off last semicolon
+            tooltip.delete(tooltip.length() - 1, tooltip.length());
+        }
 
+        List<String> bannedCards = format.getBannedCardNames();
+        if (!bannedCards.isEmpty()) {
+            tooltip.append(", Banned:");
+            
+            for (String cardName : bannedCards) {
+                // don't let a single line get too long
+                if (50 < lineLen) {
+                    tooltip.append("\n");
+                    lastLen += lineLen;
+                    lineLen = 0;
+                }
+                
+                tooltip.append(" ").append(cardName).append(";");
+                lineLen = tooltip.length() - lastLen;
+            }
+            
+            // chop off last semicolon
+            tooltip.delete(tooltip.length() - 1, tooltip.length());
+        }
+        
+        return new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build();
+    }
+    
+    private JComponent buildWorldRestriction(QuestWorld world) {
+        return buildFormatRestriction(world.getName(), world.getFormat());
+    }
+    
     private JMenuItem createMenuItem(String label, boolean enabled, KeyStroke accelerator, final Command onClick) {
         JMenuItem item = new JMenuItem(label);
         item.addActionListener(new ActionListener() {

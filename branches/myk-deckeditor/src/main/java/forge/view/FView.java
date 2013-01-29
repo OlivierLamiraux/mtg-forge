@@ -35,8 +35,6 @@ public enum FView {
     /** */
     SINGLETON_INSTANCE;
 
-    /** */
-    public static final Integer TARGETING_LAYER = JLayeredPane.MODAL_LAYER - 1;
     private final List<DragCell> allCells = new ArrayList<DragCell>();
     private SplashFrame frmSplash;
 

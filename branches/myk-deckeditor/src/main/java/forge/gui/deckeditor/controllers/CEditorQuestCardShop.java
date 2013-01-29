@@ -122,7 +122,7 @@ public final class CEditorQuestCardShop extends ACEditorBase<InventoryItem, Deck
         columnsCatalog.get(columnsCatalog.size() - 1).setSortAndDisplayFunctions(
                 this.fnPriceCompare, this.fnPriceGet);
 
-        columnsCatalog.add(1, SColumnUtil.getColumn(ColumnName.CAT_NUM_OWNED));
+        columnsCatalog.add(1, SColumnUtil.getColumn(ColumnName.CAT_OWNED));
         columnsCatalog.get(1).setSortAndDisplayFunctions(
                 questData.getCards().getFnOwnedCompare(), questData.getCards().getFnOwnedGet());
 

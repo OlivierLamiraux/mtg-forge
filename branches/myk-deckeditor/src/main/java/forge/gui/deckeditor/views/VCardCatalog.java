@@ -202,7 +202,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                         addRestriction(buildSearchRestriction(), null, null);
                     }
                 });
-                JMenu fmt = new JMenu("Format restriction");
+                JMenu fmt = new JMenu("Format");
                 for (final GameFormat f : Singletons.getModel().getFormats()) {
                     addMenuItem(fmt, f.getName(), !isActive(activeFormats, f), null, new Command() {
                         @Override
@@ -212,7 +212,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                     });
                 }
                 popup.add(fmt);
-                addMenuItem(popup, "Edition (set) restriction...", true, null, new Command() {
+                addMenuItem(popup, "Edition (set)...", true, null, new Command() {
                     @Override
                     public void execute() {
                         final List<String> setCodes = new ArrayList<String>();
@@ -250,8 +250,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                         });
                     }
                 });
+                JMenu range = new JMenu("Value range");
                 for (final RangeTypes t : RangeTypes.values()) {
-                    addMenuItem(popup, t.toLabelString() + " restriction", !isActive(activeRanges, t), null, new Command() {
+                    addMenuItem(range, t.toLabelString() + " restriction", !isActive(activeRanges, t), null, new Command() {
                         @Override
                         public void execute() {
                             Pair<FSpinner, FSpinner> s = spinners.get(t);
@@ -259,9 +260,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                         }
                     });
                 }
-                JMenu world = new JMenu("Quest world restriction");
+                popup.add(range);
+                JMenu world = new JMenu("Quest world");
                 for (final QuestWorld w : Singletons.getModel().getWorlds()) {
-                    addMenuItem(world, w.getName(), !isActive(activeWorlds, w), null, new Command() {
+                    addMenuItem(world, w.getName() + " world", !isActive(activeWorlds, w), null, new Command() {
                         @Override
                         public void execute() {
                             addRestriction(buildWorldRestriction(w), activeWorlds, w);
@@ -473,11 +475,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     private JComponent buildFormatRestriction(String displayName, GameFormat format) {
         EditionCollection editions = Singletons.getModel().getEditions();
-        StringBuilder tooltip = new StringBuilder("Sets:");
+        StringBuilder tooltip = new StringBuilder("<html>Sets:");
         
         int lastLen = 0;
         int lineLen = 0;
         
+        // use HTML tooltips so we can insert line breaks
         List<String> sets = format.getAllowedSetCodes();
         if (sets.isEmpty()) {
             tooltip.append(" All");
@@ -485,28 +488,28 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             for (String code : sets) {
                 // don't let a single line get too long
                 if (50 < lineLen) {
-                    tooltip.append("\n");
+                    tooltip.append("<br>");
                     lastLen += lineLen;
                     lineLen = 0;
                 }
                 
                 CardEdition edition = editions.get(code);
-                tooltip.append(" ").append(edition.getName()).append(" (").append(code).append(");");
+                tooltip.append(" ").append(edition.getName()).append(" (").append(code).append("),");
                 lineLen = tooltip.length() - lastLen;
             }
             
-            // chop off last semicolon
+            // chop off last comma
             tooltip.delete(tooltip.length() - 1, tooltip.length());
         }
 
         List<String> bannedCards = format.getBannedCardNames();
         if (!bannedCards.isEmpty()) {
-            tooltip.append(", Banned:");
+            tooltip.append("<br>Banned:");
             
             for (String cardName : bannedCards) {
                 // don't let a single line get too long
                 if (50 < lineLen) {
-                    tooltip.append("\n");
+                    tooltip.append("<br>");
                     lastLen += lineLen;
                     lineLen = 0;
                 }
@@ -518,6 +521,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             // chop off last semicolon
             tooltip.delete(tooltip.length() - 1, tooltip.length());
         }
+        tooltip.append("</html>");
         
         return new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build();
     }

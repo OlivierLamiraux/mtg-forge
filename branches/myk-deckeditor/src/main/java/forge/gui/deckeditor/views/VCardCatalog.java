@@ -610,6 +610,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         if (lblText.getSelected()) { sb.append(" text,"); }
         sb.delete(sb.length() - 1, sb.length()); // chop off last comma
         
+        txfSearch.setText("");
+        
         return new FLabel.Builder().text(sb.toString()).fontSize(11).build();
     }
 

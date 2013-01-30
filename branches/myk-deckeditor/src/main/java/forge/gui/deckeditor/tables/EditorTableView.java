@@ -357,7 +357,11 @@ public final class EditorTableView<T extends InventoryItem> {
      *            a boolean
      */
     public void updateView(final boolean bForceFilter) {
-        final boolean useFilter = (bForceFilter && (this.filter != null)) || !this.isUnfiltered();
+        if (this.pool == null) {
+            return;
+        }
+
+        final boolean useFilter = bForceFilter && this.filter != null;
 
         if (useFilter || this.wantUnique || bForceFilter) {
             this.model.clear();
@@ -434,3 +438,4 @@ public final class EditorTableView<T extends InventoryItem> {
         table.setAutoResizeMode(value ? JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS : JTable.AUTO_RESIZE_NEXT_COLUMN);
     }
 }
+

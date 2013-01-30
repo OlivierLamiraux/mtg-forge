@@ -59,7 +59,7 @@ public final class SEditorUtil  {
         }
         
         public String toLabelString() {
-            return TextUtil.enumToLabel(this) + " Cards";
+            return TextUtil.enumToLabel(this) + " cards";
         }
     }
     

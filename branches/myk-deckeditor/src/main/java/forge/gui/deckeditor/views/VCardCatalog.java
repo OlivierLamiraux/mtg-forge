@@ -2,67 +2,31 @@ package forge.gui.deckeditor.views;
 
 import java.awt.Container;
 import java.awt.FlowLayout;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import net.miginfocom.swing.MigLayout;
-
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-
 import forge.Command;
-import forge.Singletons;
-import forge.card.CardEdition;
 import forge.card.CardRulesPredicates;
-import forge.card.EditionCollection;
-import forge.deck.DeckBase;
-import forge.game.GameFormat;
 import forge.gui.WrapLayout;
-import forge.gui.deckeditor.CDeckEditorUI;
 import forge.gui.deckeditor.SEditorUtil;
-import forge.gui.deckeditor.SFilterUtil;
-import forge.gui.deckeditor.controllers.ACEditorBase;
 import forge.gui.deckeditor.controllers.CCardCatalog;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.IVDoc;
-import forge.gui.home.quest.DialogChooseSets;
 import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FSkin;
 import forge.gui.toolbox.FSpinner;
 import forge.gui.toolbox.FTextField;
-import forge.item.CardPrinted;
-import forge.item.ItemPredicate;
-import forge.quest.QuestWorld;
-import forge.quest.data.GameFormatQuest;
 import forge.util.Pair;
 import forge.util.TextUtil;
 
@@ -75,6 +39,8 @@ import forge.util.TextUtil;
 public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     /** */
     SINGLETON_INSTANCE;
+    
+    public static final int SEARCH_MODE_INVERSE_INDEX = 1;
 
     // Fields used with interface IVDoc
     private DragCell parentCell;
@@ -82,24 +48,23 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     // panel where special instructions appear
     private final JPanel pnlHeader = new JPanel(new MigLayout("insets 0, gap 0"));
-    private final JLabel lblTitle = new FLabel.Builder().fontSize(14).build();
+    private final FLabel lblTitle = new FLabel.Builder().fontSize(14).build();
 
     // Total and color count labels/filter toggles
     private final JPanel pnlStats = new JPanel();
-    private boolean disableFiltering = false;
     private final Map<SEditorUtil.StatTypes, FLabel> statLabels =
             new HashMap<SEditorUtil.StatTypes, FLabel>();
 
     // card transfer buttons
     private final JPanel pnlAddButtons =
             new JPanel(new MigLayout("insets 0, gap 0, ax center, hidemode 3"));
-    private final JLabel btnAdd = new FLabel.Builder()
+    private final FLabel btnAdd = new FLabel.Builder()
             .fontSize(14)
             .text("Add card")
             .tooltip("Add selected card to current deck (or double click the row)")
             .icon(FSkin.getIcon(FSkin.InterfaceIcons.ICO_PLUS))
             .iconScaleAuto(false).hoverable(true).build();
-    private final JLabel btnAdd4 = new FLabel.Builder()
+    private final FLabel btnAdd4 = new FLabel.Builder()
             .fontSize(14)
             .text("Add 4 of card")
             .tooltip("Add up to 4 of selected card to current deck")
@@ -145,7 +110,6 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     
     //========== Constructor
     /** */
-    @SuppressWarnings("serial")
     private VCardCatalog() {
         scroller.setOpaque(false);
         scroller.getViewport().setOpaque(false);
@@ -155,158 +119,22 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlStats.setOpaque(false);
         pnlStats.setLayout(new MigLayout("insets 0, gap 5px, ax center, wrap 7"));
         
-        final Command updateFilterCommand = new Command() {
-            @Override
-            public void execute() {
-                if (!disableFiltering) {
-                    applyCurrentFilter();
-                }
-            }
-        };
-
         for (SEditorUtil.StatTypes s : SEditorUtil.StatTypes.values()) {
             FLabel label = buildToggleLabel(s, SEditorUtil.StatTypes.TOTAL != s);
-            label.setCommand(updateFilterCommand);
             statLabels.put(s, label);
             pnlStats.add(label, "w 57px!, h 20px!");
         }
-
-        statLabels.get(SEditorUtil.StatTypes.TOTAL).setCommand(new Command() {
-            private boolean lastToggle = true;
-            
-            @Override
-            public void execute() {
-                disableFiltering = true;
-                lastToggle = !lastToggle;
-                for (SEditorUtil.StatTypes s : SEditorUtil.StatTypes.values()) {
-                    if (SEditorUtil.StatTypes.TOTAL != s) {
-                        statLabels.get(s).setSelected(lastToggle);
-                    }
-                }
-                disableFiltering = false;
-                applyCurrentFilter();
-            }
-        });
         
+        statLabels.get(SEditorUtil.StatTypes.TOTAL).setToolTipText("Total cards (click to toggle all filters)");
+
         pnlAddButtons.setOpaque(false);
         pnlAddButtons.add(btnAdd, "w 30%!, h 30px!, gap 0 0 5px 5px");
         pnlAddButtons.add(btnAdd4, "w 30%!, h 30px!, gap 5% 5% 5px 5px");
-        
-        btnAddRestriction.setCommand(new Command() {
-            @Override
-            public void execute() {
-                JPopupMenu popup = new JPopupMenu("Popup");
-                addMenuItem(popup, "Current text search", canSearch(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), new Command() {
-                    @Override
-                    public void execute() {
-                        addRestriction(buildSearchRestriction(), null, null);
-                    }
-                });
-                JMenu fmt = new JMenu("Format");
-                for (final GameFormat f : Singletons.getModel().getFormats()) {
-                    addMenuItem(fmt, f.getName(), !isActive(activeFormats, f), null, new Command() {
-                        @Override
-                        public void execute() {
-                            addRestriction(buildFormatRestriction(f.toString(), f), activeFormats, f);
-                        }
-                    });
-                }
-                popup.add(fmt);
-                addMenuItem(popup, "Edition (set)...", true, null, new Command() {
-                    @Override
-                    public void execute() {
-                        final List<String> setCodes = new ArrayList<String>();
-                        new DialogChooseSets(setCodes, new Runnable() {
-                            @Override
-                            public void run() {
-                                if (setCodes.isEmpty()) {
-                                    return;
-                                }
-                                
-                                GameFormat f = new GameFormat(null, setCodes, null);
-                                
-                                StringBuilder label = new StringBuilder("Sets:");
-                                boolean truncated = false;
-                                for (String code : setCodes)
-                                {
-                                    // don't let the full label get too long
-                                    if (32 > label.length()) {
-                                        label.append(" ").append(code).append(";");
-                                    } else {
-                                        truncated = true;
-                                        break;
-                                    }
-                                }
-                                
-                                // chop off last semicolons
-                                label.delete(label.length() - 1, label.length());
-                                
-                                if (truncated) {
-                                    label.append("...");
-                                }
-                                
-                                addRestriction(buildFormatRestriction(label.toString(), f), null, null);
-                            }
-                        });
-                    }
-                });
-                JMenu range = new JMenu("Value range");
-                for (final RangeTypes t : RangeTypes.values()) {
-                    addMenuItem(range, t.toLabelString() + " restriction", !isActive(activeRanges, t), null, new Command() {
-                        @Override
-                        public void execute() {
-                            addRestriction(buildRangeRestriction(t), activeRanges, t);
-                        }
-                    });
-                }
-                popup.add(range);
-                JMenu world = new JMenu("Quest world");
-                for (final QuestWorld w : Singletons.getModel().getWorlds()) {
-                    addMenuItem(world, w.getName(), !isActive(activeWorlds, w), null, new Command() {
-                        @Override
-                        public void execute() {
-                            addRestriction(buildWorldRestriction(w), activeWorlds, w);
-                        }
-                    });
-                }
-                popup.add(world);
-                popup.show(btnAddRestriction, 0, 0);
-            }
-        });
-        
-        // add restriction shortcut
-        txfSearch.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == 10) {
-                    if (e.isControlDown() || e.isMetaDown()) {
-                        if (canSearch()) {
-                            addRestriction(buildSearchRestriction(), null, null);
-                        }
-                    }
-                }
-            }
-            
-            @Override
-            public void keyReleased(KeyEvent e) {
-                applyCurrentFilter();
-            }
-        });
-        
-        lblName.setCommand(updateFilterCommand);
-        lblType.setCommand(updateFilterCommand);
-        lblText.setCommand(updateFilterCommand);
         
         pnlSearch.setOpaque(false);
         pnlSearch.add(btnAddRestriction, "center, width pref+4");
         cbSearchMode.addItem("With");
         cbSearchMode.addItem("Without");
-        cbSearchMode.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent arg0) {
-                applyCurrentFilter();
-            }
-        });
         pnlSearch.add(cbSearchMode, "center");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
@@ -321,34 +149,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         // fill spinner map
         for (RangeTypes t : RangeTypes.values()) {
-            final FSpinner min = new FSpinner.Builder().maxValue(10).build();
-            final FSpinner max = new FSpinner.Builder().maxValue(10).build();
-            
-            min.addChangeListener(new ChangeListener() {
-                @Override
-                public void stateChanged(ChangeEvent arg0) {
-                    if (Integer.parseInt(max.getValue().toString()) <
-                            Integer.parseInt(min.getValue().toString()))
-                    {
-                        max.setValue(min.getValue());
-                    }
-                    applyCurrentFilter();
-                }
-            });
-            
-            max.addChangeListener(new ChangeListener() {
-                @Override
-                public void stateChanged(ChangeEvent arg0) {
-                    if (Integer.parseInt(min.getValue().toString()) >
-                            Integer.parseInt(max.getValue().toString()))
-                    {
-                        min.setValue(max.getValue());
-                    }
-                    applyCurrentFilter();
-                }
-            });
-            
-            spinners.put(t, new Pair<FSpinner, FSpinner>(min, max));
+            spinners.put(t, new Pair<FSpinner, FSpinner>(
+                    new FSpinner.Builder().maxValue(10).build(),
+                    new FSpinner.Builder().maxValue(10).build()));
         }
     }
 
@@ -405,50 +208,26 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     //========== Accessor/mutator methods
     public JPanel getPnlHeader()     { return pnlHeader;     }
-    public JLabel getLblTitle()      { return lblTitle;      }
+    public FLabel getLblTitle()      { return lblTitle;      }
     public JPanel getPnlAddButtons() { return pnlAddButtons; }
-    public JLabel getBtnAdd()        { return btnAdd;        }
-    public JLabel getBtnAdd4()       { return btnAdd4;       }
+    public FLabel getBtnAdd()        { return btnAdd;        }
+    public FLabel getBtnAdd4()       { return btnAdd4;       }
+    public FLabel getLblName()       { return lblName;       }
+    public FLabel getLblType()       { return lblType;       }
+    public FLabel getLblText()       { return lblText;       }
+    
+    public FLabel getBtnAddRestriction() { return btnAddRestriction; }
+    public JComboBox getCbSearchMode()   { return cbSearchMode;      }
+    public JTextField getTxfSearch()     { return txfSearch;         }
 
-    //========== Other methods
-    @SuppressWarnings("unchecked")
-    public void applyCurrentFilter() {
-        // The main trick here is to apply a CardPrinted predicate
-        // to the table. CardRules will lead to difficulties.
-
-        List<Predicate<? super CardPrinted>> cardPredicates = new ArrayList<Predicate<? super CardPrinted>>();
-        cardPredicates.add(Predicates.instanceOf(CardPrinted.class));
-        cardPredicates.add(SFilterUtil.buildColorAndTypeFilter(statLabels));
-        cardPredicates.addAll(activePredicates);
-        
-        // apply current values in the range filters
-        for (RangeTypes t : RangeTypes.values()) {
-            if (activeRanges.contains(t)) {
-                cardPredicates.add(SFilterUtil.buildIntervalFilter(spinners, t));
-            }
-        }
-        
-        // get the current contents of the search box
-        cardPredicates.add(SFilterUtil.buildTextFilter(
-                txfSearch.getText(),
-                0 != cbSearchMode.getSelectedIndex(),
-                lblName.isSelected(), lblType.isSelected(), lblText.isSelected()));
-        
-        Predicate<? super CardPrinted> cardFilter = Predicates.and(cardPredicates);
-        
-        // Until this is filterable, always show packs and decks in the card shop.
-        List<Predicate<? super CardPrinted>> itemPredicates = new ArrayList<Predicate<? super CardPrinted>>();
-        itemPredicates.add(cardFilter);
-        itemPredicates.add(ItemPredicate.Presets.IS_PACK);
-        itemPredicates.add(ItemPredicate.Presets.IS_DECK);
-        Predicate<CardPrinted> filter = Predicates.or(itemPredicates);
-
-        // Apply to table
-        // TODO: is there really no way to make this type safe?
-        ((ACEditorBase<CardPrinted, DeckBase>)CDeckEditorUI.SINGLETON_INSTANCE.getCurrentEditorController())
-            .getTableCatalog().setFilter(filter);
+    public Map<SEditorUtil.StatTypes, FLabel> getStatLabels() {
+        return statLabels;
+    }
+    public Map<RangeTypes, Pair<FSpinner, FSpinner>> getSpinners() {
+        return spinners;
     }
     
+    //========== Other methods
     private FLabel buildToggleLabel(SEditorUtil.StatTypes s, boolean selectable) {
         return new FLabel.Builder()
                 .icon(s.img).iconScaleAuto(false)
@@ -458,28 +237,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 .build();
     }
 
-    private boolean canSearch() {
-        return !txfSearch.getText().isEmpty() &&
-                (lblName.isSelected() || lblType.isSelected() || lblText.isSelected());
-    }
-    
-    final Set<Predicate<CardPrinted>> activePredicates = new HashSet<Predicate<CardPrinted>>();
-    final Set<GameFormat> activeFormats = new HashSet<GameFormat>();
-    final Set<QuestWorld> activeWorlds = new HashSet<QuestWorld>();
-    final Set<RangeTypes> activeRanges = EnumSet.noneOf(RangeTypes.class);
-    
-    private <T> boolean isActive(Set<T> activeSet, T key) {
-        return activeSet.contains(key);
-    }
-    
     @SuppressWarnings("serial")
-    private <T> void addRestriction(Pair<JComponent, Predicate<CardPrinted>> restriction, final Set<T> activeSet, final T key) {
-        final Predicate<CardPrinted> predicate = restriction.b;
-        
-        if (null != predicate && activePredicates.contains(predicate)) {
-            return;
-        }
-        
+    public void addRestrictionWidget(JComponent component, final Command onRemove) {
         final JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
 
         pnl.setOpaque(false);
@@ -487,164 +246,42 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         final Container parent = pnlRestrictions.getParent();
         
-        pnl.add(restriction.a, "h 30!, center");
+        pnl.add(component, "h 30!, center");
         pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true)
                 .tooltip("Remove filter").cmdClick(new Command() {
-            @Override
-            public void execute() {
-                pnlRestrictions.remove(pnl);
-                if (null != key) {
-                    activeSet.remove(key);
-                }
-                pnlRestrictions.validate();
-                parent.validate();
-                parent.repaint();
-                
-                if (null != predicate) {
-                    activePredicates.remove(predicate);
-                }
-                applyCurrentFilter();
-            }
-        }).build(), "top");
+                    @Override
+                    public void execute() {
+                        pnlRestrictions.remove(pnl);
+                        pnlRestrictions.validate();
+                        parent.validate();
+                        parent.repaint();
+                        
+                        onRemove.execute();
+                    }
+                }).build(), "top");
 
         pnlRestrictions.add(pnl, "h 30!");
-        if (null != key) {
-            activeSet.add(key);
-        }
+
         pnlRestrictions.validate();
         parent.validate();
         parent.repaint();
-        
-        if (null != predicate) {
-            activePredicates.add(predicate);
-        }
-        applyCurrentFilter();
     }
     
-    private Pair<JComponent, Predicate<CardPrinted>> buildRangeRestriction(RangeTypes t) {
+    public JComponent buildRangeRestrictionWidget(RangeTypes t) {
         JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
         pnl.setOpaque(false);
         
         Pair<FSpinner, FSpinner> s = spinners.get(t);
-        s.a.setValue(0);
-        s.b.setValue(10);
         pnl.add(s.a, "w 45!");
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
         pnl.add(new FLabel.Builder().text(t.toLabelString()).fontSize(11).build());
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
         pnl.add(s.b, "w 45!");
         
-        return new Pair<JComponent, Predicate<CardPrinted>>(pnl, null);
+        return pnl;
     }
 
-    private Pair<JComponent, Predicate<CardPrinted>> buildSearchRestriction() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(0 == cbSearchMode.getSelectedIndex() ? "Contains" : "Without");
-        sb.append(": '");
-        sb.append(txfSearch.getText());
-        sb.append("' in:");
-        if (lblName.getSelected()) { sb.append(" name,"); }
-        if (lblType.getSelected()) { sb.append(" type,"); }
-        if (lblText.getSelected()) { sb.append(" text,"); }
-        sb.delete(sb.length() - 1, sb.length()); // chop off last comma
-        
-        String text = txfSearch.getText();
-        txfSearch.setText("");
-        
-        return new Pair<JComponent, Predicate<CardPrinted>>(
-                new FLabel.Builder().text(sb.toString()).fontSize(11).build(),
-                SFilterUtil.buildTextFilter(text, 0 != cbSearchMode.getSelectedIndex(),
-                        lblName.isSelected(), lblType.isSelected(), lblText.isSelected()));
-    }
-
-    private Pair<JComponent, Predicate<CardPrinted>> buildFormatRestriction(String displayName, GameFormat format) {
-        EditionCollection editions = Singletons.getModel().getEditions();
-        StringBuilder tooltip = new StringBuilder("<html>Sets:");
-        
-        int lastLen = 0;
-        int lineLen = 0;
-        
-        // use HTML tooltips so we can insert line breaks
-        List<String> sets = null == format ? null : format.getAllowedSetCodes();
-        if (null == sets || sets.isEmpty()) {
-            tooltip.append(" All");
-        } else {
-            for (String code : sets) {
-                // don't let a single line get too long
-                if (50 < lineLen) {
-                    tooltip.append("<br>");
-                    lastLen += lineLen;
-                    lineLen = 0;
-                }
-                
-                CardEdition edition = editions.get(code);
-                tooltip.append(" ").append(edition.getName()).append(" (").append(code).append("),");
-                lineLen = tooltip.length() - lastLen;
-            }
-            
-            // chop off last comma
-            tooltip.delete(tooltip.length() - 1, tooltip.length());
-            
-            tooltip.append("<br><br>Allowing identical cards from other sets");
-        }
-
-        List<String> bannedCards = null == format ? null : format.getBannedCardNames();
-        if (null != bannedCards && !bannedCards.isEmpty()) {
-            tooltip.append("<br><br>Banned:");
-            lastLen += lineLen;
-            lineLen = 0;
-            
-            for (String cardName : bannedCards) {
-                // don't let a single line get too long
-                if (50 < lineLen) {
-                    tooltip.append("<br>");
-                    lastLen += lineLen;
-                    lineLen = 0;
-                }
-                
-                tooltip.append(" ").append(cardName).append(";");
-                lineLen = tooltip.length() - lastLen;
-            }
-            
-            // chop off last semicolon
-            tooltip.delete(tooltip.length() - 1, tooltip.length());
-        }
-        tooltip.append("</html>");
-        
-        return new Pair<JComponent, Predicate<CardPrinted>>(
-                new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build(),
-                format.getFilterRules());
-    }
-    
-    private Pair<JComponent, Predicate<CardPrinted>> buildWorldRestriction(QuestWorld world) {
-        GameFormatQuest format = world.getFormat();
-        if (null == format) {
-            // assumes that no world other than the main world will have a null format
-            format = Singletons.getModel().getQuest().getMainFormat();
-        }
-        return buildFormatRestriction(world.getName(), format);
-    }
-    
-    private JMenuItem createMenuItem(String label, boolean enabled, KeyStroke accelerator, final Command onClick) {
-        JMenuItem item = new JMenuItem(label);
-        item.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent arg0) {
-                if (null != onClick) {
-                    onClick.execute();
-                }
-            }
-        });
-        item.setEnabled(enabled);
-        item.setAccelerator(accelerator);
-        return item;
-    }
-    
-    private void addMenuItem(JPopupMenu parent, String label, boolean enabled, KeyStroke accelerator, Command onClick) {
-        parent.add(createMenuItem(label, enabled, accelerator, onClick));
-    }
-    
-    private void addMenuItem(JMenuItem parent, String label, boolean enabled, KeyStroke accelerator, Command onClick) {
-        parent.add(createMenuItem(label, enabled, accelerator, onClick));
+    public JComponent buildPlainRestrictionWidget(String label, String tooltip) {
+        return new FLabel.Builder().text(label).tooltip(tooltip).fontSize(11).build();
     }
 }

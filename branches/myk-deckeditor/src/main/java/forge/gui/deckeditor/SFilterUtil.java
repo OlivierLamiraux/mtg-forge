@@ -9,7 +9,6 @@ import com.google.common.base.Predicates;
 
 import forge.card.CardRules;
 import forge.card.CardRulesPredicates;
-import forge.game.GameFormat;
 import forge.gui.deckeditor.views.VCardCatalog;
 import forge.gui.deckeditor.views.VCardCatalog.RangeTypes;
 import forge.gui.toolbox.FLabel;
@@ -81,20 +80,6 @@ public class SFilterUtil {
     }
 
     /**
-     * builds a predicate for a list of sets
-     */
-    public static Predicate<CardPrinted> buildSetFilter(List<String> sets) {
-        return CardPrinted.Predicates.printedInSets(sets, true);
-    }
-
-    /**
-     * builds a predicate for a format
-     */
-    public static Predicate<CardPrinted> buildFormatFilter(GameFormat format) {
-        return format.getFilterRules();
-    }
-
-    /**
      * builds a string search filter
      */
     public static Predicate<CardPrinted> buildTextFilter(String text, boolean invert, boolean inName, boolean inType, boolean inText) {
@@ -124,12 +109,12 @@ public class SFilterUtil {
         return Predicates.compose(textFilter, CardPrinted.FN_GET_RULES);
     }
 
-    private static Predicate<CardRules> getCardRulesFieldPredicate(String min, String max, CardRulesPredicates.LeafNumber.CardField field) {
-        boolean hasMin = !("*".equals(min));
-        boolean hasMax = !("10+".equals(max));
+    private static Predicate<CardRules> getCardRulesFieldPredicate(int min, int max, CardRulesPredicates.LeafNumber.CardField field) {
+        boolean hasMin = 0 != min;
+        boolean hasMax = 10 != max;
 
-        Predicate<CardRules> pMin = !hasMin ? null : new CardRulesPredicates.LeafNumber(field, ComparableOp.GT_OR_EQUAL, Integer.valueOf(min));
-        Predicate<CardRules> pMax = !hasMax ? null : new CardRulesPredicates.LeafNumber(field, ComparableOp.LT_OR_EQUAL, Integer.valueOf(max));
+        Predicate<CardRules> pMin = !hasMin ? null : new CardRulesPredicates.LeafNumber(field, ComparableOp.GT_OR_EQUAL, min);
+        Predicate<CardRules> pMax = !hasMax ? null : new CardRulesPredicates.LeafNumber(field, ComparableOp.LT_OR_EQUAL, max);
 
         return optimizedAnd(pMin, pMax);
     }
@@ -140,23 +125,23 @@ public class SFilterUtil {
     }
 
     /**
-     * builds a filter for an interval
+     * builds a filter for an interval on a card field
      */
     public static Predicate<CardPrinted> buildIntervalFilter(
-            Map<RangeTypes, Pair<FSpinner, FSpinner>> spinners, VCardCatalog.RangeTypes rangeType) {
-//        // Must include -1 so non-creatures are included by default.
-//        Predicate<CardRules> preToughness = getCardRulesFieldPredicate(view.getCbxTLow().getSelectedItem().toString(), view.getCbxTHigh().getSelectedItem().toString(), CardRulesPredicates.LeafNumber.CardField.TOUGHNESS);
-//        Predicate<CardRules> prePower = getCardRulesFieldPredicate(view.getCbxPLow().getSelectedItem().toString(), view.getCbxPHigh().getSelectedItem().toString(), CardRulesPredicates.LeafNumber.CardField.POWER);
-//        Predicate<CardRules> preCMC = getCardRulesFieldPredicate(view.getCbxCMCLow().getSelectedItem().toString(), view.getCbxCMCHigh().getSelectedItem().toString(), CardRulesPredicates.LeafNumber.CardField.CMC);
-//
-//        Predicate<CardRules> preCreature = optimizedAnd(preToughness, prePower);
-//        preCreature = preCreature == null ? null : Predicates.and(preCreature, CardRulesPredicates.Presets.IS_CREATURE);
-//
-//        Predicate<CardRules> preFinal = optimizedAnd(preCMC, preCreature);
-//        if (preFinal == null) {
+            Map<RangeTypes, Pair<FSpinner, FSpinner>> spinners, VCardCatalog.RangeTypes field) {
+        Pair<FSpinner, FSpinner> sPair = spinners.get(field);
+        Predicate<CardRules> fieldFilter = getCardRulesFieldPredicate(
+                Integer.valueOf(sPair.a.getValue().toString()), Integer.valueOf(sPair.b.getValue().toString()), field.cardField);
+
+        if (null != fieldFilter && VCardCatalog.RangeTypes.CMC != field)
+        {
+            fieldFilter = Predicates.and(fieldFilter, CardRulesPredicates.Presets.IS_CREATURE);
+        }
+
+        if (fieldFilter == null) {
             return Predicates.alwaysTrue();
-//        } else {
-//            return Predicates.compose(preFinal, CardPrinted.FN_GET_RULES);
-//        }
+        } else {
+            return Predicates.compose(fieldFilter, CardPrinted.FN_GET_RULES);
+        }
     }
 }

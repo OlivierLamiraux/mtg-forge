@@ -14,7 +14,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,6 +29,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -122,8 +123,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     public static enum RangeTypes {
         CMC       (CardRulesPredicates.LeafNumber.CardField.CMC),
         POWER     (CardRulesPredicates.LeafNumber.CardField.POWER),
-        TOUGHNESS (CardRulesPredicates.LeafNumber.CardField.TOUGHNESS),
-        OWNED     (null);
+        TOUGHNESS (CardRulesPredicates.LeafNumber.CardField.TOUGHNESS);
         
         public final CardRulesPredicates.LeafNumber.CardField cardField;
         
@@ -255,8 +255,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                     addMenuItem(range, t.toLabelString() + " restriction", !isActive(activeRanges, t), null, new Command() {
                         @Override
                         public void execute() {
-                            Pair<FSpinner, FSpinner> s = spinners.get(t);
-                            addRestriction(buildRangeRestriction(t, s.a, 0, s.b, 10), activeRanges, t);
+                            addRestriction(buildRangeRestriction(t), activeRanges, t);
                         }
                     });
                 }
@@ -322,8 +321,34 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         // fill spinner map
         for (RangeTypes t : RangeTypes.values()) {
-            spinners.put(t, new Pair<FSpinner, FSpinner>(
-                    new FSpinner.Builder().maxValue(99).build(), new FSpinner.Builder().maxValue(99).build()));
+            final FSpinner min = new FSpinner.Builder().maxValue(10).build();
+            final FSpinner max = new FSpinner.Builder().maxValue(10).build();
+            
+            min.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent arg0) {
+                    if (Integer.parseInt(max.getValue().toString()) <
+                            Integer.parseInt(min.getValue().toString()))
+                    {
+                        max.setValue(min.getValue());
+                    }
+                    applyCurrentFilter();
+                }
+            });
+            
+            max.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent arg0) {
+                    if (Integer.parseInt(min.getValue().toString()) >
+                            Integer.parseInt(max.getValue().toString()))
+                    {
+                        min.setValue(max.getValue());
+                    }
+                    applyCurrentFilter();
+                }
+            });
+            
+            spinners.put(t, new Pair<FSpinner, FSpinner>(min, max));
         }
     }
 
@@ -356,12 +381,6 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     @Override
     public void populate() {
-        // reset state
-        pnlRestrictions.removeAll();
-        activeFormats.clear();
-        activeWorlds.clear();
-        activeRanges.clear();
-        
         JPanel parentBody = parentCell.getBody();
         parentBody.setLayout(new MigLayout("insets 0, gap 0, wrap, hidemode 3"));
         parentBody.add(pnlHeader, "w 98%!, h 30px!, gap 1% 1% 0 0");
@@ -401,6 +420,13 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         cardPredicates.add(Predicates.instanceOf(CardPrinted.class));
         cardPredicates.add(SFilterUtil.buildColorAndTypeFilter(statLabels));
         cardPredicates.addAll(activePredicates);
+        
+        // apply current values in the range filters
+        for (RangeTypes t : RangeTypes.values()) {
+            if (activeRanges.contains(t)) {
+                cardPredicates.add(SFilterUtil.buildIntervalFilter(spinners, t));
+            }
+        }
         
         // get the current contents of the search box
         cardPredicates.add(SFilterUtil.buildTextFilter(
@@ -450,7 +476,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     private <T> void addRestriction(Pair<JComponent, Predicate<CardPrinted>> restriction, final Set<T> activeSet, final T key) {
         final Predicate<CardPrinted> predicate = restriction.b;
         
-        if (activePredicates.contains(predicate)) {
+        if (null != predicate && activePredicates.contains(predicate)) {
             return;
         }
         
@@ -462,7 +488,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         final Container parent = pnlRestrictions.getParent();
         
         pnl.add(restriction.a, "h 30!, center");
-        pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).cmdClick(new Command() {
+        pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true)
+                .tooltip("Remove filter").cmdClick(new Command() {
             @Override
             public void execute() {
                 pnlRestrictions.remove(pnl);
@@ -473,7 +500,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 parent.validate();
                 parent.repaint();
                 
-                activePredicates.remove(predicate);
+                if (null != predicate) {
+                    activePredicates.remove(predicate);
+                }
                 applyCurrentFilter();
             }
         }).build(), "top");
@@ -486,24 +515,26 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         parent.validate();
         parent.repaint();
         
-        activePredicates.add(predicate);
+        if (null != predicate) {
+            activePredicates.add(predicate);
+        }
         applyCurrentFilter();
     }
     
-    private Pair<JComponent, Predicate<CardPrinted>> buildRangeRestriction(
-            RangeTypes type, FSpinner spnLeft, int valLeft, FSpinner spnRight, int valRight) {
+    private Pair<JComponent, Predicate<CardPrinted>> buildRangeRestriction(RangeTypes t) {
         JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
         pnl.setOpaque(false);
         
-        spnLeft.setValue(valLeft);
-        spnRight.setValue(valRight);
-        pnl.add(spnLeft, "w 45!");
+        Pair<FSpinner, FSpinner> s = spinners.get(t);
+        s.a.setValue(0);
+        s.b.setValue(10);
+        pnl.add(s.a, "w 45!");
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(new FLabel.Builder().text(type.toString().substring(0, 1) + type.toString().substring(1).toLowerCase(Locale.ENGLISH)).fontSize(11).build());
+        pnl.add(new FLabel.Builder().text(t.toLabelString()).fontSize(11).build());
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
-        pnl.add(spnRight, "w 45!");
+        pnl.add(s.b, "w 45!");
         
-        return new Pair<JComponent, Predicate<CardPrinted>>(pnl, SFilterUtil.buildIntervalFilter(spinners, type));
+        return new Pair<JComponent, Predicate<CardPrinted>>(pnl, null);
     }
 
     private Pair<JComponent, Predicate<CardPrinted>> buildSearchRestriction() {
@@ -580,7 +611,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         return new Pair<JComponent, Predicate<CardPrinted>>(
                 new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build(),
-                SFilterUtil.buildFormatFilter(format));
+                format.getFilterRules());
     }
     
     private Pair<JComponent, Predicate<CardPrinted>> buildWorldRestriction(QuestWorld world) {

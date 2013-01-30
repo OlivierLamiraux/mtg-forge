@@ -584,6 +584,8 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             
             // chop off last comma
             tooltip.delete(tooltip.length() - 1, tooltip.length());
+            
+            tooltip.append("<br><br>Allowing identical cards from other sets");
         }
 
         List<String> bannedCards = null == format ? null : format.getBannedCardNames();

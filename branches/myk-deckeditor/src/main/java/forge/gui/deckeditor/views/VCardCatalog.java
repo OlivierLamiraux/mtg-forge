@@ -5,6 +5,8 @@ import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -17,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -31,13 +32,22 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 
 import net.miginfocom.swing.MigLayout;
+
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+
 import forge.Command;
 import forge.Singletons;
 import forge.card.CardEdition;
+import forge.card.CardRulesPredicates;
 import forge.card.EditionCollection;
+import forge.deck.DeckBase;
 import forge.game.GameFormat;
 import forge.gui.WrapLayout;
+import forge.gui.deckeditor.CDeckEditorUI;
 import forge.gui.deckeditor.SEditorUtil;
+import forge.gui.deckeditor.SFilterUtil;
+import forge.gui.deckeditor.controllers.ACEditorBase;
 import forge.gui.deckeditor.controllers.CCardCatalog;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
@@ -48,9 +58,12 @@ import forge.gui.toolbox.FLabel;
 import forge.gui.toolbox.FSkin;
 import forge.gui.toolbox.FSpinner;
 import forge.gui.toolbox.FTextField;
+import forge.item.CardPrinted;
+import forge.item.ItemPredicate;
 import forge.quest.QuestWorld;
 import forge.quest.data.GameFormatQuest;
 import forge.util.Pair;
+import forge.util.TextUtil;
 
 /** 
  * Assembles Swing components of card catalog in deck editor.
@@ -72,22 +85,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     // Total and color count labels/filter toggles
     private final JPanel pnlStats = new JPanel();
-    private final FLabel lblTotal = buildToggleLabel(SEditorUtil.ICO_TOTAL, false, "Total Card Count");
-    private final FLabel lblBlack = buildToggleLabel(SEditorUtil.ICO_BLACK, true, "Black Card Count");
-    private final FLabel lblBlue = buildToggleLabel(SEditorUtil.ICO_BLUE, true, "Blue Card Count");
-    private final FLabel lblGreen = buildToggleLabel(SEditorUtil.ICO_GREEN, true, "Green Card Count");
-    private final FLabel lblRed = buildToggleLabel(SEditorUtil.ICO_RED, true, "Red Card Count");
-    private final FLabel lblWhite = buildToggleLabel(SEditorUtil.ICO_WHITE, true, "White Card Count");
-    private final FLabel lblColorless = buildToggleLabel(SEditorUtil.ICO_COLORLESS, true, "Colorless Card Count");
-
-    // Card type labels
-    private final FLabel lblArtifact = buildToggleLabel(SEditorUtil.ICO_ARTIFACT, true, "Artifact Card Count");
-    private final FLabel lblCreature = buildToggleLabel(SEditorUtil.ICO_CREATURE, true, "Creature Card Count");
-    private final FLabel lblEnchantment = buildToggleLabel(SEditorUtil.ICO_ENCHANTMENT, true, "Enchantment Card Count");
-    private final FLabel lblInstant = buildToggleLabel(SEditorUtil.ICO_INSTANT, true, "Instant Card Count");
-    private final FLabel lblLand = buildToggleLabel(SEditorUtil.ICO_LAND, true, "Land Card Count");
-    private final FLabel lblPlaneswalker = buildToggleLabel(SEditorUtil.ICO_PLANESWALKER, true, "Planeswalker Card Count");
-    private final FLabel lblSorcery = buildToggleLabel(SEditorUtil.ICO_SORCERY, true, "Sorcery Card Count");
+    private boolean disableFiltering = false;
+    private final Map<SEditorUtil.StatTypes, FLabel> statLabels =
+            new HashMap<SEditorUtil.StatTypes, FLabel>();
 
     // card transfer buttons
     private final JPanel pnlAddButtons =
@@ -120,14 +120,20 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     
     // restriction widgets
     public static enum RangeTypes {
-        CMC,
-        POWER,
-        TOUGHNESS,
-        OWNED;
+        CMC       (CardRulesPredicates.LeafNumber.CardField.CMC),
+        POWER     (CardRulesPredicates.LeafNumber.CardField.POWER),
+        TOUGHNESS (CardRulesPredicates.LeafNumber.CardField.TOUGHNESS),
+        OWNED     (null);
         
+        public final CardRulesPredicates.LeafNumber.CardField cardField;
+        
+        RangeTypes(CardRulesPredicates.LeafNumber.CardField cardField) {
+            this.cardField = cardField;
+        }
+
         public String toLabelString() {
             if (this == CMC) { return toString(); }
-            return toString().substring(0, 1) + toString().substring(1).toLowerCase(Locale.ENGLISH);
+            return TextUtil.enumToLabel(this);
         }
     }
     private final Map<RangeTypes, Pair<FSpinner, FSpinner>> spinners = new HashMap<RangeTypes, Pair<FSpinner, FSpinner>>();
@@ -148,47 +154,40 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
         pnlStats.setOpaque(false);
         pnlStats.setLayout(new MigLayout("insets 0, gap 5px, ax center, wrap 7"));
+        
+        final Command updateFilterCommand = new Command() {
+            @Override
+            public void execute() {
+                if (!disableFiltering) {
+                    applyCurrentFilter();
+                }
+            }
+        };
 
-        lblTotal.setCommand(new Command() {
+        for (SEditorUtil.StatTypes s : SEditorUtil.StatTypes.values()) {
+            FLabel label = buildToggleLabel(s, SEditorUtil.StatTypes.TOTAL != s);
+            label.setCommand(updateFilterCommand);
+            statLabels.put(s, label);
+            pnlStats.add(label, "w 57px!, h 20px!");
+        }
+
+        statLabels.get(SEditorUtil.StatTypes.TOTAL).setCommand(new Command() {
             private boolean lastToggle = true;
             
             @Override
             public void execute() {
+                disableFiltering = true;
                 lastToggle = !lastToggle;
-                lblWhite.setSelected(lastToggle);
-                lblBlue.setSelected(lastToggle);
-                lblBlack.setSelected(lastToggle);
-                lblRed.setSelected(lastToggle);
-                lblGreen.setSelected(lastToggle);
-                lblColorless.setSelected(lastToggle);
-
-                lblLand.setSelected(lastToggle);
-                lblArtifact.setSelected(lastToggle);
-                lblCreature.setSelected(lastToggle);
-                lblEnchantment.setSelected(lastToggle);
-                lblPlaneswalker.setSelected(lastToggle);
-                lblInstant.setSelected(lastToggle);
-                lblSorcery.setSelected(lastToggle);
+                for (SEditorUtil.StatTypes s : SEditorUtil.StatTypes.values()) {
+                    if (SEditorUtil.StatTypes.TOTAL != s) {
+                        statLabels.get(s).setSelected(lastToggle);
+                    }
+                }
+                disableFiltering = false;
+                applyCurrentFilter();
             }
         });
         
-        final String constraints = "w 57px!, h 20px!";
-        pnlStats.add(lblTotal, constraints);
-        pnlStats.add(lblWhite, constraints);
-        pnlStats.add(lblBlue, constraints);
-        pnlStats.add(lblBlack, constraints);
-        pnlStats.add(lblRed, constraints);
-        pnlStats.add(lblGreen, constraints);
-        pnlStats.add(lblColorless, constraints);
-
-        pnlStats.add(lblLand, constraints);
-        pnlStats.add(lblArtifact, constraints);
-        pnlStats.add(lblCreature, constraints);
-        pnlStats.add(lblEnchantment, constraints);
-        pnlStats.add(lblPlaneswalker, constraints);
-        pnlStats.add(lblInstant, constraints);
-        pnlStats.add(lblSorcery, constraints);
-
         pnlAddButtons.setOpaque(false);
         pnlAddButtons.add(btnAdd, "w 30%!, h 30px!, gap 0 0 5px 5px");
         pnlAddButtons.add(btnAdd4, "w 30%!, h 30px!, gap 5% 5% 5px 5px");
@@ -276,13 +275,6 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
             }
         });
         
-        txfSearch.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // TODO: apply filter
-            }
-        });
-        
         // add restriction shortcut
         txfSearch.addKeyListener(new KeyAdapter() {
             @Override
@@ -295,12 +287,27 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                     }
                 }
             }
+            
+            @Override
+            public void keyReleased(KeyEvent e) {
+                applyCurrentFilter();
+            }
         });
+        
+        lblName.setCommand(updateFilterCommand);
+        lblType.setCommand(updateFilterCommand);
+        lblText.setCommand(updateFilterCommand);
         
         pnlSearch.setOpaque(false);
         pnlSearch.add(btnAddRestriction, "center, width pref+4");
         cbSearchMode.addItem("With");
         cbSearchMode.addItem("Without");
+        cbSearchMode.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent arg0) {
+                applyCurrentFilter();
+            }
+        });
         pnlSearch.add(cbSearchMode, "center");
         pnlSearch.add(txfSearch, "pushx, growx");
         pnlSearch.add(new FLabel.Builder().text("in").build());
@@ -349,6 +356,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
     @Override
     public void populate() {
+        // reset state
+        pnlRestrictions.removeAll();
+        activeFormats.clear();
+        activeWorlds.clear();
+        activeRanges.clear();
+        
         JPanel parentBody = parentCell.getBody();
         parentBody.setLayout(new MigLayout("insets 0, gap 0, wrap, hidemode 3"));
         parentBody.add(pnlHeader, "w 98%!, h 30px!, gap 1% 1% 0 0");
@@ -366,20 +379,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         scroller.setViewportView(tblCards);
     }
 
-    @Override public JLabel getLblTotal()        { return lblTotal;        }
-    @Override public JLabel getLblBlack()        { return lblBlack;        }
-    @Override public JLabel getLblBlue()         { return lblBlue;         }
-    @Override public JLabel getLblGreen()        { return lblGreen;        }
-    @Override public JLabel getLblRed()          { return lblRed;          }
-    @Override public JLabel getLblWhite()        { return lblWhite;        }
-    @Override public JLabel getLblColorless()    { return lblColorless;    }
-    @Override public JLabel getLblArtifact()     { return lblArtifact;     }
-    @Override public JLabel getLblEnchantment()  { return lblEnchantment;  }
-    @Override public JLabel getLblCreature()     { return lblCreature;     }
-    @Override public JLabel getLblSorcery()      { return lblSorcery;      }
-    @Override public JLabel getLblInstant()      { return lblInstant;      }
-    @Override public JLabel getLblPlaneswalker() { return lblPlaneswalker; }
-    @Override public JLabel getLblLand()         { return lblLand;         }
+    @Override
+    public FLabel getStatLabel(SEditorUtil.StatTypes s) {
+        return statLabels.get(s);
+    }
 
     //========== Accessor/mutator methods
     public JPanel getPnlHeader()     { return pnlHeader;     }
@@ -389,11 +392,42 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
     public JLabel getBtnAdd4()       { return btnAdd4;       }
 
     //========== Other methods
-    private FLabel buildToggleLabel(final ImageIcon icon0, final boolean selectable, final String tooltip) {
+    @SuppressWarnings("unchecked")
+    public void applyCurrentFilter() {
+        // The main trick here is to apply a CardPrinted predicate
+        // to the table. CardRules will lead to difficulties.
+
+        List<Predicate<? super CardPrinted>> cardPredicates = new ArrayList<Predicate<? super CardPrinted>>();
+        cardPredicates.add(Predicates.instanceOf(CardPrinted.class));
+        cardPredicates.add(SFilterUtil.buildColorAndTypeFilter(statLabels));
+        cardPredicates.addAll(activePredicates);
+        
+        // get the current contents of the search box
+        cardPredicates.add(SFilterUtil.buildTextFilter(
+                txfSearch.getText(),
+                0 != cbSearchMode.getSelectedIndex(),
+                lblName.isSelected(), lblType.isSelected(), lblText.isSelected()));
+        
+        Predicate<? super CardPrinted> cardFilter = Predicates.and(cardPredicates);
+        
+        // Until this is filterable, always show packs and decks in the card shop.
+        List<Predicate<? super CardPrinted>> itemPredicates = new ArrayList<Predicate<? super CardPrinted>>();
+        itemPredicates.add(cardFilter);
+        itemPredicates.add(ItemPredicate.Presets.IS_PACK);
+        itemPredicates.add(ItemPredicate.Presets.IS_DECK);
+        Predicate<CardPrinted> filter = Predicates.or(itemPredicates);
+
+        // Apply to table
+        // TODO: is there really no way to make this type safe?
+        ((ACEditorBase<CardPrinted, DeckBase>)CDeckEditorUI.SINGLETON_INSTANCE.getCurrentEditorController())
+            .getTableCatalog().setFilter(filter);
+    }
+    
+    private FLabel buildToggleLabel(SEditorUtil.StatTypes s, boolean selectable) {
         return new FLabel.Builder()
-                .icon(icon0).iconScaleAuto(false)
+                .icon(s.img).iconScaleAuto(false)
                 .text("0").fontSize(11)
-                .tooltip(tooltip)
+                .tooltip(s.toLabelString())
                 .hoverable(true).selectable(selectable).selected(selectable)
                 .build();
     }
@@ -403,16 +437,23 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 (lblName.isSelected() || lblType.isSelected() || lblText.isSelected());
     }
     
-    Set<GameFormat> activeFormats = new HashSet<GameFormat>();
-    Set<QuestWorld> activeWorlds = new HashSet<QuestWorld>();
-    Set<RangeTypes> activeRanges = EnumSet.noneOf(RangeTypes.class);
+    final Set<Predicate<CardPrinted>> activePredicates = new HashSet<Predicate<CardPrinted>>();
+    final Set<GameFormat> activeFormats = new HashSet<GameFormat>();
+    final Set<QuestWorld> activeWorlds = new HashSet<QuestWorld>();
+    final Set<RangeTypes> activeRanges = EnumSet.noneOf(RangeTypes.class);
     
     private <T> boolean isActive(Set<T> activeSet, T key) {
         return activeSet.contains(key);
     }
     
     @SuppressWarnings("serial")
-    private <T> void addRestriction(JComponent content, final Set<T> activeSet,final T key) {
+    private <T> void addRestriction(Pair<JComponent, Predicate<CardPrinted>> restriction, final Set<T> activeSet, final T key) {
+        final Predicate<CardPrinted> predicate = restriction.b;
+        
+        if (activePredicates.contains(predicate)) {
+            return;
+        }
+        
         final JPanel pnl = new JPanel(new MigLayout("insets 2, gap 2, h 30!"));
 
         pnl.setOpaque(false);
@@ -420,7 +461,7 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         
         final Container parent = pnlRestrictions.getParent();
         
-        pnl.add(content, "h 30!, center");
+        pnl.add(restriction.a, "h 30!, center");
         pnl.add(new FLabel.Builder().text("X").fontSize(10).hoverable(true).cmdClick(new Command() {
             @Override
             public void execute() {
@@ -431,6 +472,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
                 pnlRestrictions.validate();
                 parent.validate();
                 parent.repaint();
+                
+                activePredicates.remove(predicate);
+                applyCurrentFilter();
             }
         }).build(), "top");
 
@@ -441,9 +485,13 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnlRestrictions.validate();
         parent.validate();
         parent.repaint();
+        
+        activePredicates.add(predicate);
+        applyCurrentFilter();
     }
     
-    private JComponent buildRangeRestriction(RangeTypes type, FSpinner spnLeft, int valLeft, FSpinner spnRight, int valRight) {
+    private Pair<JComponent, Predicate<CardPrinted>> buildRangeRestriction(
+            RangeTypes type, FSpinner spnLeft, int valLeft, FSpinner spnRight, int valRight) {
         JPanel pnl = new JPanel(new MigLayout("insets 0, gap 2"));
         pnl.setOpaque(false);
         
@@ -455,10 +503,10 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         pnl.add(new FLabel.Builder().text("<=").fontSize(11).build());
         pnl.add(spnRight, "w 45!");
         
-        return pnl;
+        return new Pair<JComponent, Predicate<CardPrinted>>(pnl, SFilterUtil.buildIntervalFilter(spinners, type));
     }
 
-    private JComponent buildSearchRestriction() {
+    private Pair<JComponent, Predicate<CardPrinted>> buildSearchRestriction() {
         StringBuilder sb = new StringBuilder();
         sb.append(0 == cbSearchMode.getSelectedIndex() ? "Contains" : "Without");
         sb.append(": '");
@@ -469,12 +517,16 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         if (lblText.getSelected()) { sb.append(" text,"); }
         sb.delete(sb.length() - 1, sb.length()); // chop off last comma
         
+        String text = txfSearch.getText();
         txfSearch.setText("");
         
-        return new FLabel.Builder().text(sb.toString()).fontSize(11).build();
+        return new Pair<JComponent, Predicate<CardPrinted>>(
+                new FLabel.Builder().text(sb.toString()).fontSize(11).build(),
+                SFilterUtil.buildTextFilter(text, 0 != cbSearchMode.getSelectedIndex(),
+                        lblName.isSelected(), lblType.isSelected(), lblText.isSelected()));
     }
 
-    private JComponent buildFormatRestriction(String displayName, GameFormat format) {
+    private Pair<JComponent, Predicate<CardPrinted>> buildFormatRestriction(String displayName, GameFormat format) {
         EditionCollection editions = Singletons.getModel().getEditions();
         StringBuilder tooltip = new StringBuilder("<html>Sets:");
         
@@ -505,7 +557,9 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
 
         List<String> bannedCards = null == format ? null : format.getBannedCardNames();
         if (null != bannedCards && !bannedCards.isEmpty()) {
-            tooltip.append("<br>Banned:");
+            tooltip.append("<br><br>Banned:");
+            lastLen += lineLen;
+            lineLen = 0;
             
             for (String cardName : bannedCards) {
                 // don't let a single line get too long
@@ -524,10 +578,12 @@ public enum VCardCatalog implements IVDoc<CCardCatalog>, ITableContainer {
         }
         tooltip.append("</html>");
         
-        return new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build();
+        return new Pair<JComponent, Predicate<CardPrinted>>(
+                new FLabel.Builder().text(displayName).fontSize(11).tooltip(tooltip.toString()).build(),
+                SFilterUtil.buildFormatFilter(format));
     }
     
-    private JComponent buildWorldRestriction(QuestWorld world) {
+    private Pair<JComponent, Predicate<CardPrinted>> buildWorldRestriction(QuestWorld world) {
         GameFormatQuest format = world.getFormat();
         if (null == format) {
             // assumes that no world other than the main world will have a null format

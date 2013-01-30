@@ -268,8 +268,8 @@ public class FLabel extends JLabel implements ILocalRepaint {
         }
         
         private void _doMouseAction() {
-            if (cmdClick != null && FLabel.this.isEnabled()) { cmdClick.execute(); }
             if (selectable) { setSelected(!selected); }
+            if (cmdClick != null && FLabel.this.isEnabled()) { cmdClick.execute(); }
         }
         
         @Override

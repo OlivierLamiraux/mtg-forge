@@ -30,11 +30,13 @@ import javax.swing.table.TableColumnModel;
 import com.google.common.base.Function;
 
 import forge.Singletons;
+import forge.card.CardAiHints;
 import forge.card.ColorSet;
 import forge.card.CardEdition;
-import forge.card.SpellManaCost;
 import forge.card.CardRarity;
+import forge.card.mana.ManaCost;
 import forge.deck.DeckBase;
+import forge.game.limited.DraftRankCache;
 import forge.gui.deckeditor.CDeckEditorUI;
 import forge.gui.deckeditor.SEditorIO;
 import forge.gui.deckeditor.controllers.ACEditorBase;
@@ -73,6 +75,7 @@ public final class SColumnUtil {
         CAT_NEW, /** */
         CAT_PURCHASE_PRICE, /** */
         CAT_OWNED, /** */
+        CAT_RANKING,
         DECK_QUANTITY, /** */
         DECK_NAME, /** */
         DECK_COST, /** */
@@ -86,7 +89,8 @@ public final class SColumnUtil {
         DECK_AI, /** */
         DECK_NEW, /** */
         DECK_SALE_PRICE, /** */
-        DECK_DECKS;
+        DECK_DECKS,
+        DECK_RANKING;
     }
 
     /** Possible states of data sorting in a column: none, ascending, or descending. */
@@ -111,6 +115,7 @@ public final class SColumnUtil {
         columns.add(SColumnUtil.getColumn(ColumnName.CAT_RARITY));
         columns.add(SColumnUtil.getColumn(ColumnName.CAT_SET));
         columns.add(SColumnUtil.getColumn(ColumnName.CAT_AI));
+        columns.add(SColumnUtil.getColumn(ColumnName.CAT_RANKING));
 
         return columns;
     }
@@ -130,6 +135,7 @@ public final class SColumnUtil {
         columns.add(SColumnUtil.getColumn(ColumnName.DECK_RARITY));
         columns.add(SColumnUtil.getColumn(ColumnName.DECK_SET));
         columns.add(SColumnUtil.getColumn(ColumnName.DECK_AI));
+        columns.add(SColumnUtil.getColumn(ColumnName.DECK_RANKING));
 
         return columns;
     }
@@ -158,6 +164,8 @@ public final class SColumnUtil {
                 SColumnUtil.FN_SET_COMPARE, SColumnUtil.FN_SET_GET);
         SColumnUtil.getColumn(ColumnName.CAT_AI).setSortAndDisplayFunctions(
                 SColumnUtil.FN_AI_STATUS_COMPARE, SColumnUtil.FN_AI_STATUS_GET);
+        SColumnUtil.getColumn(ColumnName.CAT_RANKING).setSortAndDisplayFunctions(
+                SColumnUtil.FN_RANKING_COMPARE, SColumnUtil.FN_RANKING_GET);
 
         SColumnUtil.getColumn(ColumnName.DECK_QUANTITY).setSortAndDisplayFunctions(
                 SColumnUtil.FN_QTY_COMPARE, SColumnUtil.FN_QTY_GET);
@@ -181,6 +189,8 @@ public final class SColumnUtil {
                 SColumnUtil.FN_SET_COMPARE, SColumnUtil.FN_SET_GET);
         SColumnUtil.getColumn(ColumnName.DECK_AI).setSortAndDisplayFunctions(
                 SColumnUtil.FN_AI_STATUS_COMPARE, SColumnUtil.FN_AI_STATUS_GET);
+        SColumnUtil.getColumn(ColumnName.DECK_RANKING).setSortAndDisplayFunctions(
+                SColumnUtil.FN_RANKING_COMPARE, SColumnUtil.FN_RANKING_GET);
 
         SColumnUtil.getColumn(ColumnName.CAT_COST).setCellRenderer(new ManaCostRenderer());
         SColumnUtil.getColumn(ColumnName.CAT_POWER).setCellRenderer(new IntegerRenderer());
@@ -306,27 +316,26 @@ public final class SColumnUtil {
 
     private static final Pattern AE_FINDER = Pattern.compile("AE", Pattern.LITERAL);
 
-    private static SpellManaCost toManaCost(final InventoryItem i) {
-        return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getManaCost() : SpellManaCost.NO_COST;
+    private static ManaCost toManaCost(final InventoryItem i) {
+        return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getManaCost() : ManaCost.NO_COST;
     }
 
     private static ColorSet toColor(final InventoryItem i) {
         return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getColor() : ColorSet.getNullColor();
     }
 
-    private static Integer toPower(final InventoryItem i) {
-        Integer result = -1;
+    private static int toPower(final InventoryItem i) {
+        int result = -1;
         if (i instanceof CardPrinted) {
             result = ((CardPrinted) i).getRules().getIntPower();
-            if (result == null) {
-                result = Integer.valueOf(((CardPrinted) i).getRules().getLoyalty());
-                if (result == null) { result = -1; }
+            if (result == -1) {
+                result = ((CardPrinted) i).getRules().getInitialLoyalty();
             }
         }
         return result;
     }
 
-    private static Integer toToughness(final InventoryItem i) {
+    private static int toToughness(final InventoryItem i) {
         return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getIntToughness() : -1;
     }
 
@@ -348,11 +357,29 @@ public final class SColumnUtil {
     }
 
     private static Integer toAiCmp(final InventoryItem i) {
-        return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getAiStatusComparable() : Integer.valueOf(-1);
+        return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getAiHints().getAiStatusComparable() : Integer.valueOf(-1);
     }
 
     private static String toAiStr(final InventoryItem i) {
-        return i instanceof CardPrinted ? ((CardPrinted) i).getRules().getAiStatus() : "n/a";
+        if (!(i instanceof CardPrinted))
+            return "n/a";
+        
+        CardPrinted cp = (CardPrinted) i;
+        CardAiHints ai = cp.getRules().getAiHints();
+        
+        return ai.getRemAIDecks() ? (ai.getRemRandomDecks() ? "AI ?" : "AI")
+                : (ai.getRemRandomDecks() ? "?" : "");
+    }
+    
+    private static Double toRankingCmp(final InventoryItem i) {
+        Double ranking = 500D;
+        if (i != null && i instanceof CardPrinted){
+            CardPrinted cp = (CardPrinted) i;
+            ranking = DraftRankCache.getRanking(cp.getName(), cp.getEdition());
+            if ( ranking == null )
+                ranking = 500D;
+        }
+        return ranking;
     }
 
     //==========
@@ -444,7 +471,7 @@ public final class SColumnUtil {
     private static final Function<Entry<InventoryItem, Integer>, Comparable<?>> FN_POWER_COMPARE = new Function<Entry<InventoryItem, Integer>, Comparable<?>>() {
         @Override
         public Comparable<?> apply(final Entry<InventoryItem, Integer> from) {
-            return SColumnUtil.toPower(from.getKey());
+            return Integer.valueOf(SColumnUtil.toPower(from.getKey()));
         }
     };
 
@@ -452,7 +479,7 @@ public final class SColumnUtil {
     private static final Function<Entry<InventoryItem, Integer>, Object> FN_POWER_GET = new Function<Entry<InventoryItem, Integer>, Object>() {
         @Override
         public Object apply(final Entry<InventoryItem, Integer> from) {
-            return SColumnUtil.toPower(from.getKey());
+            return Integer.valueOf(SColumnUtil.toPower(from.getKey()));
         }
     };
 
@@ -460,7 +487,7 @@ public final class SColumnUtil {
     private static final Function<Entry<InventoryItem, Integer>, Comparable<?>> FN_TOUGHNESS_COMPARE = new Function<Entry<InventoryItem, Integer>, Comparable<?>>() {
         @Override
         public Comparable<?> apply(final Entry<InventoryItem, Integer> from) {
-            return SColumnUtil.toToughness(from.getKey());
+            return Integer.valueOf(SColumnUtil.toToughness(from.getKey()));
         }
     };
 
@@ -468,7 +495,7 @@ public final class SColumnUtil {
     private static final Function<Entry<InventoryItem, Integer>, Object> FN_TOUGHNESS_GET = new Function<Entry<InventoryItem, Integer>, Object>() {
         @Override
         public Object apply(final Entry<InventoryItem, Integer> from) {
-            return SColumnUtil.toToughness(from.getKey());
+            return Integer.valueOf(SColumnUtil.toToughness(from.getKey()));
         }
     };
 
@@ -533,6 +560,22 @@ public final class SColumnUtil {
         @Override
         public Object apply(final Entry<InventoryItem, Integer> from) {
             return SColumnUtil.toAiStr(from.getKey());
+        }
+    };
+    
+    /** Lamda sort fnRankingCompare. */
+    private static final Function<Entry<InventoryItem, Integer>, Comparable<?>> FN_RANKING_COMPARE = new Function<Entry<InventoryItem, Integer>, Comparable<?>>() {
+        @Override
+        public Comparable<?> apply(final Entry<InventoryItem, Integer> from) {
+            return SColumnUtil.toRankingCmp(from.getKey());
+        }
+    };
+
+    /** Lamda sort fnRankingGet. */
+    private static final Function<Entry<InventoryItem, Integer>, Object> FN_RANKING_GET = new Function<Entry<InventoryItem, Integer>, Object>() {
+        @Override
+        public Object apply(final Entry<InventoryItem, Integer> from) {
+            return String.valueOf(SColumnUtil.toRankingCmp(from.getKey()));
         }
     };
 }

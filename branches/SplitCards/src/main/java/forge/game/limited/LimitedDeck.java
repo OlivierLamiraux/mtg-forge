@@ -18,13 +18,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import forge.Constant.Preferences;
+import forge.card.CardAiHints;
 import forge.card.MagicColor;
 import forge.card.ColorSet;
-import forge.card.SpellManaCost;
 import forge.card.CardRules;
 import forge.card.CardRulesPredicates;
 import forge.card.DeckHints;
 import forge.card.mana.ManaCostShard;
+import forge.card.mana.ManaCost;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
@@ -363,7 +364,7 @@ public class LimitedDeck {
 
         // count each card color using mana costs
         for (int i = 0; i < deckList.size(); i++) {
-            final SpellManaCost mc = deckList.get(i).getRules().getManaCost();
+            final ManaCost mc = deckList.get(i).getRules().getManaCost();
 
             // count each mana symbol in the mana cost
             for (ManaCostShard shard : mc.getShards()) {
@@ -516,11 +517,9 @@ public class LimitedDeck {
      */
     private int addDeckHintsCards(CardPrinted cardToAdd, int num) {
         // cards with DeckHints will try to grab additional cards from the pool
-        if (cardToAdd.getRules().getDeckHints() != null
-                && cardToAdd.getRules().getDeckHints().getType() != DeckHints.Type.NONE) {
-            DeckHints hints = cardToAdd.getRules().getDeckHints();
-            Iterable<CardPrinted> onColor = Iterables.filter(aiPlayables,
-                    Predicates.compose(hasColor, CardPrinted.FN_GET_RULES));
+        DeckHints hints = cardToAdd.getRules().getAiHints().getDeckHints();
+        if (hints != null && hints.getType() != DeckHints.Type.NONE) {
+            Iterable<CardPrinted> onColor = Iterables.filter(aiPlayables, Predicates.compose(hasColor, CardPrinted.FN_GET_RULES));
             List<CardPrinted> comboCards = hints.filter(onColor);
             if (Preferences.DEV_MODE) {
                 System.out.println("Found " + comboCards.size() + " cards for " + cardToAdd.getName());
@@ -557,16 +556,17 @@ public class LimitedDeck {
         int numOthers = 0;
         for (ListIterator<CardPrinted> it = deckList.listIterator(); it.hasNext();) {
             CardPrinted card = it.next();
-            if (card.getRules().getRemRandomDecks()) {
+            CardAiHints ai = card.getRules().getAiHints();
+            if (ai.getRemRandomDecks()) {
                 List<CardPrinted> comboCards = new ArrayList<CardPrinted>();
-                if (card.getRules().getDeckNeeds() != null
-                        && card.getRules().getDeckNeeds().getType() != DeckHints.Type.NONE) {
-                    DeckHints needs = card.getRules().getDeckNeeds();
+                if (ai.getDeckNeeds() != null
+                        && ai.getDeckNeeds().getType() != DeckHints.Type.NONE) {
+                    DeckHints needs = ai.getDeckNeeds();
                     comboCards.addAll(needs.filter(deckList));
                 }
-                if (card.getRules().getDeckHints() != null
-                        && card.getRules().getDeckHints().getType() != DeckHints.Type.NONE) {
-                    DeckHints hints = card.getRules().getDeckHints();
+                if (ai.getDeckHints() != null
+                        && ai.getDeckHints().getType() != DeckHints.Type.NONE) {
+                    DeckHints hints = ai.getDeckHints();
                     comboCards.addAll(hints.filter(deckList));
                 }
                 if (comboCards.isEmpty()) {

@@ -7,7 +7,7 @@ import forge.Card;
 import forge.CardLists;
 import forge.CounterType;
 import forge.card.ability.AbilityUtils;
-import forge.card.ability.SpellAiLogic;
+import forge.card.ability.SpellAbilityAi;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
@@ -16,7 +16,7 @@ import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.util.MyRandom;
 
-public class CountersMoveAi extends SpellAiLogic {
+public class CountersMoveAi extends SpellAbilityAi {
     @Override
     protected boolean canPlayAI(AIPlayer ai, SpellAbility sa) {
         // AI needs to be expanded, since this function can be pretty complex
@@ -26,8 +26,10 @@ public class CountersMoveAi extends SpellAiLogic {
         final String amountStr = sa.getParam("CounterNum");
 
         // TODO handle proper calculation of X values based on Cost
-        final int amount = AbilityUtils.calculateAmount(sa.getSourceCard(), amountStr, sa);
-
+        int amount = 0;
+        if (!sa.getParam("CounterNum").equals("All")) {
+            amount = AbilityUtils.calculateAmount(sa.getSourceCard(), amountStr, sa);
+        }
         // don't use it if no counters to add
         if (amount <= 0) {
             return false;
@@ -36,7 +38,7 @@ public class CountersMoveAi extends SpellAiLogic {
         // prevent run-away activations - first time will always return true
         boolean chance = false;
 
-        if (SpellAiLogic.playReusable(ai, sa)) {
+        if (SpellAbilityAi.playReusable(ai, sa)) {
             return chance;
         }
 
@@ -49,13 +51,19 @@ public class CountersMoveAi extends SpellAiLogic {
         final Target abTgt = sa.getTarget();
         final String type = sa.getParam("CounterType");
         final String amountStr = sa.getParam("CounterNum");
-        final int amount = AbilityUtils.calculateAmount(sa.getSourceCard(), amountStr, sa);
+        int amount = 0;
+        if (!sa.getParam("CounterNum").equals("All")) {
+            amount = AbilityUtils.calculateAmount(sa.getSourceCard(), amountStr, sa);
+        }
         boolean chance = false;
         boolean preferred = true;
 
         final CounterType cType = CounterType.valueOf(sa.getParam("CounterType"));
         final List<Card> srcCards = AbilityUtils.getDefinedCards(host, sa.getParam("Source"), sa);
         final List<Card> destCards = AbilityUtils.getDefinedCards(host, sa.getParam("Defined"), sa);
+        if ((srcCards.size() > 0 && sa.getParam("CounterNum").equals("All"))) {
+            amount = srcCards.get(0).getCounters(cType);
+        }
         if (abTgt == null) {
             if ((srcCards.size() > 0)
                     && cType.equals(CounterType.P1P1) // move +1/+1 counters away

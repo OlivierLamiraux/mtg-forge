@@ -23,7 +23,7 @@ import forge.game.player.Player;
  * @version $Id: AbilityFactoryAlterLife.java 17656 2012-10-22 19:32:56Z Max mtg $
  */
 
-    public abstract class SpellEffect {
+    public abstract class SpellAbilityEffect {
 
         public abstract void resolve(final SpellAbility sa);
 
@@ -71,11 +71,8 @@ import forge.game.player.Player;
                 final String baseDesc = this.getStackDescription(sa);
                 if (conditionDesc != null) {
                     sb.append(conditionDesc).append(" ");
-                    sb.append(baseDesc.substring(0, 2).toLowerCase());
-                    sb.append(baseDesc.substring(2));
-                } else {
-                    sb.append(this.getStackDescription(sa));
-                }
+                } 
+                sb.append(baseDesc);
             }
 
             // This includes all subAbilities

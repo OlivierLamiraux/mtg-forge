@@ -36,13 +36,13 @@ import com.google.common.collect.Iterables;
 
 import forge.CardPredicates.Presets;
 import forge.card.CardCharacteristics;
-import forge.card.SpellManaCost;
 import forge.card.EditionInfo;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
 import forge.card.mana.ManaCostBeingPaid;
+import forge.card.mana.ManaCost;
 import forge.card.replacement.ReplaceMoved;
 import forge.card.replacement.ReplacementEffect;
 import forge.card.replacement.ReplacementResult;
@@ -1611,7 +1611,7 @@ public class Card extends GameEntity implements Comparable<Card> {
      * @param s
      *            a {@link java.lang.String} object.
      */
-    public final void setManaCost(final SpellManaCost s) {
+    public final void setManaCost(final ManaCost s) {
         this.getCharacteristics().setManaCost(s);
     }
 
@@ -1622,7 +1622,7 @@ public class Card extends GameEntity implements Comparable<Card> {
      * 
      * @return a {@link java.lang.String} object.
      */
-    public final SpellManaCost getManaCost() {
+    public final ManaCost getManaCost() {
         return this.getCharacteristics().getManaCost();
     }
 
@@ -2062,10 +2062,8 @@ public class Card extends GameEntity implements Comparable<Card> {
         // Vanguard Modifiers
         if (this.isType("Vanguard")) {
             final CardPrinted avatar = CardDb.getCard(this);
-            sb.append("Hand Modifier: ");
-            sb.append(avatar.getRules().getHand());
-            sb.append("\r\nLife Modifier: ");
-            sb.append(avatar.getRules().getLife());
+            sb.append("Hand Modifier: ").append(avatar.getRules().getHand());
+            sb.append("\r\nLife Modifier: ").append(avatar.getRules().getLife());
             sb.append("\r\n\r\n");
         }
         sb.append(this.getAbilityText());
@@ -2652,7 +2650,7 @@ public class Card extends GameEntity implements Comparable<Card> {
             // if there is a parent ability the AI can't use it
             final Cost cost = a.getPayCosts();
             if (!cost.hasNoManaCost()
-                || (!a.getApi().equals(ApiType.Mana) && !a.getApi().equals(ApiType.ManaReflected))) {
+                || (a.getApi() != ApiType.Mana && a.getApi() != ApiType.ManaReflected)) {
                 continue;
             }
 
@@ -5973,7 +5971,7 @@ public class Card extends GameEntity implements Comparable<Card> {
      */
     public final boolean isReflectedLand() {
         for (final SpellAbility a : this.getCharacteristics().getManaAbility()) {
-            if (a.getApi().equals(ApiType.ManaReflected)) {
+            if (a.getApi() == ApiType.ManaReflected) {
                 return true;
             }
         }

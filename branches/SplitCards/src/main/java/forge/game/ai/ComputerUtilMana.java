@@ -15,7 +15,6 @@ import forge.CardUtil;
 import forge.Constant;
 import forge.Singletons;
 import forge.card.MagicColor;
-import forge.card.SpellManaCost;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.cardfactory.CardFactoryUtil;
@@ -24,7 +23,9 @@ import forge.card.cost.CostPayment;
 import forge.card.mana.ManaCostBeingPaid;
 import forge.card.mana.ManaCostShard;
 import forge.card.mana.ManaPool;
+import forge.card.mana.ManaCost;
 import forge.card.spellability.AbilityManaPart;
+import forge.card.spellability.AbilitySub;
 import forge.card.spellability.SpellAbility;
 import forge.game.GameActionUtil;
 import forge.game.GameState;
@@ -132,7 +133,7 @@ public class ComputerUtilMana {
                         m.setExpressChoice(colorChoice);
                         colorChoice = ComputerUtilMana.getComboManaChoice(ai, ma, sa, cost);
                         m.setExpressChoice(colorChoice);
-                    } else if (ma.getApi().equals(ApiType.ManaReflected)) {
+                    } else if (ma.getApi() == ApiType.ManaReflected) {
                         if (CardUtil.getReflectableManaColors(ma, ma, new HashSet<String>(), new ArrayList<Card>()).contains(MagicColor.toLongString(costParts[nPart]))) {
                             m.setExpressChoice(costParts[nPart]);
                         } else {
@@ -398,7 +399,7 @@ public class ComputerUtilMana {
      * @return ManaCost
      */
     private static ManaCostBeingPaid calculateManaCost(final SpellAbility sa, final boolean test, final int extraMana) {
-        final SpellManaCost mana = sa.getPayCosts() != null ? sa.getPayCosts().getTotalMana() : sa.getManaCost();
+        final ManaCost mana = sa.getPayCosts() != null ? sa.getPayCosts().getTotalMana() : sa.getManaCost();
     
         ManaCostBeingPaid cost = new ManaCostBeingPaid(mana);
     
@@ -528,12 +529,12 @@ public class ComputerUtilMana {
                 }
     
                 // don't use abilities with dangerous drawbacks
-                if (m.getSubAbility() != null && !card.getName().equals("Pristine Talisman")) {
-                    if (ai instanceof AIPlayer && !m.getSubAbility().chkAIDrawback((AIPlayer)ai)) {
+                AbilitySub sub = m.getSubAbility(); 
+                if (sub != null && !card.getName().equals("Pristine Talisman")) {
+                    if (ai instanceof AIPlayer && !sub.getAi().chkDrawbackWithSubs((AIPlayer)ai, sub)) {
                         continue;
                     }
-                    needsLimitedResources = true; // TODO: check for good
-                                                  // drawbacks (gainLife)
+                    needsLimitedResources = true; // TODO: check for good drawbacks (gainLife)
                 }
                 usableManaAbilities++;
             }
@@ -602,8 +603,9 @@ public class ComputerUtilMana {
                 }
     
                 // don't use abilities with dangerous drawbacks
-                if (m.getSubAbility() != null) {
-                    if (ai instanceof AIPlayer && !m.getSubAbility().chkAIDrawback((AIPlayer)ai)) {
+                AbilitySub sub = m.getSubAbility(); 
+                if (sub != null) {
+                    if (ai instanceof AIPlayer && !sub.getAi().chkDrawbackWithSubs((AIPlayer)ai, sub)) {
                         continue;
                     }
                 }

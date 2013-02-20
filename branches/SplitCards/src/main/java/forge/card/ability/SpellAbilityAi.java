@@ -5,21 +5,19 @@ import forge.Singletons;
 import forge.card.spellability.AbilitySub;
 import forge.card.spellability.SpellAbility;
 import forge.game.ai.ComputerUtilCost;
+import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
 import forge.game.player.AIPlayer;
 import forge.game.player.Player;
 
-public abstract class SpellAiLogic {
+public abstract class SpellAbilityAi {
 
     public final boolean canPlayAIWithSubs(final AIPlayer aiPlayer, final SpellAbility sa) {
         if (!canPlayAI(aiPlayer, sa)) {
             return false;
         }
         final AbilitySub subAb = sa.getSubAbility();
-        if (subAb != null && !subAb.chkAIDrawbackWithSubs(aiPlayer)) {
-            return false;
-        }
-        return true;
+        return subAb == null || chkDrawbackWithSubs(aiPlayer,  subAb);
     }
 
     protected abstract boolean canPlayAI(final AIPlayer aiPlayer, final SpellAbility sa);
@@ -38,10 +36,7 @@ public abstract class SpellAiLogic {
             return false;
         }
         final AbilitySub subAb = sa.getSubAbility();
-        if (subAb != null && !subAb.chkAIDrawback(aiPlayer) && !mandatory) {
-            return false;
-        }
-        return true;
+        return subAb == null || chkDrawbackWithSubs(aiPlayer,  subAb) || mandatory;
     }
 
     protected boolean doTriggerAINoCost(final AIPlayer aiPlayer, final SpellAbility sa, final boolean mandatory) {
@@ -89,8 +84,19 @@ public abstract class SpellAiLogic {
         if (sa.getRestrictions().getPlaneswalker() && Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.MAIN2)) {
             return true;
         }
-    
-        return Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.END_OF_TURN)
-             && Singletons.getModel().getGame().getPhaseHandler().getNextTurn().equals(ai);
+        
+        PhaseHandler phase = Singletons.getModel().getGame().getPhaseHandler();
+        return phase.is(PhaseType.END_OF_TURN) && phase.getNextTurn().equals(ai);
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     * @param ai
+     * @param subAb
+     * @return
+     */
+    public boolean chkDrawbackWithSubs(AIPlayer aiPlayer, AbilitySub ab) {
+        final AbilitySub subAb = ab.getSubAbility();
+        return ab.getAi().chkAIDrawback(ab, aiPlayer) && (subAb == null || chkDrawbackWithSubs(aiPlayer, subAb));  
     }
 }

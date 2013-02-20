@@ -13,23 +13,23 @@ import forge.card.spellability.Spell;
 import forge.card.spellability.Target;
 import forge.game.player.AIPlayer;
 
-public class CommonSpell extends Spell {
+public class SpellApiBased extends Spell {
     private static final long serialVersionUID = -6741797239508483250L;
-    private final SpellEffect effect;
-    private final SpellAiLogic ai;
+    private final SpellAbilityEffect effect;
+    private final SpellAbilityAi ai;
 
-    public CommonSpell(ApiType api0, Card sourceCard, Cost abCost, Target tgt, Map<String, String> params0, SpellEffect effect0, SpellAiLogic ai0) {
+    public SpellApiBased(ApiType api0, Card sourceCard, Cost abCost, Target tgt, Map<String, String> params0) {
         super(sourceCard, abCost, tgt);
         params = params0;
         api = api0;
-        effect = effect0;
-        ai = ai0;
+        effect = api.getSpellEffect();
+        ai = api.getAi();
 
-        if (effect0 instanceof ManaEffect || effect0 instanceof ManaReflectedEffect) {
+        if (effect instanceof ManaEffect || effect instanceof ManaReflectedEffect) {
             this.setManaPart(new AbilityManaPart(sourceCard, params));
         }
 
-        if (effect0 instanceof ChangeZoneEffect || effect0 instanceof ChangeZoneAllEffect) {
+        if (effect instanceof ChangeZoneEffect || effect instanceof ChangeZoneAllEffect) {
             AbilityFactory.adjustChangeZoneTarget(params, this);
         }
     }

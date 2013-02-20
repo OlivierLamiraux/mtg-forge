@@ -18,7 +18,7 @@ import forge.Singletons;
 import forge.CardPredicates.Presets;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
-import forge.card.ability.SpellAiLogic;
+import forge.card.ability.SpellAbilityAi;
 import forge.card.ability.effects.AttachEffect;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
@@ -43,7 +43,7 @@ import forge.gui.GuiChoose;
 import forge.util.Aggregates;
 import forge.util.MyRandom;
 
-public class ChangeZoneAi extends SpellAiLogic {
+public class ChangeZoneAi extends SpellAbilityAi {
 
     /**
      * <p>
@@ -58,7 +58,7 @@ public class ChangeZoneAi extends SpellAiLogic {
      */
     @Override
     protected boolean canPlayAI(AIPlayer aiPlayer, SpellAbility sa) {
-        String origin = "";
+        String origin = null;
         if (sa.hasParam("Origin")) {
             origin = sa.getParam("Origin");
         }
@@ -69,13 +69,10 @@ public class ChangeZoneAi extends SpellAiLogic {
             }
         }
 
-        if (ZoneType.isHidden(origin, sa.hasParam("Hidden"))) {
+        if (sa.hasParam("Hidden") || ZoneType.isHidden(origin)) {
             return hiddenOriginCanPlayAI(aiPlayer, sa);
-        } else if (ZoneType.isKnown(origin)) {
-            return knownOriginCanPlayAI(aiPlayer, sa);
         }
-
-        return false;
+        return knownOriginCanPlayAI(aiPlayer, sa);
     }
 
     /**
@@ -91,18 +88,15 @@ public class ChangeZoneAi extends SpellAiLogic {
      */
     @Override
     public boolean chkAIDrawback(SpellAbility sa, AIPlayer aiPlayer) {
-        String origin = "";
+        String origin = null;
         if (sa.hasParam("Origin")) {
             origin = sa.getParam("Origin");
         }
 
-        if (ZoneType.isHidden(origin, sa.hasParam("Hidden"))) {
+        if (sa.hasParam("Hidden") || ZoneType.isHidden(origin)) {
             return hiddenOriginPlayDrawbackAI(aiPlayer, sa);
-        } else if (ZoneType.isKnown(origin)) {
-            return knownOriginPlayDrawbackAI(aiPlayer, sa);
         }
-
-        return false;
+        return knownOriginPlayDrawbackAI(aiPlayer, sa);
     }
 
 
@@ -122,18 +116,15 @@ public class ChangeZoneAi extends SpellAiLogic {
      */
     @Override
     protected boolean doTriggerAINoCost(AIPlayer aiPlayer, SpellAbility sa, boolean mandatory) {
-        String origin = "";
+        String origin = null;
         if (sa.hasParam("Origin")) {
             origin = sa.getParam("Origin");
         }
 
-        if (ZoneType.isHidden(origin, sa.hasParam("Hidden"))) {
+        if (sa.hasParam("Hidden") || ZoneType.isHidden(origin)) {
             return hiddenTriggerAI(aiPlayer, sa, mandatory);
-        } else if (ZoneType.isKnown(origin)) {
-            return knownOriginTriggerAI(aiPlayer, sa, mandatory);
         }
-
-        return false;
+        return knownOriginTriggerAI(aiPlayer, sa, mandatory);
     }
 
 
@@ -295,9 +286,7 @@ public class ChangeZoneAi extends SpellAiLogic {
         chance &= (r.nextFloat() < .8);
 
         final AbilitySub subAb = sa.getSubAbility();
-        if (subAb != null) {
-            chance &= subAb.chkAIDrawback(ai);
-        }
+        chance &= subAb == null || subAb.getAi().chkDrawbackWithSubs(ai, subAb);
 
         return chance;
     }
@@ -589,13 +578,13 @@ public class ChangeZoneAi extends SpellAiLogic {
                 }
 
                 final AbilitySub abSub = sa.getSubAbility();
-                ApiType subAPI = null;
+                ApiType subApi = null;
                 if (abSub != null) {
-                    subAPI = abSub.getApi();
+                    subApi = abSub.getApi();
                 }
 
                 // only use blink or bounce effects
-                if (!(destination.equals(ZoneType.Exile) && (subAPI == ApiType.DelayedTrigger || subAPI == ApiType.ChangeZone))
+                if (!(destination.equals(ZoneType.Exile) && (subApi == ApiType.DelayedTrigger || subApi == ApiType.ChangeZone))
                         && !destination.equals(ZoneType.Hand)) {
                     return false;
                 }
@@ -629,11 +618,9 @@ public class ChangeZoneAi extends SpellAiLogic {
         }
 
         final AbilitySub subAb = sa.getSubAbility();
-        if (subAb != null) {
-            chance &= subAb.chkAIDrawback(ai);
-        }
+        chance &= subAb == null || subAb.getAi().chkDrawbackWithSubs(ai, subAb);
 
-        return (chance);
+        return chance;
     }
 
     /**
@@ -676,10 +663,10 @@ public class ChangeZoneAi extends SpellAiLogic {
         final Target tgt = sa.getTarget();
 
         final AbilitySub abSub = sa.getSubAbility();
-        ApiType subAPI = null;
+        ApiType subApi = null;
         String subAffected = "";
         if (abSub != null) {
-            subAPI = abSub.getApi();
+            subApi = abSub.getApi();
             if (abSub.hasParam("Defined")) {
                 subAffected = abSub.getParam("Defined");
             }
@@ -714,7 +701,7 @@ public class ChangeZoneAi extends SpellAiLogic {
 
             // if it's blink or bounce, try to save my about to die stuff
             if ((destination.equals(ZoneType.Hand) || (destination.equals(ZoneType.Exile)
-                    && (subAPI == ApiType.DelayedTrigger || (subAPI == ApiType.ChangeZone && subAffected.equals("Remembered")))))
+                    && (subApi == ApiType.DelayedTrigger || (subApi == ApiType.ChangeZone && subAffected.equals("Remembered")))))
                     && (tgt.getMinTargets(sa.getSourceCard(), sa) <= 1)) {
 
                 // check stack for something on the stack that will kill
@@ -749,7 +736,7 @@ public class ChangeZoneAi extends SpellAiLogic {
                     }
                 }
                 // Blink permanents with ETB triggers
-                else if (sa.isAbility() && (sa.getPayCosts() != null) && SpellAiLogic.playReusable(ai, sa)) {
+                else if (sa.isAbility() && (sa.getPayCosts() != null) && SpellAbilityAi.playReusable(ai, sa)) {
                     aiPermanents = CardLists.filter(aiPermanents, new Predicate<Card>() {
                         @Override
                         public boolean apply(final Card c) {
@@ -792,7 +779,7 @@ public class ChangeZoneAi extends SpellAiLogic {
         // blink human targets only during combat
         if (origin.equals(ZoneType.Battlefield)
                 && destination.equals(ZoneType.Exile)
-                && (subAPI == ApiType.DelayedTrigger || (subAPI == ApiType.ChangeZone  && subAffected.equals("Remembered")))
+                && (subApi == ApiType.DelayedTrigger || (subApi == ApiType.ChangeZone  && subAffected.equals("Remembered")))
                 && !(Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY) || sa
                         .isAbility())) {
             return false;

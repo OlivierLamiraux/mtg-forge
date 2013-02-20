@@ -126,15 +126,13 @@ public final class AbilityFactory {
             }
         }
 
-        SpellAiLogic ai = api.getAi();
-        SpellEffect se = api.getSpellEffect();
 
         if (isAb) {
-            spellAbility = new CommonAbility(api, hostCard, abCost, abTgt, mapParams, se, ai);
+            spellAbility = new AbilityApiBased(api, hostCard, abCost, abTgt, mapParams);
         } else if (isSp) {
-            spellAbility = new CommonSpell(api, hostCard, abCost, abTgt, mapParams, se, ai);
+            spellAbility = new SpellApiBased(api, hostCard, abCost, abTgt, mapParams);
         } else if (isDb) {
-            spellAbility = new CommonDrawback(api, hostCard, abTgt, mapParams, se, ai);
+            spellAbility = new AbilitySub(api, hostCard, abTgt, mapParams);
         }
 
 
@@ -162,7 +160,7 @@ public final class AbilityFactory {
             spellAbility.setSubAbility(getSubAbility(hostCard, hostCard.getSVar(mapParams.get("SubAbility"))));
         }
 
-        if (spellAbility instanceof CommonSpell && hostCard.isPermanent()) {
+        if (spellAbility instanceof SpellApiBased && hostCard.isPermanent()) {
             spellAbility.setDescription(spellAbility.getSourceCard().getName());
         } else if (mapParams.containsKey("SpellDescription")) {
             final StringBuilder sb = new StringBuilder();

@@ -31,7 +31,7 @@ import forge.card.spellability.AbilityActivated;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellPermanent;
 import forge.card.spellability.Target;
-import forge.error.ErrorViewer;
+import forge.error.BugReporter;
 import forge.game.player.Player;
 import forge.gui.GuiUtils;
 import forge.item.CardDb;
@@ -79,7 +79,7 @@ public class CardFactory {
             CardDb.setup(listCardRules.iterator());
 
         } catch (final Exception ex) {
-            ErrorViewer.showError(ex);
+            BugReporter.reportException(ex);
         }
 
     } // constructor
@@ -227,7 +227,7 @@ public class CardFactory {
     public final Card getCard(final CardPrinted cp, final Player owner) {
 
         //System.out.println(cardName);
-        Card c = this.getCard2(cp.getRules().getCardScript(), owner);
+        Card c = this.getCard2(cp.getRules().getForgeScript(), owner);
 
         if (c != null) {
             c.setCurSetCode(cp.getEdition());

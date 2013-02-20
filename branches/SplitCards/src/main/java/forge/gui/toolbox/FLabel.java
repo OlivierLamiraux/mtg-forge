@@ -65,18 +65,19 @@ public class FLabel extends JLabel implements ILocalRepaint {
         private int     bldIconAlignX       = SwingConstants.LEFT;
         private Point   bldIconInsets       = new Point(0, 0);
 
-        private boolean bldSelectable       = false;
-        private boolean bldSelected         = false;
-        protected boolean bldHoverable      = false;
-        protected boolean bldOpaque         = false;
-        private boolean bldIconInBackground = false;
-        private boolean bldIconScaleAuto    = true;
-        private boolean reactOnMouseDown    = false;
+        private boolean bldSelectable         = false;
+        private boolean bldSelected           = false;
+        protected boolean bldHoverable        = false;
+        protected boolean bldOpaque           = false;
+        private boolean bldIconInBackground   = false;
+        private boolean bldIconScaleAuto      = true;
+        protected boolean bldReactOnMouseDown = false;
+        private boolean bldUseSkinColors      = true;
 
-        private String  bldText, bldToolTip;
+        protected String  bldText, bldToolTip;
         private ImageIcon bldIcon;
         private int bldFontAlign;
-        private Command bldCmd;
+        protected Command bldCmd;
 
         // Build!
         /** @return {@link forge.gui.toolbox.FLabel} */
@@ -121,9 +122,13 @@ public class FLabel extends JLabel implements ILocalRepaint {
         
         /**@param b0 &emsp; boolean that controls when the label responds to mouse events
          * @return {@link forge.gui.toolbox.Builder} */
-        public Builder reactOnMouseDown(final boolean b0) { this.reactOnMouseDown = b0; return this; }
+        public Builder reactOnMouseDown(final boolean b0) { this.bldReactOnMouseDown = b0; return this; }
         public Builder reactOnMouseDown() { reactOnMouseDown(true); return this; }
 
+        /**@param b0 &emsp; boolean that controls whether the text uses skin colors
+         * @return {@link forge.gui.toolbox.Builder} */
+        public Builder useSkinColors(final boolean b0) { bldUseSkinColors = b0; return this; }
+        
         /**@param c0 &emsp; {@link forge.Command} to execute if clicked
          * @return {@link forge.gui.toolbox.Builder} */
         public Builder cmdClick(final Command c0) { this.bldCmd = c0; return this; }
@@ -173,11 +178,8 @@ public class FLabel extends JLabel implements ILocalRepaint {
     }
     
     //========== Constructors
-    /** Must have protected constructor to allow Builder to subclass. */
-    protected FLabel() { }
-
     // Call this using FLabel.Builder()...
-    private FLabel(final Builder b0) {
+    protected FLabel(final Builder b0) {
         super(b0.bldText);
 
         // Init fields from builder
@@ -195,7 +197,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
         this.setFontSize(b0.bldFontSize);
         this.setUnhoveredAlpha(b0.bldUnhoveredAlpha);
         this.setCommand(b0.bldCmd);
-        this.setReactOnMouseDown(b0.reactOnMouseDown);
+        this.setReactOnMouseDown(b0.bldReactOnMouseDown);
         this.setFontAlign(b0.bldFontAlign);
         this.setToolTipText(b0.bldToolTip);
         this.setHoverable(b0.bldHoverable);
@@ -220,9 +222,11 @@ public class FLabel extends JLabel implements ILocalRepaint {
             });
         }
         
-        // Non-custom display properties
-        this.setForeground(clrText);
-        this.setBackground(clrMain);
+        if (b0.bldUseSkinColors) {
+            // Non-custom display properties
+            this.setForeground(clrText);
+            this.setBackground(clrMain);
+        }
 
         // Resize adapter
         this.removeComponentListener(cadResize);
@@ -293,7 +297,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
 
     private void _doMouseAction() {
         if (selectable) { setSelected(!selected); }
-        if (cmdClick != null && FLabel.this.isEnabled()) {
+        if (cmdClick != null && isEnabled()) {
             hovered = false;
             repaintSelf();
             cmdClick.execute();
@@ -447,7 +451,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
     /** Major performance kicker - won't repaint whole screen! */
     @Override
     public void repaintSelf() {
-        final Dimension d = FLabel.this.getSize();
+        final Dimension d = getSize();
         repaint(0, 0, d.width, d.height);
     }
 
@@ -546,7 +550,7 @@ public class FLabel extends JLabel implements ILocalRepaint {
             int w = (int) (h * iar);
             if (w == 0 || h == 0) { return; }
 
-            FLabel.super.setIcon(new ImageIcon(img.getScaledInstance(w, h, Image.SCALE_SMOOTH)));
+            super.setIcon(new ImageIcon(img.getScaledInstance(w, h, Image.SCALE_SMOOTH)));
         }
     }
 }

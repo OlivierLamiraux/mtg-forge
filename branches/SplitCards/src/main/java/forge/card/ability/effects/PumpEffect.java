@@ -9,14 +9,14 @@ import forge.Command;
 import forge.GameEntity;
 import forge.Singletons;
 import forge.card.ability.AbilityUtils;
-import forge.card.ability.SpellEffect;
+import forge.card.ability.SpellAbilityEffect;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiDialog;
 
-public class PumpEffect extends SpellEffect {
+public class PumpEffect extends SpellAbilityEffect {
 
     private void applyPump(final SpellAbility sa, final Card applyTo, final int a, final int d, final List<String> keywords) {
         //if host is not on the battlefield don't apply
@@ -249,6 +249,11 @@ public class PumpEffect extends SpellEffect {
                 }
             }
         }
+        
+        if (sa.hasParam("ForgetLastImprinted")) {
+            final int size = sa.getSourceCard().getImprinted().size();
+            sa.getSourceCard().getImprinted().remove(size - 1);
+        }   // Used in a SubAbility to clear the root imprinted card (Archery Training)
         
         if (sa.hasParam("Radiance")) {
             for (final Card c : CardUtil.getRadiance(sa.getSourceCard(), tgtCards.get(0), sa.getParam("ValidTgts")

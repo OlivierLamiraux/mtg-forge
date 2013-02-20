@@ -11,7 +11,7 @@ import forge.CardPredicates;
 import forge.GameEntity;
 import forge.Singletons;
 import forge.card.ability.AbilityUtils;
-import forge.card.ability.SpellEffect;
+import forge.card.ability.SpellAbilityEffect;
 import forge.card.ability.ai.ChangeZoneAi;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.spellability.AbilitySub;
@@ -25,7 +25,7 @@ import forge.gui.GuiChoose;
 import forge.gui.GuiDialog;
 import forge.util.Aggregates;
 
-public class ChangeZoneEffect extends SpellEffect {
+public class ChangeZoneEffect extends SpellAbilityEffect {
     @Override
     protected String getStackDescription(SpellAbility sa) {
 
@@ -34,13 +34,10 @@ public class ChangeZoneEffect extends SpellEffect {
             origin = sa.getParam("Origin");
         }
 
-        if (ZoneType.isHidden(origin, sa.hasParam("Hidden"))) {
+        if (sa.hasParam("Hidden") || ZoneType.isHidden(origin)) {
             return changeHiddenOriginStackDescription(sa);
-        } else if (ZoneType.isKnown(origin)) {
-            return changeKnownOriginStackDescription(sa);
         }
-
-        return "";
+        return changeKnownOriginStackDescription(sa);
     }
 
     /**
@@ -280,8 +277,7 @@ public class ChangeZoneEffect extends SpellEffect {
         if (sa.hasParam("Origin")) {
             origin = sa.getParam("Origin");
         }
-
-        if (ZoneType.isHidden(origin, sa.hasParam("Hidden")) && !sa.hasParam("Ninjutsu")) {
+        if ((sa.hasParam("Hidden") || ZoneType.isHidden(origin)) && !sa.hasParam("Ninjutsu")) {
             changeHiddenOriginResolve(sa);
         } else {
             //else if (isKnown(origin) || sa.containsKey("Ninjutsu")) {
@@ -315,10 +311,8 @@ public class ChangeZoneEffect extends SpellEffect {
             tgtCards = tgt.getTargetCards();
         } else {
             tgtCards = new ArrayList<Card>();
-            for (ZoneType o : origin) {
-                for (final Card c : sa.knownDetermineDefined(sa.getParam("Defined"))) {
-                    tgtCards.add(c);
-                }
+            for (final Card c : AbilityUtils.getDefinedCards(sa.getSourceCard(), sa.getParam("Defined"), sa)) {
+                tgtCards.add(c);
             }
         }
 
@@ -343,6 +337,7 @@ public class ChangeZoneEffect extends SpellEffect {
         } // End of change from stack
 
         final String remember = sa.getParam("RememberChanged");
+        final String forget = sa.getParam("ForgetChanged");
         final String imprint = sa.getParam("Imprint");
 
         if (sa.hasParam("Unimprint")) {
@@ -470,6 +465,9 @@ public class ChangeZoneEffect extends SpellEffect {
                 }
                 if (remember != null) {
                     hostCard.addRemembered(movedCard);
+                }
+                if (forget != null) {
+                    sa.getSourceCard().getRemembered().remove(movedCard);
                 }
                 if (imprint != null) {
                     hostCard.addImprinted(movedCard);
@@ -623,7 +621,7 @@ public class ChangeZoneEffect extends SpellEffect {
         final String selectPrompt = sa.hasParam("SelectPrompt") ? sa.getParam("SelectPrompt") : "Select a card";
         final String totalcmc = sa.getParam("WithTotalCMC");
         int totcmc = AbilityUtils.calculateAmount(card, totalcmc, sa);
-        
+
         if (sa.hasParam("Unimprint")) {
             card.clearImprinted();
         }
@@ -715,7 +713,7 @@ public class ChangeZoneEffect extends SpellEffect {
                                 sa.getParam("AttachedToPlayer"), sa);
                         if (!list.isEmpty()) {
                             Player attachedTo = null;
-                            
+
                             if (list.size() == 1) {
                                 attachedTo = list.get(0);
                             } else {
@@ -737,7 +735,7 @@ public class ChangeZoneEffect extends SpellEffect {
                                     c.clearUnEnchantCommand();
                                 }
                                 c.enchantEntity(attachedTo);
-                            } 
+                            }
                         } else { // When it should enter the battlefield attached to an illegal permanent it fails
                             continue;
                         }

@@ -22,13 +22,13 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,11 +40,10 @@ import forge.Card;
 import forge.CounterType;
 import forge.ImageCache;
 import forge.Singletons;
+import forge.card.CardEdition;
 import forge.gui.CardContainer;
 import forge.gui.toolbox.CardFaceSymbols;
 import forge.properties.ForgePreferences.FPref;
-import forge.view.arcane.ScaledImagePanel.MultipassType;
-import forge.view.arcane.ScaledImagePanel.ScalingType;
 import forge.view.arcane.util.GlowText;
 
 /**
@@ -156,11 +155,6 @@ public class CardPanel extends JPanel implements CardContainer {
 
         this.imagePanel = new ScaledImagePanel();
         this.add(this.imagePanel);
-        this.imagePanel.setScaleLarger(true);
-        this.imagePanel.setScalingType(ScalingType.nearestNeighbor);
-        this.imagePanel.setScalingBlur(true);
-        this.imagePanel.setScalingMultiPassType(MultipassType.none);
-
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(final ComponentEvent e) {
@@ -188,12 +182,12 @@ public class CardPanel extends JPanel implements CardContainer {
      * @param srcImageBlurred
      *            a {@link java.awt.Image} object.
      */
-    private void setImage(final Image srcImage, final Image srcImageBlurred) {
+    private void setImage(final BufferedImage srcImage) {
         synchronized (this.imagePanel) {
-            this.imagePanel.setImage(srcImage, srcImageBlurred);
+            this.imagePanel.setImage(srcImage);
             this.repaint();
             for (final CardPanel cardPanel : this.imageLoadListeners) {
-                cardPanel.setImage(srcImage, srcImageBlurred);
+                cardPanel.setImage(srcImage);
                 cardPanel.repaint();
             }
             this.imageLoadListeners.clear();
@@ -212,24 +206,13 @@ public class CardPanel extends JPanel implements CardContainer {
     public final void setImage(final CardPanel panel) {
         synchronized (panel.imagePanel) {
             if (panel.imagePanel.hasImage()) {
-                this.setImage(panel.imagePanel.getSrcImage(), panel.imagePanel.getSrcImageBlurred());
+                this.setImage(panel.imagePanel.getSrcImage());
             } else {
                 panel.imageLoadListeners.add(this);
             }
         }
     }
 
-    /**
-     * <p>
-     * setScalingType.
-     * </p>
-     * 
-     * @param scalingType
-     *            a {@link forge.view.arcane.ScaledImagePanel.ScalingType} object.
-     */
-    public final void setScalingType(final ScalingType scalingType) {
-        this.imagePanel.setScalingType(scalingType);
-    }
 
     /**
      * <p>
@@ -330,20 +313,11 @@ public class CardPanel extends JPanel implements CardContainer {
         // + White borders for Core sets Unlimited - 9th +
         final int cornerSize = Math.max(4, Math.round(this.cardWidth * CardPanel.ROUNDED_CORNER_SIZE));
 
-        if (this.getGameCard() != null && (!this.getGameCard().getImageFilename().equals("none"))
-                && (!this.getGameCard().getName().equals("Morph"))) {
-            if ((this.getGameCard().getCurSetCode().equals("2ED"))
-                    || (this.getGameCard().getCurSetCode().equals("3ED"))
-                    || (this.getGameCard().getCurSetCode().equals("4ED"))
-                    || (this.getGameCard().getCurSetCode().equals("5ED"))
-                    || (this.getGameCard().getCurSetCode().equals("6ED"))
-                    || (this.getGameCard().getCurSetCode().equals("7ED"))
-                    || (this.getGameCard().getCurSetCode().equals("8ED"))
-                    || (this.getGameCard().getCurSetCode().equals("9ED"))
-                    || (this.getGameCard().getCurSetCode().equals("CHR"))
-                    || (this.getGameCard().getCurSetCode().equals("S99"))
-                    || (this.getGameCard().getCurSetCode().equals("PTK"))
-                    || (this.getGameCard().getCurSetCode().equals("S00"))) {
+        if (this.getGameCard() != null && this.getGameCard().getImageFilename() != null
+                && !this.getGameCard().getImageFilename().equals("none") && !this.getGameCard().getName().equals("Morph")) {
+            CardEdition ed = Singletons.getModel().getEditions().get(this.getGameCard().getCurSetCode());
+
+            if (ed != null && ed.isWhiteBorder()) {
                 if (!this.isSelected) {
                     g2d.setColor(Color.black);
                     final int offset = this.isTapped() ? 1 : 0;
@@ -477,11 +451,6 @@ public class CardPanel extends JPanel implements CardContainer {
         this.ptText.setLocation((this.cardXOffset + ptX) - (CardPanel.TEXT_GLOW_SIZE / 2), (this.cardYOffset + ptY)
                 - (CardPanel.TEXT_GLOW_SIZE / 2));
 
-        if (this.isAnimationPanel || (this.cardWidth < 200)) {
-            this.imagePanel.setScalingType(ScalingType.nearestNeighbor);
-        } else {
-            this.imagePanel.setScalingType(ScalingType.bilinear);
-        }
     }
 
     /**
@@ -660,14 +629,14 @@ public class CardPanel extends JPanel implements CardContainer {
         if (!this.isShowing()) {
             return;
         }
-        final Insets i = this.getInsets();
-        final Image image = card == null ? null : ImageCache.getImage(card, this.getWidth() - i.left - i.right,
-                this.getHeight() - i.top - i.bottom);
+        //final Insets i = this.getInsets();
+        //System.out.println("Setting card: " + this.getWidth() + ", " + getCardWidth() + " (" + imagePanel.getWidth() + ")" );
+        final BufferedImage image = card == null ? null : ImageCache.getImage(card, imagePanel.getWidth(), imagePanel.getHeight());
         if ((this.getGameCard() != null) && Singletons.getModel().getPreferences().getPrefBoolean(FPref.UI_CARD_OVERLAY)) {
             this.setText(this.getGameCard());
         }
 
-        this.setImage(image, image);
+        this.setImage(image);
     }
 
     /**

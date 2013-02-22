@@ -81,7 +81,11 @@ public class BugReporter {
         StringBuilder sb = new StringBuilder();
         sb.append("Description: [describe what you were doing when the crash occurred]\n\n");
         _buildSpoilerHeader(sb, ex.getClass().getSimpleName());
-        sb.append(null == message ? ex.getMessage() : message).append("\n\n");
+        sb.append("\n\n");
+        if (null != message && !message.isEmpty()) {
+            sb.append(message);
+            sb.append("\n");
+        }
         
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -90,7 +94,7 @@ public class BugReporter {
         
         _buildSpoilerFooter(sb);
 
-        _showDialog("Report a crash", sb.toString(), false);
+        _showDialog("Report a crash", sb.toString(), true);
     }
 
     /**
@@ -130,10 +134,11 @@ public class BugReporter {
         StringBuilder sb = new StringBuilder();
         sb.append("Description: [describe what you were doing at the time]\n\n");
         _buildSpoilerHeader(sb, "Thread stack dump");
-        if (null != message) {
-            sb.append(message);
-        }
         sb.append("\n\n");
+        if (null != message && !message.isEmpty()) {
+            sb.append(message);
+            sb.append("\n");
+        }
         
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -170,7 +175,7 @@ public class BugReporter {
     }
     
     private static StringBuilder _buildSpoilerFooter(StringBuilder sb) {
-        sb.append("\n[/code][/spoiler]");
+        sb.append("[/code][/spoiler]");
         return sb;
     }
     
@@ -222,7 +227,7 @@ public class BugReporter {
         JOptionPane pane = new JOptionPane(p, JOptionPane.PLAIN_MESSAGE,
                 JOptionPane.DEFAULT_OPTION, null, options.toArray(), options.get(0));
         JDialog dlg = pane.createDialog(null, title);
-        dlg.setSize(600, 500);
+        dlg.setSize(showExitAppBtn ? 780 : 600, 400);
         dlg.setResizable(true);
         dlg.setLocationRelativeTo(null);
         dlg.setVisible(true);

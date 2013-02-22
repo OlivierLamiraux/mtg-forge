@@ -2,7 +2,6 @@ package forge.card;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -146,7 +145,7 @@ public final class CardRulesPredicates {
         return new Predicate<CardRules>() {
             @Override
             public boolean apply(final CardRules card) {
-                return Iterables.contains(card.getKeywords(), keyword);
+                return Iterables.contains(card.getMainPart().getKeywords(), keyword);
             }
         };
     }
@@ -222,18 +221,6 @@ public final class CardRulesPredicates {
         return new PredicateSuperType(type, isEqual);
     }
 
-    /**
-     * Rarity in cards latest set.
-     * 
-     * @param isEqual
-     *            the is equal
-     * @param value
-     *            the value
-     * @return the predicate
-     */
-    public static Predicate<CardRules> rarityInCardsLatestSet(final boolean isEqual, final CardRarity value) {
-        return new PredicateLastesSetRarity(value, isEqual);
-    }
 
     /**
      * Checks for color.
@@ -444,21 +431,6 @@ public final class CardRulesPredicates {
         }
     }
 
-    private static class PredicateLastesSetRarity implements Predicate<CardRules> {
-        private final CardRarity operand;
-        private final boolean shouldBeEqual;
-
-        @Override
-        public boolean apply(final CardRules card) {
-            return card.getRarityFromLatestSet().equals(this.operand) == this.shouldBeEqual;
-        }
-
-        public PredicateLastesSetRarity(final CardRarity type, final boolean wantEqual) {
-            this.operand = type;
-            this.shouldBeEqual = wantEqual;
-        }
-    }
-
     private static class PredicateExistsInSets implements Predicate<CardRules> {
         private final List<String> sets;
 
@@ -468,11 +440,9 @@ public final class CardRulesPredicates {
 
         @Override
         public boolean apply(final CardRules subject) {
-            for (final String s : this.sets) {
-                if (subject.setsPrinted.containsKey(s)) {
+            for (final String s : this.sets)
+                if ( null != subject.getEditionInfo(s) )
                     return true;
-                }
-            }
             return false;
         }
     }
@@ -572,27 +542,5 @@ public final class CardRulesPredicates {
             Presets.COLORS.add(Presets.IS_GREEN);
             Presets.COLORS.add(Presets.IS_COLORLESS);
         }
-
-        // Think twice before using these, since rarity is a prop of printed
-        // card.
-        /** The Constant isInLatestSetCommon. */
-        public static final Predicate<CardRules> IS_IN_LATEST_SET_COMMON = CardRulesPredicates.rarityInCardsLatestSet(
-                true, CardRarity.Common);
-
-        /** The Constant isInLatestSetUncommon. */
-        public static final Predicate<CardRules> IS_IN_LATEST_SET_UNCOMMON = CardRulesPredicates
-                .rarityInCardsLatestSet(true, CardRarity.Uncommon);
-
-        /** The Constant isInLatestSetRare. */
-        public static final Predicate<CardRules> IS_IN_LATEST_SET_RARE = CardRulesPredicates.rarityInCardsLatestSet(
-                true, CardRarity.Rare);
-
-        /** The Constant isInLatestSetMythicRare. */
-        public static final Predicate<CardRules> IS_IN_LATEST_SET_MYTHIC_RARE = CardRulesPredicates
-                .rarityInCardsLatestSet(true, CardRarity.MythicRare);
-
-        /** The Constant isInLatestSetSpecial. */
-        public static final Predicate<CardRules> IS_IN_LATEST_SET_SPECIAL = CardRulesPredicates.rarityInCardsLatestSet(
-                true, CardRarity.Special);
     }
 }

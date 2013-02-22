@@ -48,6 +48,7 @@ import forge.gui.deckeditor.SEditorIO;
 import forge.gui.deckeditor.tables.SColumnUtil.ColumnName;
 import forge.gui.deckeditor.tables.SColumnUtil.SortState;
 import forge.item.CardPrinted;
+import forge.item.IPaperCard;
 import forge.item.InventoryItem;
 import forge.item.ItemPool;
 import forge.item.ItemPoolView;
@@ -191,14 +192,16 @@ public final class EditorTableModel<T extends InventoryItem> extends AbstractTab
     public void showSelectedCard(final JTable table) {
         final int row = table.getSelectedRow();
         if (row != -1) {
-            final T cp = this.rowToCard(row).getKey();
-            if (cp instanceof CardPrinted) {
-                CDeckEditorUI.SINGLETON_INSTANCE.setCard(((CardPrinted) cp).getMatchingForgeCard());
-            }
-            else if (cp != null) {
-                CDeckEditorUI.SINGLETON_INSTANCE.setCard(cp);
-            }
-            else {
+            Entry<T, Integer> card = this.rowToCard(row);
+            if (null != card) {
+                T cp = card.getKey();
+                if (cp instanceof CardPrinted) {
+                    CDeckEditorUI.SINGLETON_INSTANCE.setCard(((IPaperCard) cp).getMatchingForgeCard());
+                }
+                else {
+                    CDeckEditorUI.SINGLETON_INSTANCE.setCard(cp);
+                }
+            } else {
                 CDeckEditorUI.SINGLETON_INSTANCE.setCard((Card)null);
             }
         }

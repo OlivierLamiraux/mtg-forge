@@ -1,9 +1,0 @@
-Name:Savannah
-ManaCost:no cost
-Types:Land Forest Plains
-SVar:Picture:http://www.wizards.com/global/images/magic/general/savannah.jpg
-Oracle:
-SetInfo:2ED Rare
-SetInfo:LEB Rare
-SetInfo:LEA Rare
-SetInfo:3ED Rare

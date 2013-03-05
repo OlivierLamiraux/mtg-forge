@@ -1,9 +1,0 @@
-Name:Taiga
-ManaCost:no cost
-Types:Land Mountain Forest
-SVar:Picture:http://www.wizards.com/global/images/magic/general/taiga.jpg
-Oracle:
-SetInfo:2ED Rare
-SetInfo:LEB Rare
-SetInfo:LEA Rare
-SetInfo:3ED Rare

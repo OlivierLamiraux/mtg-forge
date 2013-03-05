@@ -1,9 +1,0 @@
-Name:Syndic of Tithes
-ManaCost:1 W
-Types:Creature Human Cleric
-Text:no text
-PT:2/2
-K:Extort
-SVar:Rarity:Common
-SVar:Picture:http://www.wizards.com/global/images/magic/general/syndic_of_tithes.jpg
-End

@@ -1,8 +1,0 @@
-Name:Gutter Skulk
-ManaCost:1 B
-Types:Creature Zombie Rat
-Text:no text
-PT:2/2
-SVar:Rarity:Common
-SVar:Picture:http://www.wizards.com/global/images/magic/general/gutter_skulk.jpg
-End

@@ -1,0 +1,9 @@
+Name:Tundra
+ManaCost:no cost
+Types:Land Plains Island
+SVar:Picture:http://www.wizards.com/global/images/magic/general/tundra.jpg
+Oracle:
+SetInfo:2ED Rare
+SetInfo:LEB Rare
+SetInfo:LEA Rare
+SetInfo:3ED Rare

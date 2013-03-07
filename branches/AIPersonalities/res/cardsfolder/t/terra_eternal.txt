@@ -1,0 +1,8 @@
+Name:Terra Eternal
+ManaCost:2 W
+Types:Enchantment
+S:Mode$ Continuous | Affected$ Land | AddHiddenKeyword$ Indestructible | Description$ All lands are indestructible.
+SVar:RemRandomDeck:True
+SVar:Picture:http://www.wizards.com/global/images/magic/general/terra_eternal.jpg
+Oracle:All lands are indestructible.
+SetInfo:WWK Rare

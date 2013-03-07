@@ -1,0 +1,14 @@
+Name:Karma
+ManaCost:2 W W
+Types:Enchantment
+Text:At the beginning of each player's upkeep, Karma deals damage to that player equal to the number of Swamps he or she controls.
+SVar:RemRandomDeck:True
+SVar:Picture:http://www.wizards.com/global/images/magic/general/karma.jpg
+Oracle:At the beginning of each player's upkeep, Karma deals damage to that player equal to the number of Swamps he or she controls.
+SetInfo:8ED Uncommon
+SetInfo:2ED Uncommon
+SetInfo:LEB Uncommon
+SetInfo:LEA Uncommon
+SetInfo:5ED Uncommon
+SetInfo:4ED Uncommon
+SetInfo:3ED Uncommon

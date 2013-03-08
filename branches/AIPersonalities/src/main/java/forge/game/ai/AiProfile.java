@@ -77,6 +77,7 @@ public class AiProfile {
     }
 
     /**
+     * Set an AI property to a certain string value.
      * @param q0 &emsp; {@link forge.properties.ForgePreferences.AIProps}
      * @param s0 &emsp; {@link java.lang.String} value
      */
@@ -85,8 +86,16 @@ public class AiProfile {
     }
 
     /**
-     * 
-     * TODO: Write javadoc for this method.
+     * Set an AI property to a certain integer value.
+     * @param q0 AIProps
+     * @param val boolean
+     */
+    private void setPref(AIProps q0, int val) {
+        setPref(q0, String.valueOf(val));
+    }
+
+    /**
+     * Set an AI property to a certain boolean value.
      * @param q0 AIProps
      * @param val boolean
      */

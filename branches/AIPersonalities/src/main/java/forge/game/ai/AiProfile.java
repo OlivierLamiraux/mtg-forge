@@ -17,11 +17,14 @@
  */
 package forge.game.ai;
 
+import forge.util.Aggregates;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import forge.util.FileUtil;
+import java.io.File;
+import java.util.ArrayList;
 
 /**
  * Holds default AI personality profile values in an enum.
@@ -34,6 +37,12 @@ import forge.util.FileUtil;
 public class AiProfile {
     private static Map<AIProps, String> aiProfileProps = new HashMap<AIProps, String>();
     private static String currentProfile = "";
+
+    private static final String AI_PROFILE_DIR = "res/ai";
+    private static final String AI_PROFILE_EXT = ".ai";
+
+    public static final String AI_PROFILE_RANDOM_MATCH = "* Random (Match) *";
+    public static final String AI_PROFILE_RANDOM_DUEL = "* Random (Duel) *";
 
     /** 
      * AI personality profile settings identifiers, and their default values.
@@ -64,7 +73,7 @@ public class AiProfile {
      * @return the full relative path and file name for the given profile.
      */
     private String buildFileName(final String profileName) {
-        return String.format("res/ai/%s.ai", profileName);
+        return String.format("%s/%s%s", AI_PROFILE_DIR, profileName, AI_PROFILE_EXT);
     }
     
     /** 
@@ -123,6 +132,8 @@ public class AiProfile {
                 this.setPref(AIProps.valueOf(split[0]), "");
             }
         }
+
+        this.currentProfile = profileName;
     }
 
     /**
@@ -162,10 +173,58 @@ public class AiProfile {
 
     /**
      * Returns the name of the current AI profile.
-     * @return the name of the currently used AI profile, can be empty if
-     * no profile is loaded and default settings are used.
+     * @return String - the name of the currently used AI profile, can be empty 
+     * if no profile is loaded and default settings are used.
      */
     public static String getCurrentProfileName() {
         return currentProfile;
+    }
+
+    /**
+     * Returns an array of strings containing all available profiles.
+     * @return ArrayList<String> - an array of strings containing all 
+     * available profiles.
+     */
+    public static ArrayList<String> getAvailableProfiles()
+    {
+        final ArrayList<String> availableProfiles = new ArrayList<String>();
+
+        final File dir = new File(AI_PROFILE_DIR);
+        final String[] children = dir.list();
+        if (children == null) {
+            System.err.println("AIProfile > can't find AI profile directory!");
+        } else {
+            for (int i = 0; i < children.length; i++) {
+                if (children[i].endsWith(AI_PROFILE_EXT)) {
+                    availableProfiles.add(children[i].substring(0, children[i].length() - AI_PROFILE_EXT.length()));
+                }
+            }
+        }
+
+        return availableProfiles;
+    }
+    
+    /**
+     * Returns an array of strings containing all available profiles including 
+     * the special "Random" profiles.
+     * @return ArrayList<String> - an array list of strings containing all 
+     *         available profiles including special random profile tags.
+     */
+    public static ArrayList<String> getProfilesDisplayList() {
+        final ArrayList<String> availableProfiles = new ArrayList<String>();
+        availableProfiles.add(AI_PROFILE_RANDOM_MATCH);
+        availableProfiles.add(AI_PROFILE_RANDOM_DUEL);
+        availableProfiles.addAll(getAvailableProfiles());
+
+        return availableProfiles;
+    }
+
+    /**
+     * Returns a random personality from the currently available ones.
+     * @return String - a string containing a random profile from all the
+     * currently available ones.
+     */
+    public static String getRandomProfile() {
+        return Aggregates.random(getAvailableProfiles());
     }
 }

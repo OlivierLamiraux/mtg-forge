@@ -25,8 +25,8 @@ import forge.util.FileUtil;
 
 /**
  * Holds default AI personality profile values in an enum.
- * Loads profile from the given text file when instantiated.
- * If a requested value is not present, default is returned.
+ * Loads profile from the given text file when setProfile is called.
+ * If a requested value is not loaded from a profile, default is returned.
  * 
  * @author Forge
  * @version $Id: AIProfile.java 20169 2013-03-08 08:24:17Z Agetian $

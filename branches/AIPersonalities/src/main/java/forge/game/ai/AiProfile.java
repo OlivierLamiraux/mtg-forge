@@ -36,7 +36,7 @@ import forge.util.FileUtil;
  * @version $Id: AIProfile.java 20169 2013-03-08 08:24:17Z Agetian $
  */
 public class AiProfile {
-    private static Map<AIProps, String> aiProfileProps = new HashMap<AIProps, String>();;
+    private static Map<AIProps, String> aiProfileProps = new HashMap<AIProps, String>();
     private static String currentProfile = "";
 
     /** 

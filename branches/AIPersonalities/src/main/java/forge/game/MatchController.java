@@ -13,6 +13,7 @@ import forge.control.FControl;
 import forge.control.input.InputControl;
 import forge.deck.Deck;
 import forge.error.BugReporter;
+import forge.game.ai.AiProfile;
 import forge.game.event.DuelOutcomeEvent;
 import forge.game.player.LobbyPlayer;
 import forge.game.player.Player;
@@ -140,6 +141,25 @@ public class MatchController {
             startConditions.put(p, players.get(p.getLobbyPlayer()));
         }
 
+        // Set the current AI profile.
+        if (this.getPlayedGames().isEmpty()) {
+            AiProfile.resetAllAssociations();
+        }
+        for (Player p : currentGame.getPlayers()) {
+            if (p.getType() == PlayerType.COMPUTER) {
+                if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE) == AiProfile.AI_PROFILE_RANDOM_DUEL) {
+                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getRandomProfile());
+                } else if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE) == AiProfile.AI_PROFILE_RANDOM_MATCH) {
+                    if (this.getPlayedGames().isEmpty()) {
+                        AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getRandomProfile());
+                    }
+                } else {
+                    // TODO: implement specific AI profiles for quest mode.
+                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getCurrentProfileName());
+                }
+            }
+        }
+        
         try {
             Player localHuman = Aggregates.firstFieldEquals(currentGame.getPlayers(), Player.Accessors.FN_GET_TYPE, PlayerType.HUMAN);
             FControl.SINGLETON_INSTANCE.setPlayer(localHuman);

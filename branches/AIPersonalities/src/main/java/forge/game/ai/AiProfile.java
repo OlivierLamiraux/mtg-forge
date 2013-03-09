@@ -140,7 +140,22 @@ public class AiProfile {
     }
 
     /**
-     * Returns an AI property value.
+     * Get the associated profile.
+     * @param opponentName the name of the opponent whose associated profile to get.
+     */
+    public static final String getAssociatedProfile(final String opponentName) {
+        return aiProfilesList.get(opponentName);
+    }
+    
+    /**
+     * Reset all profile associations.
+     */
+    public static final void resetAllAssociations() {
+        aiProfilesList.clear();
+    }
+
+    /**
+     * Returns an AI property value for the current profile.
      * 
      * @param fp0 an AI property.
      * @return String
@@ -155,7 +170,7 @@ public class AiProfile {
     }
 
     /**
-     * Returns an AI property value, as an int.
+     * Returns an AI property value for the current profile, as an int.
      * 
      * @param fp0 an AI property.
      * @return int
@@ -165,13 +180,48 @@ public class AiProfile {
     }
 
     /**
-     * Returns an AI property value, as a boolean.
+     * Returns an AI property value for the current profile, as a boolean.
      * 
      * @param fp0 an AI property.
      * @return boolean
      */
     public static boolean getAIPropBoolean(final AIProps fp0) {
         return Boolean.parseBoolean(getAIProp(fp0));
+    }
+
+    /**
+     * Returns an AI property value for the given profile.
+     * 
+     * @param fp0 an AI property.
+     * @return String
+     */
+    public static String getAIProfileProp(final String profileName, final AIProps fp0) {
+        String val;
+
+        val = loadedProfiles.get(profileName).get(fp0);
+        if (val == null) { val = fp0.getDefault(); }
+
+        return val;
+    }
+
+    /**
+     * Returns an AI property value for the given profile, as an int.
+     * 
+     * @param fp0 an AI property.
+     * @return int
+     */
+    public static int getAIProfilePropInt(final String profileName, final AIProps fp0) {
+        return Integer.parseInt(getAIProfileProp(profileName, fp0));
+    }
+
+    /**
+     * Returns an AI property value for the given profile, as a boolean.
+     * 
+     * @param fp0 an AI property.
+     * @return boolean
+     */
+    public static boolean getAIProfilePropBoolean(final String profileName, final AIProps fp0) {
+        return Boolean.parseBoolean(getAIProfileProp(profileName, fp0));
     }
 
     /**

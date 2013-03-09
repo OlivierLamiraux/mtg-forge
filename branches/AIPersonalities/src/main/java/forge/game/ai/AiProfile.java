@@ -247,7 +247,7 @@ public class AiProfile {
         ArrayList<String> profiles = getAvailableProfiles();
         System.out.println(String.format("Available profiles: %s", profiles));
         if (profiles.size() > 0) {
-            System.out.println(String.format("Loading all profiles...", profiles.get(0)));
+            System.out.println(String.format("Loading all profiles..."));
             loadAllProfiles();
             System.out.println(String.format("Setting profile %s...", profiles.get(0)));
             setProfile(profiles.get(0));

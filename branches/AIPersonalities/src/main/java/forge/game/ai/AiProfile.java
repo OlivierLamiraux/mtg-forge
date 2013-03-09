@@ -142,7 +142,7 @@ public class AiProfile {
     /**
      * Returns an AI property value.
      * 
-     * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
+     * @param fp0 an AI property.
      * @return String
      */
     public static String getAIProp(final AIProps fp0) {
@@ -157,7 +157,7 @@ public class AiProfile {
     /**
      * Returns an AI property value, as an int.
      * 
-     * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
+     * @param fp0 an AI property.
      * @return int
      */
     public static int getAIPropInt(final AIProps fp0) {
@@ -167,7 +167,7 @@ public class AiProfile {
     /**
      * Returns an AI property value, as a boolean.
      * 
-     * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
+     * @param fp0 an AI property.
      * @return boolean
      */
     public static boolean getAIPropBoolean(final AIProps fp0) {

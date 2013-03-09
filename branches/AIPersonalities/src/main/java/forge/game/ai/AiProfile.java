@@ -36,7 +36,9 @@ import java.util.ArrayList;
  */
 public class AiProfile {
     private static Map<AIProps, String> aiProfileProps = new HashMap<AIProps, String>();
+
     private static String currentProfile = "";
+    private static Map<String, String> aiProfilesList = new HashMap<String, String>();
 
     private static final String AI_PROFILE_DIR = "res/ai";
     private static final String AI_PROFILE_EXT = ".ai";
@@ -81,6 +83,7 @@ public class AiProfile {
      */
     private static void reset() {
         aiProfileProps.clear();
+        aiProfilesList.clear();
     }
 
     /**
@@ -111,11 +114,15 @@ public class AiProfile {
     }
 
     /** 
-     * Set the current AI profile (loads AI properties from file). 
+     * Set the current AI profile (load AI properties from a file). 
      * @param profileName the name of the profile to load.
      */
-    public final static void setProfile(final String profileName) {
-        reset();
+    public static final void setProfile(final String profileName) {
+        if (currentProfile == profileName) {
+            return;
+        }
+
+        aiProfileProps.clear();
 
         List<String> lines = FileUtil.readFile(buildFileName(profileName));
         for (String line : lines) {
@@ -134,6 +141,15 @@ public class AiProfile {
         }
 
         currentProfile = profileName;
+    }
+
+    /**
+     * Associate the profile with a particular AI opponent by name.
+     * @param opponentName the name of the opponent to associate with the profile.
+     * @param profileName the name of the profile to associate with the opponent.
+     */
+    public static final void associateProfile(final String opponentName, final String profileName) {
+        aiProfilesList.put(opponentName, profileName);
     }
 
     /**
@@ -180,6 +196,14 @@ public class AiProfile {
         return currentProfile;
     }
 
+    /** 
+     * Returns the name of the AI profile associated with the given opponent name.
+     * @param opponentName the name of the opponent to get the binding for. 
+     */
+    public static String getCurrentProfileForOpp(String opponentName) {
+        return aiProfilesList.get(opponentName);
+    }
+    
     /**
      * Returns an array of strings containing all available profiles.
      * @return ArrayList<String> - an array of strings containing all 
@@ -208,7 +232,7 @@ public class AiProfile {
      * Returns an array of strings containing all available profiles including 
      * the special "Random" profiles.
      * @return ArrayList<String> - an array list of strings containing all 
-     *         available profiles including special random profile tags.
+     * available profiles including special random profile tags.
      */
     public static ArrayList<String> getProfilesDisplayList() {
         final ArrayList<String> availableProfiles = new ArrayList<String>();

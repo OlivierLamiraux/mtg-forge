@@ -72,15 +72,15 @@ public class AiProfile {
      * @param profileName the name of the profile.
      * @return the full relative path and file name for the given profile.
      */
-    private String buildFileName(final String profileName) {
+    private static String buildFileName(final String profileName) {
         return String.format("%s/%s%s", AI_PROFILE_DIR, profileName, AI_PROFILE_EXT);
     }
     
     /** 
      * Reset the current AI profile to default values.
      */
-    private void reset() {
-        this.aiProfileProps.clear();
+    private static void reset() {
+        aiProfileProps.clear();
     }
 
     /**
@@ -88,7 +88,7 @@ public class AiProfile {
      * @param q0 &emsp; {@link forge.properties.ForgePreferences.AIProps}
      * @param s0 &emsp; {@link java.lang.String} value
      */
-    private void setPref(final AIProps q0, final String s0) {
+    private static void setPref(final AIProps q0, final String s0) {
         aiProfileProps.put(q0, s0);
     }
 
@@ -97,7 +97,7 @@ public class AiProfile {
      * @param q0 AIProps
      * @param val boolean
      */
-    private void setPref(final AIProps q0, final int val) {
+    private static void setPref(final AIProps q0, final int val) {
         setPref(q0, String.valueOf(val));
     }
 
@@ -106,7 +106,7 @@ public class AiProfile {
      * @param q0 AIProps
      * @param val boolean
      */
-    private void setPref(final AIProps q0, final boolean val) {
+    private static void setPref(final AIProps q0, final boolean val) {
         setPref(q0, String.valueOf(val));
     }
 
@@ -114,7 +114,7 @@ public class AiProfile {
      * Set the current AI profile (loads AI properties from file). 
      * @param profileName the name of the profile to load.
      */
-    public final void setProfile(final String profileName) {
+    public final static void setProfile(final String profileName) {
         reset();
 
         List<String> lines = FileUtil.readFile(buildFileName(profileName));
@@ -127,13 +127,13 @@ public class AiProfile {
             final String[] split = line.split("=");
 
             if (split.length == 2) {
-                this.setPref(AIProps.valueOf(split[0]), split[1]);
+                setPref(AIProps.valueOf(split[0]), split[1]);
             } else if (split.length == 1 && line.endsWith("=")) {
-                this.setPref(AIProps.valueOf(split[0]), "");
+                setPref(AIProps.valueOf(split[0]), "");
             }
         }
 
-        this.currentProfile = profileName;
+        currentProfile = profileName;
     }
 
     /**
@@ -226,5 +226,27 @@ public class AiProfile {
      */
     public static String getRandomProfile() {
         return Aggregates.random(getAvailableProfiles());
+    }
+
+    /**
+     * Simple class test facility for AiProfile.
+     */
+    public static void selfTest() {
+        System.out.println(String.format("Current profile = %s", getCurrentProfileName()));
+        ArrayList<String> profiles = getAvailableProfiles();
+        System.out.println(String.format("Available profiles: %s", profiles));
+        if (profiles.size() > 0) {
+            System.out.println(String.format("Loading profile %s...", profiles.get(0)));
+            setProfile(profiles.get(0));
+            for (AIProps property : AIProps.values()) {
+                System.out.println(String.format("%s = %s", property, getAIProp(property)));
+            }
+            String randomProfile = getRandomProfile();
+            System.out.println(String.format("Loading random profile %s...", randomProfile));
+            setProfile(randomProfile);
+            for (AIProps property : AIProps.values()) {
+                System.out.println(String.format("%s = %s", property, getAIProp(property)));
+            }
+        }
     }
 }

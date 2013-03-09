@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * @version $Id: AIProfile.java 20169 2013-03-08 08:24:17Z Agetian $
  */
 public class AiProfile {
-    private static Map<AIProps, String> aiProfileProps = new HashMap<AIProps, String>();
+    private static Map<String, Map<AIProps, String>> loadedProfiles = new HashMap<String, Map<AIProps, String>>();
 
     private static String currentProfile = "";
     private static Map<String, String> aiProfilesList = new HashMap<String, String>();
@@ -82,47 +82,26 @@ public class AiProfile {
      * Reset the current AI profile to default values.
      */
     private static void reset() {
-        aiProfileProps.clear();
         aiProfilesList.clear();
     }
 
     /**
-     * Set an AI property to a certain string value.
-     * @param q0 &emsp; {@link forge.properties.ForgePreferences.AIProps}
-     * @param s0 &emsp; {@link java.lang.String} value
+     * Load all profiles
      */
-    private static void setPref(final AIProps q0, final String s0) {
-        aiProfileProps.put(q0, s0);
-    }
-
-    /**
-     * Set an AI property to a certain integer value.
-     * @param q0 AIProps
-     * @param val boolean
-     */
-    private static void setPref(final AIProps q0, final int val) {
-        setPref(q0, String.valueOf(val));
-    }
-
-    /**
-     * Set an AI property to a certain boolean value.
-     * @param q0 AIProps
-     * @param val boolean
-     */
-    private static void setPref(final AIProps q0, final boolean val) {
-        setPref(q0, String.valueOf(val));
-    }
-
-    /** 
-     * Set the current AI profile (load AI properties from a file). 
-     * @param profileName the name of the profile to load.
-     */
-    public static final void setProfile(final String profileName) {
-        if (currentProfile == profileName) {
-            return;
+    public static final void loadAllProfiles() {
+        loadedProfiles.clear();
+        ArrayList<String> availableProfiles = getAvailableProfiles();
+        for (String profile : availableProfiles) {
+            loadedProfiles.put(profile, loadProfile(profile));
         }
-
-        aiProfileProps.clear();
+    }
+    
+    /**
+     * Load a single profile.
+     * @param profileName a profile to load.
+     */
+    private static final Map<AIProps, String> loadProfile(final String profileName) {
+        Map<AIProps, String> profileMap = new HashMap<AIProps, String>();
 
         List<String> lines = FileUtil.readFile(buildFileName(profileName));
         for (String line : lines) {
@@ -134,12 +113,20 @@ public class AiProfile {
             final String[] split = line.split("=");
 
             if (split.length == 2) {
-                setPref(AIProps.valueOf(split[0]), split[1]);
+                profileMap.put(AIProps.valueOf(split[0]), split[1]);
             } else if (split.length == 1 && line.endsWith("=")) {
-                setPref(AIProps.valueOf(split[0]), "");
+                profileMap.put(AIProps.valueOf(split[0]), "");
             }
         }
 
+        return profileMap;
+    }
+
+    /** 
+     * Set the current AI profile. 
+     * @param profileName the name of the profile to set.
+     */
+    public static final void setProfile(final String profileName) {
         currentProfile = profileName;
     }
 
@@ -161,7 +148,7 @@ public class AiProfile {
     public static String getAIProp(final AIProps fp0) {
         String val;
 
-        val = aiProfileProps.get(fp0);
+        val = loadedProfiles.get(currentProfile).get(fp0);
         if (val == null) { val = fp0.getDefault(); }
 
         return val;
@@ -260,7 +247,9 @@ public class AiProfile {
         ArrayList<String> profiles = getAvailableProfiles();
         System.out.println(String.format("Available profiles: %s", profiles));
         if (profiles.size() > 0) {
-            System.out.println(String.format("Loading profile %s...", profiles.get(0)));
+            System.out.println(String.format("Loading all profiles...", profiles.get(0)));
+            loadAllProfiles();
+            System.out.println(String.format("Setting profile %s...", profiles.get(0)));
             setProfile(profiles.get(0));
             for (AIProps property : AIProps.values()) {
                 System.out.println(String.format("%s = %s", property, getAIProp(property)));

@@ -161,9 +161,11 @@ public class AiProfile {
      * @return String
      */
     public static String getAIProp(final AIProps fp0) {
-        String val;
+        String val = null;
 
-        val = loadedProfiles.get(currentProfile).get(fp0);
+        if (loadedProfiles.get(currentProfile) != null) {
+            val = loadedProfiles.get(currentProfile).get(fp0);
+        }
         if (val == null) { val = fp0.getDefault(); }
 
         return val;

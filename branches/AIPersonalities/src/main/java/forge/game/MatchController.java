@@ -32,6 +32,7 @@ import forge.gui.match.controllers.CMessage;
 import forge.gui.match.controllers.CStack;
 import forge.gui.match.nonsingleton.VField;
 import forge.gui.match.views.VAntes;
+import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.properties.ForgeProps;
 import forge.properties.NewConstants.Lang.GuiWinLose.WinLoseText;
@@ -147,15 +148,21 @@ public class MatchController {
         }
         for (Player p : currentGame.getPlayers()) {
             if (p.getType() == PlayerType.COMPUTER) {
-                if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE) == AiProfile.AI_PROFILE_RANDOM_DUEL) {
-                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getRandomProfile());
-                } else if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE) == AiProfile.AI_PROFILE_RANDOM_MATCH) {
+                if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_DUEL)) {
+                    String randomProfile = AiProfile.getRandomProfile();
+                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), randomProfile);
+                    AiProfile.setProfile(randomProfile);
+                } else if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_MATCH)) {
                     if (this.getPlayedGames().isEmpty()) {
-                        AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getRandomProfile());
+                        String randomProfile = AiProfile.getRandomProfile();
+                        AiProfile.associateProfile(p.getLobbyPlayer().getName(), randomProfile);
+                        AiProfile.setProfile(randomProfile);
                     }
                 } else {
                     // TODO: implement specific AI profiles for quest mode.
-                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), AiProfile.getCurrentProfileName());
+                    String profile = Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE);
+                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), profile);
+                    AiProfile.setProfile(profile);
                 }
             }
         }

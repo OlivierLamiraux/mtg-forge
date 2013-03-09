@@ -47,6 +47,7 @@ import forge.gui.match.VMatchUI;
 import forge.gui.match.controllers.CDock;
 import forge.gui.toolbox.CardFaceSymbols;
 import forge.gui.toolbox.FSkin;
+import forge.properties.ForgePreferences;
 import forge.properties.ForgeProps;
 import forge.properties.NewConstants;
 import forge.quest.data.QuestPreferences.QPref;
@@ -167,6 +168,7 @@ public enum FControl {
 
         // Preload AI profiles
         AiProfile.loadAllProfiles();
+        AiProfile.setProfile(Singletons.getModel().getPreferences().getPref(ForgePreferences.FPref.UI_CURRENT_AI_PROFILE));
 
         // Handles resizing in null layouts of layers in JLayeredPane.
         Singletons.getView().getFrame().addComponentListener(new ComponentAdapter() {

@@ -153,7 +153,7 @@ public class AiProfile {
     }
 
     /**
-     * Returns a non-difficulty-indexed preference value.
+     * Returns an AI property value.
      * 
      * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
      * @return String
@@ -168,7 +168,7 @@ public class AiProfile {
     }
 
     /**
-     * Returns a non-difficulty-indexed preference value, as an int.
+     * Returns an AI property value, as an int.
      * 
      * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
      * @return int
@@ -178,7 +178,7 @@ public class AiProfile {
     }
 
     /**
-     * Returns a non-difficulty-indexed preference value, as a boolean.
+     * Returns an AI property value, as a boolean.
      * 
      * @param fp0 &emsp; {@link forge.quest.data.ForgePreferences.AIProps}
      * @return boolean

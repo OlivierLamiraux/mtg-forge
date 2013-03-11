@@ -145,9 +145,6 @@ public class MatchController {
         // Set the current AI profile.
         for (Player p : currentGame.getPlayers()) {
             if (p.getType() == PlayerType.COMPUTER) {
-                if (this.getPlayedGames().isEmpty()) {
-                    p.resetAiProfile();
-                }
                 if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_DUEL)) {
                     String randomProfile = AiProfile.getRandomProfile();
                     p.setAiProfile(randomProfile);

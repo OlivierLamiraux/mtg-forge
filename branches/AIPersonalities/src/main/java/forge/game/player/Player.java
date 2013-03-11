@@ -212,10 +212,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         return aiProfile;
     }
 
-    public void resetAiProfile() {
-        aiProfile = "";
-    }
-
     public List<Card> getSchemeDeck() {
 
         return schemeDeck;

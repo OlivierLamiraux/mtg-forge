@@ -161,6 +161,7 @@ public class MatchController {
                     String profile = Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE);
                     p.setAiProfile(profile);
                 }
+                System.out.println(String.format("AI profile %s was chosen for the lobby player %s.", p.getAiProfile(), p.getLobbyPlayer().getName()));
             }
         }
         

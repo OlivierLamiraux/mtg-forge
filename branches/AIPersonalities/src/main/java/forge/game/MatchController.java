@@ -146,7 +146,7 @@ public class MatchController {
         if (this.getPlayedGames().isEmpty()) {
             for (Player p : currentGame.getPlayers()) {
                 if (p.getType() == PlayerType.COMPUTER) {
-                    p.setAiProfile("");
+                    p.resetAiProfile();
                 }
             }
         }

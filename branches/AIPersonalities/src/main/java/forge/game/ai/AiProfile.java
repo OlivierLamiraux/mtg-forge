@@ -17,6 +17,8 @@
  */
 package forge.game.ai;
 
+import forge.Singletons;
+import forge.game.player.Player;
 import forge.util.Aggregates;
 import java.util.HashMap;
 import java.util.List;
@@ -36,9 +38,6 @@ import java.util.ArrayList;
  */
 public class AiProfile {
     private static Map<String, Map<AIProps, String>> loadedProfiles = new HashMap<String, Map<AIProps, String>>();
-
-    private static String currentProfile = "";
-    private static Map<String, String> aiProfilesList = new HashMap<String, String>();
 
     private static final String AI_PROFILE_DIR = "res/ai";
     private static final String AI_PROFILE_EXT = ".ai";
@@ -78,13 +77,6 @@ public class AiProfile {
         return String.format("%s/%s%s", AI_PROFILE_DIR, profileName, AI_PROFILE_EXT);
     }
     
-    /** 
-     * Reset the current AI profile to default values.
-     */
-    private static void reset() {
-        aiProfilesList.clear();
-    }
-
     /**
      * Load all profiles
      */
@@ -122,49 +114,18 @@ public class AiProfile {
         return profileMap;
     }
 
-    /** 
-     * Set the current AI profile. 
-     * @param profileName the name of the profile to set.
-     */
-    public static final void setProfile(final String profileName) {
-        currentProfile = profileName;
-    }
-
-    /**
-     * Associate the profile with a particular AI opponent by name.
-     * @param opponentName the name of the opponent to associate with the profile.
-     * @param profileName the name of the profile to associate with the opponent.
-     */
-    public static final void associateProfile(final String opponentName, final String profileName) {
-        aiProfilesList.put(opponentName, profileName);
-    }
-
-    /**
-     * Get the associated profile.
-     * @param opponentName the name of the opponent whose associated profile to get.
-     */
-    public static final String getAssociatedProfile(final String opponentName) {
-        return aiProfilesList.get(opponentName);
-    }
-    
-    /**
-     * Reset all profile associations.
-     */
-    public static final void resetAllAssociations() {
-        aiProfilesList.clear();
-    }
-
     /**
      * Returns an AI property value for the current profile.
      * 
      * @param fp0 an AI property.
      * @return String
      */
-    public static String getAIProp(final AIProps fp0) {
+    public static String getAIProp(final Player p, final AIProps fp0) {
         String val = null;
-
-        if (loadedProfiles.get(currentProfile) != null) {
-            val = loadedProfiles.get(currentProfile).get(fp0);
+        String profile = p.getAiProfile();
+       
+        if (loadedProfiles.get(profile) != null) {
+            val = loadedProfiles.get(profile).get(fp0);
         }
         if (val == null) { val = fp0.getDefault(); }
 
@@ -177,8 +138,8 @@ public class AiProfile {
      * @param fp0 an AI property.
      * @return int
      */
-    public static int getAIPropInt(final AIProps fp0) {
-        return Integer.parseInt(getAIProp(fp0));
+    public static int getAIPropInt(final Player p, final AIProps fp0) {
+        return Integer.parseInt(getAIProp(p, fp0));
     }
 
     /**
@@ -187,62 +148,10 @@ public class AiProfile {
      * @param fp0 an AI property.
      * @return boolean
      */
-    public static boolean getAIPropBoolean(final AIProps fp0) {
-        return Boolean.parseBoolean(getAIProp(fp0));
+    public static boolean getAIPropBoolean(final Player p, final AIProps fp0) {
+        return Boolean.parseBoolean(getAIProp(p, fp0));
     }
 
-    /**
-     * Returns an AI property value for the given profile.
-     * 
-     * @param fp0 an AI property.
-     * @return String
-     */
-    public static String getAIProfileProp(final String profileName, final AIProps fp0) {
-        String val;
-
-        val = loadedProfiles.get(profileName).get(fp0);
-        if (val == null) { val = fp0.getDefault(); }
-
-        return val;
-    }
-
-    /**
-     * Returns an AI property value for the given profile, as an int.
-     * 
-     * @param fp0 an AI property.
-     * @return int
-     */
-    public static int getAIProfilePropInt(final String profileName, final AIProps fp0) {
-        return Integer.parseInt(getAIProfileProp(profileName, fp0));
-    }
-
-    /**
-     * Returns an AI property value for the given profile, as a boolean.
-     * 
-     * @param fp0 an AI property.
-     * @return boolean
-     */
-    public static boolean getAIProfilePropBoolean(final String profileName, final AIProps fp0) {
-        return Boolean.parseBoolean(getAIProfileProp(profileName, fp0));
-    }
-
-    /**
-     * Returns the name of the current AI profile.
-     * @return String - the name of the currently used AI profile, can be empty 
-     * if no profile is loaded and default settings are used.
-     */
-    public static String getCurrentProfileName() {
-        return currentProfile;
-    }
-
-    /** 
-     * Returns the name of the AI profile associated with the given opponent name.
-     * @param opponentName the name of the opponent to get the binding for. 
-     */
-    public static String getCurrentProfileForOpp(String opponentName) {
-        return aiProfilesList.get(opponentName);
-    }
-    
     /**
      * Returns an array of strings containing all available profiles.
      * @return ArrayList<String> - an array of strings containing all 
@@ -295,22 +204,23 @@ public class AiProfile {
      * Simple class test facility for AiProfile.
      */
     public static void selfTest() {
-        System.out.println(String.format("Current profile = %s", getCurrentProfileName()));
+        final Player activePlayer = Singletons.getControl().getPlayer();
+        System.out.println(String.format("Current profile = %s", activePlayer.getAiProfile()));
         ArrayList<String> profiles = getAvailableProfiles();
         System.out.println(String.format("Available profiles: %s", profiles));
         if (profiles.size() > 0) {
             System.out.println(String.format("Loading all profiles..."));
             loadAllProfiles();
             System.out.println(String.format("Setting profile %s...", profiles.get(0)));
-            setProfile(profiles.get(0));
+            activePlayer.setAiProfile(profiles.get(0));
             for (AIProps property : AIProps.values()) {
-                System.out.println(String.format("%s = %s", property, getAIProp(property)));
+                System.out.println(String.format("%s = %s", property, getAIProp(activePlayer, property)));
             }
             String randomProfile = getRandomProfile();
             System.out.println(String.format("Loading random profile %s...", randomProfile));
-            setProfile(randomProfile);
+            activePlayer.setAiProfile(randomProfile);
             for (AIProps property : AIProps.values()) {
-                System.out.println(String.format("%s = %s", property, getAIProp(property)));
+                System.out.println(String.format("%s = %s", property, getAIProp(activePlayer, property)));
             }
         }
     }

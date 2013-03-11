@@ -160,6 +160,8 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             ZoneType.Library, ZoneType.Graveyard, ZoneType.Hand, ZoneType.Exile, ZoneType.Command, ZoneType.Ante,
             ZoneType.Sideboard));
 
+    /** The AI profile. */
+    private String aiProfile = "";
 
     protected final LobbyPlayer lobbyPlayer;
     protected final GameState game;
@@ -201,6 +203,18 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     @Deprecated
     public boolean isComputer() { return getType() == PlayerType.COMPUTER; }
     public abstract PlayerType getType();
+
+    public void setAiProfile(String profileName) {
+        aiProfile = profileName;
+    }
+
+    public String getAiProfile() {
+        return aiProfile;
+    }
+
+    public void resetAiProfile() {
+        aiProfile = "";
+    }
 
     public List<Card> getSchemeDeck() {
 

@@ -144,25 +144,26 @@ public class MatchController {
 
         // Set the current AI profile.
         if (this.getPlayedGames().isEmpty()) {
-            AiProfile.resetAllAssociations();
+            for (Player p : currentGame.getPlayers()) {
+                if (p.getType() == PlayerType.COMPUTER) {
+                    p.setAiProfile("");
+                }
+            }
         }
         for (Player p : currentGame.getPlayers()) {
             if (p.getType() == PlayerType.COMPUTER) {
                 if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_DUEL)) {
                     String randomProfile = AiProfile.getRandomProfile();
-                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), randomProfile);
-                    AiProfile.setProfile(randomProfile);
+                    p.setAiProfile(randomProfile);
                 } else if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_MATCH)) {
                     if (this.getPlayedGames().isEmpty()) {
                         String randomProfile = AiProfile.getRandomProfile();
-                        AiProfile.associateProfile(p.getLobbyPlayer().getName(), randomProfile);
-                        AiProfile.setProfile(randomProfile);
+                        p.setAiProfile(randomProfile);
                     }
                 } else {
                     // TODO: implement specific AI profiles for quest mode.
                     String profile = Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE);
-                    AiProfile.associateProfile(p.getLobbyPlayer().getName(), profile);
-                    AiProfile.setProfile(profile);
+                    p.setAiProfile(profile);
                 }
             }
         }

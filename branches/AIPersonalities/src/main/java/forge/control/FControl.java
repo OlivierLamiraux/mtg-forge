@@ -168,7 +168,6 @@ public enum FControl {
 
         // Preload AI profiles
         AiProfile.loadAllProfiles();
-        AiProfile.setProfile(Singletons.getModel().getPreferences().getPref(ForgePreferences.FPref.UI_CURRENT_AI_PROFILE));
 
         // Handles resizing in null layouts of layers in JLayeredPane.
         Singletons.getView().getFrame().addComponentListener(new ComponentAdapter() {

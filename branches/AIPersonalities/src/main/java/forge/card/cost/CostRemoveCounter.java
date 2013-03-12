@@ -107,7 +107,9 @@ public class CostRemoveCounter extends CostPartWithList {
     @Override
     public boolean isReusable() { return true; }
 
-    
+    @Override
+    public boolean isUndoable() { return true; }
+
     /*
      * (non-Javadoc)
      * 
@@ -129,7 +131,7 @@ public class CostRemoveCounter extends CostPartWithList {
 
             sb.append(" from ");
 
-            if (this.isTargetingThis()) {
+            if (this.payCostFromSource()) {
                 sb.append(this.getType());
             } else {
                 final String desc = this.getTypeDescription() == null ? this.getType() : this.getTypeDescription();
@@ -146,8 +148,9 @@ public class CostRemoveCounter extends CostPartWithList {
      */
     @Override
     public final void refund(final Card source) {
+        int refund = this.getList().size() == 1 ? this.lastPaidAmount : 1;
         for (final Card c : this.getList()) {
-            c.addCounter(this.counter, this.lastPaidAmount, false);
+            c.addCounter(this.counter, refund, false);
         }
     }
 
@@ -163,7 +166,7 @@ public class CostRemoveCounter extends CostPartWithList {
         final CounterType cntrs = this.getCounter();
 
         final Integer amount = this.convertAmount();
-        if (this.isTargetingThis()) {
+        if (this.payCostFromSource()) {
             if ((amount != null) && ((source.getCounters(cntrs) - amount) < 0)) {
                 return false;
             }
@@ -201,7 +204,7 @@ public class CostRemoveCounter extends CostPartWithList {
             }
         }
 
-        if (this.isTargetingThis()) {
+        if (this.payCostFromSource()) {
             source.subtractCounter(this.counter, c);
         } else {
             for (final Card card : this.getList()) {
@@ -224,7 +227,17 @@ public class CostRemoveCounter extends CostPartWithList {
         Integer c = this.convertAmount();
         int maxCounters = 0;
 
-        if (!this.isTargetingThis()) {
+        if (!this.payCostFromSource()) {
+            if (c == null) {
+                final String sVar = ability.getSVar(amount);
+                // Generalize this
+                if (sVar.equals("XChoice")) {
+                    c = CostUtil.chooseXValue(source, ability, maxCounters);
+                } else {
+                    c = AbilityUtils.calculateAmount(source, amount, ability);
+                }
+            }
+
             if (this.getZone().equals(ZoneType.Battlefield)) {
                 final Input inp = CostRemoveCounter.removeCounterType(ability, this.getType(), payment, this, c);
                 Singletons.getModel().getMatch().getInput().setInputInterrupt(inp);
@@ -290,7 +303,7 @@ public class CostRemoveCounter extends CostPartWithList {
             }
         }
 
-        if (!this.isTargetingThis()) {
+        if (!this.payCostFromSource()) {
             this.getList().clear();
             final List<Card> typeList =
                     CardLists.getValidCards(ai.getCardsIn(this.getZone()), this.getType().split(";"), ai, source);
@@ -342,14 +355,13 @@ public class CostRemoveCounter extends CostPartWithList {
                 final StringBuilder msg = new StringBuilder("Remove ");
                 final int nLeft = nNeeded - this.nRemove;
                 msg.append(nLeft).append(" ");
-                msg.append(costRemoveCounter.getCounter()).append(" from ");
-
+                msg.append(costRemoveCounter.getCounter().getName()).append(" counters from ");
                 msg.append(costRemoveCounter.getDescriptiveType());
-                if (nLeft > 1) {
-                    msg.append("s");
-                }
 
                 this.typeList = CardLists.getValidCards(sa.getActivatingPlayer().getCardsIn(costRemoveCounter.getZone()), type.split(";"), sa.getActivatingPlayer(), sa.getSourceCard());
+                
+                // TODO Tabulate typelist vs nNeeded to see if there are enough counters to remove
+                
                 CMatchUI.SINGLETON_INSTANCE.showMessage(msg.toString());
                 ButtonUtil.enableOnlyCancel();
             }
@@ -378,14 +390,14 @@ public class CostRemoveCounter extends CostPartWithList {
 
             public void done() {
                 this.stop();
-                costRemoveCounter.addListToHash(sa, "CounterPut");
+                costRemoveCounter.addListToHash(sa, "CounterRemove");
                 payment.paidCost(costRemoveCounter);
             }
 
             public void cancel() {
                 this.stop();
-                costRemoveCounter.addListToHash(sa, "CounterPut");
-                payment.cancelCost();
+                costRemoveCounter.addListToHash(sa, "CounterRemove");
+                payment.cancelCost(costRemoveCounter);
             }
         };
 
@@ -465,13 +477,13 @@ public class CostRemoveCounter extends CostPartWithList {
 
             public void done() {
                 this.stop();
-                costRemoveCounter.addListToHash(sa, "CounterPut");
+                costRemoveCounter.addListToHash(sa, "CounterRemove");
                 payment.paidCost(costRemoveCounter);
             }
 
             public void cancel() {
                 this.stop();
-                costRemoveCounter.addListToHash(sa, "CounterPut");
+                costRemoveCounter.addListToHash(sa, "CounterRemove");
                 payment.cancelCost();
             }
         };

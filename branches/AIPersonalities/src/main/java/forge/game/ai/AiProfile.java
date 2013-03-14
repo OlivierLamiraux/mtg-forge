@@ -45,6 +45,8 @@ public class AiProfile {
     public static final String AI_PROFILE_RANDOM_MATCH = "* Random (Match) *";
     public static final String AI_PROFILE_RANDOM_DUEL = "* Random (Duel) *";
 
+    private static Map<String, String> rememberedProfileNames = new HashMap<String, String>();
+
     /** 
      * AI personality profile settings identifiers, and their default values.
      * When this class is instantiated, these enum values are used
@@ -52,8 +54,7 @@ public class AiProfile {
      * from the text file.
      */
     public enum AIProps { /** */
-        AI_TEST_PROPERTY ("false"), /** */
-        AI_TEST_PROPERTY_2 ("16"); /** */
+        AI_MULLIGAN_THRESHOLD ("5"); /** */
 
         private final String strDefaultVal;
 
@@ -198,6 +199,32 @@ public class AiProfile {
      */
     public static String getRandomProfile() {
         return Aggregates.random(getAvailableProfiles());
+    }
+
+    /**
+     * Remember a profile for the given player name.
+     * @param playerName the name of the player to remember the profile for.
+     * @param profileName the profile name to associate with the player name.
+     */
+    public static void rememberProfile(String playerName, String profileName) {
+        rememberedProfileNames.put(playerName, profileName);
+    }
+
+    /**
+     * Retrieve a profile name remembered for the given player name.
+     * @param playerName the name of the player to retrieve the profile for.
+     * @return String the name of the associated profile for the player.
+     */
+    public static String getRememberedProfile(String playerName) {
+        String profileName = rememberedProfileNames.get(playerName);
+        return profileName != null ? profileName : "";
+    }
+    
+    /**
+     * Clear all remembered profiles.
+     */
+    public static void clearRememberedProfiles() {
+        rememberedProfileNames.clear();
     }
 
     /**

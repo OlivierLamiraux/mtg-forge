@@ -143,6 +143,9 @@ public class MatchController {
         }
 
         // Set the current AI profile.
+        if (this.getPlayedGames().isEmpty()) {
+            AiProfile.clearRememberedProfiles();
+        }
         for (Player p : currentGame.getPlayers()) {
             if (p.getType() == PlayerType.COMPUTER) {
                 if (Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE).equals(AiProfile.AI_PROFILE_RANDOM_DUEL)) {
@@ -152,6 +155,9 @@ public class MatchController {
                     if (this.getPlayedGames().isEmpty()) {
                         String randomProfile = AiProfile.getRandomProfile();
                         p.setAiProfile(randomProfile);
+                        AiProfile.rememberProfile(p.getLobbyPlayer().getName(), randomProfile);
+                    } else {
+                        p.setAiProfile(AiProfile.getRememberedProfile(p.getLobbyPlayer().getName()));
                     }
                 } else {
                     // TODO: implement specific AI profiles for quest mode.

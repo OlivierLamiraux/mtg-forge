@@ -19,7 +19,6 @@ package forge.game.ai;
 
 import forge.Singletons;
 import forge.game.player.LobbyPlayer;
-import forge.game.player.Player;
 import forge.util.Aggregates;
 import java.util.HashMap;
 import java.util.List;

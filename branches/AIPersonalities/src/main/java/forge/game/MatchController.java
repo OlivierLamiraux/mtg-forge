@@ -32,7 +32,6 @@ import forge.gui.match.controllers.CMessage;
 import forge.gui.match.controllers.CStack;
 import forge.gui.match.nonsingleton.VField;
 import forge.gui.match.views.VAntes;
-import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.properties.ForgeProps;
 import forge.properties.NewConstants.Lang.GuiWinLose.WinLoseText;

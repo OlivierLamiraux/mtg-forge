@@ -1,7 +1,6 @@
 package forge.game.player;
 
 import forge.game.ai.AiProfileUtil;
-import forge.game.ai.AiProfileUtil;
 
 /** 
  * This means a player's part unchanged for all games.

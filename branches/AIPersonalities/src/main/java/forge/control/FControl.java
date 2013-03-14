@@ -47,7 +47,6 @@ import forge.gui.match.VMatchUI;
 import forge.gui.match.controllers.CDock;
 import forge.gui.toolbox.CardFaceSymbols;
 import forge.gui.toolbox.FSkin;
-import forge.properties.ForgePreferences;
 import forge.properties.ForgeProps;
 import forge.properties.NewConstants;
 import forge.quest.data.QuestPreferences.QPref;

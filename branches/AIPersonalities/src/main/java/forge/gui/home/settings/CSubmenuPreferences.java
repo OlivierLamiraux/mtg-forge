@@ -13,7 +13,7 @@ import forge.Command;
 import forge.Constant.Preferences;
 import forge.Singletons;
 import forge.control.RestartUtil;
-import forge.game.ai.AiProfile;
+import forge.game.ai.AiProfileUtil;
 import forge.gui.framework.ICDoc;
 import forge.gui.toolbox.FSkin;
 import forge.properties.ForgePreferences;
@@ -238,7 +238,7 @@ public enum CSubmenuPreferences implements ICDoc {
 
     private void updateAIProfiles() {
         final VSubmenuPreferences view = VSubmenuPreferences.SINGLETON_INSTANCE;
-        final ArrayList<String> profileNames = AiProfile.getProfilesDisplayList();
+        final ArrayList<String> profileNames = AiProfileUtil.getProfilesDisplayList();
         final String currentName = Singletons.getModel().getPreferences().getPref(FPref.UI_CURRENT_AI_PROFILE);
         int currentIndex = 0;
 

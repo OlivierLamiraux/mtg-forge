@@ -1218,7 +1218,7 @@ public class ComputerUtil {
     public static boolean wantMulligan(AIPlayer ai) {
         final List<Card> handList = ai.getCardsIn(ZoneType.Hand);
         final boolean hasLittleCmc0Cards = CardLists.getValidCards(handList, "Card.cmcEQ0", ai, null).size() < 2;
-        return (handList.size() > AiProfile.getAIPropInt(ai, AiProfile.AIProps.AI_MULLIGAN_THRESHOLD)) && hasLittleCmc0Cards;
+        return (handList.size() > ai.getLobbyPlayer().getAIPropInt(AiProfileUtil.AIProps.AI_MULLIGAN_THRESHOLD)) && hasLittleCmc0Cards;
 
     }
 }

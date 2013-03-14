@@ -18,6 +18,7 @@
 package forge.game.ai;
 
 import forge.Singletons;
+import forge.game.player.LobbyPlayer;
 import forge.game.player.Player;
 import forge.util.Aggregates;
 import java.util.HashMap;
@@ -36,7 +37,7 @@ import java.util.ArrayList;
  * @author Forge
  * @version $Id: AIProfile.java 20169 2013-03-08 08:24:17Z Agetian $
  */
-public class AiProfile {
+public class AiProfileUtil {
     private static Map<String, Map<AIProps, String>> loadedProfiles = new HashMap<String, Map<AIProps, String>>();
 
     private static final String AI_PROFILE_DIR = "res/ai";
@@ -44,8 +45,6 @@ public class AiProfile {
 
     public static final String AI_PROFILE_RANDOM_MATCH = "* Random (Match) *";
     public static final String AI_PROFILE_RANDOM_DUEL = "* Random (Duel) *";
-
-    private static Map<String, String> rememberedProfileNames = new HashMap<String, String>();
 
     /** 
      * AI personality profile settings identifiers, and their default values.
@@ -121,7 +120,7 @@ public class AiProfile {
      * @param fp0 an AI property.
      * @return String
      */
-    public static String getAIProp(final Player p, final AIProps fp0) {
+    public static String getAIProp(final LobbyPlayer p, final AIProps fp0) {
         String val = null;
         String profile = p.getAiProfile();
        
@@ -139,7 +138,7 @@ public class AiProfile {
      * @param fp0 an AI property.
      * @return int
      */
-    public static int getAIPropInt(final Player p, final AIProps fp0) {
+    public static int getAIPropInt(final LobbyPlayer p, final AIProps fp0) {
         return Integer.parseInt(getAIProp(p, fp0));
     }
 
@@ -149,7 +148,7 @@ public class AiProfile {
      * @param fp0 an AI property.
      * @return boolean
      */
-    public static boolean getAIPropBoolean(final Player p, final AIProps fp0) {
+    public static boolean getAIPropBoolean(final LobbyPlayer p, final AIProps fp0) {
         return Boolean.parseBoolean(getAIProp(p, fp0));
     }
 
@@ -202,36 +201,10 @@ public class AiProfile {
     }
 
     /**
-     * Remember a profile for the given player name.
-     * @param playerName the name of the player to remember the profile for.
-     * @param profileName the profile name to associate with the player name.
-     */
-    public static void rememberProfile(String playerName, String profileName) {
-        rememberedProfileNames.put(playerName, profileName);
-    }
-
-    /**
-     * Retrieve a profile name remembered for the given player name.
-     * @param playerName the name of the player to retrieve the profile for.
-     * @return String the name of the associated profile for the player.
-     */
-    public static String getRememberedProfile(String playerName) {
-        String profileName = rememberedProfileNames.get(playerName);
-        return profileName != null ? profileName : "";
-    }
-    
-    /**
-     * Clear all remembered profiles.
-     */
-    public static void clearRememberedProfiles() {
-        rememberedProfileNames.clear();
-    }
-
-    /**
-     * Simple class test facility for AiProfile.
+     * Simple class test facility for AiProfileUtil.
      */
     public static void selfTest() {
-        final Player activePlayer = Singletons.getControl().getPlayer();
+        final LobbyPlayer activePlayer = Singletons.getControl().getPlayer().getLobbyPlayer();
         System.out.println(String.format("Current profile = %s", activePlayer.getAiProfile()));
         ArrayList<String> profiles = getAvailableProfiles();
         System.out.println(String.format("Available profiles: %s", profiles));

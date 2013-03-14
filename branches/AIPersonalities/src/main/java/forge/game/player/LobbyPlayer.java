@@ -1,5 +1,8 @@
 package forge.game.player;
 
+import forge.game.ai.AiProfileUtil;
+import forge.game.ai.AiProfileUtil;
+
 /** 
  * This means a player's part unchanged for all games.
  * 
@@ -19,6 +22,9 @@ public class LobbyPlayer {
     // string with picture is more important than avatar index
     protected String picture;
     private int avatarIndex = -1;
+
+    /** The AI profile. */
+    private String aiProfile = "";
 
     public LobbyPlayer(PlayerType type, String name) {
 
@@ -82,5 +88,21 @@ public class LobbyPlayer {
 
     public void setAvatarIndex(int avatarIndex) {
         this.avatarIndex = avatarIndex;
+    }
+
+    public void setAiProfile(String profileName) {
+        aiProfile = profileName;
+    }
+
+    public String getAiProfile() {
+        return aiProfile;
+    }
+
+    public String getAIProp(AiProfileUtil.AIProps propName) {
+        return AiProfileUtil.getAIProp(this, propName);
+    }
+
+    public int getAIPropInt(AiProfileUtil.AIProps propName) {
+        return AiProfileUtil.getAIPropInt(this, propName);
     }
 }

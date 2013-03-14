@@ -710,11 +710,11 @@ public class AiController {
     }
 
     public int getIntProperty(AiProps propName) {
-        return AiProfileUtil.getAIPropInt(getPlayer().getLobbyPlayer(), propName);
+        return Integer.parseInt(AiProfileUtil.getAIProp(getPlayer().getLobbyPlayer(), propName));
     }
 
     public boolean getBooleanProperty(AiProps propName) {
-        return AiProfileUtil.getAIPropBoolean(getPlayer().getLobbyPlayer(), propName);
+        return Boolean.parseBoolean(AiProfileUtil.getAIProp(getPlayer().getLobbyPlayer(), propName));
     }
 }
 

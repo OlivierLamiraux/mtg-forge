@@ -110,26 +110,6 @@ public class AiProfileUtil {
     }
 
     /**
-     * Returns an AI property value for the current profile, as an int.
-     * 
-     * @param fp0 an AI property.
-     * @return int
-     */
-    public static int getAIPropInt(final LobbyPlayer p, final AiProps fp0) {
-        return Integer.parseInt(getAIProp(p, fp0));
-    }
-
-    /**
-     * Returns an AI property value for the current profile, as a boolean.
-     * 
-     * @param fp0 an AI property.
-     * @return boolean
-     */
-    public static boolean getAIPropBoolean(final LobbyPlayer p, final AiProps fp0) {
-        return Boolean.parseBoolean(getAIProp(p, fp0));
-    }
-
-    /**
      * Returns an array of strings containing all available profiles.
      * @return ArrayList<String> - an array of strings containing all 
      * available profiles.

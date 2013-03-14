@@ -1,6 +1,7 @@
 package forge.game.player;
 
 import forge.game.ai.AiProfileUtil;
+import forge.game.ai.AiProps;
 
 /** 
  * This means a player's part unchanged for all games.
@@ -95,13 +96,5 @@ public class LobbyPlayer {
 
     public String getAiProfile() {
         return aiProfile;
-    }
-
-    public String getAIProp(AiProfileUtil.AIProps propName) {
-        return AiProfileUtil.getAIProp(this, propName);
-    }
-
-    public int getAIPropInt(AiProfileUtil.AIProps propName) {
-        return AiProfileUtil.getAIPropInt(this, propName);
     }
 }

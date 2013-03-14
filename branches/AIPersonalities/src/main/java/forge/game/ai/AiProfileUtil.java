@@ -20,12 +20,12 @@ package forge.game.ai;
 import forge.Singletons;
 import forge.game.player.LobbyPlayer;
 import forge.util.Aggregates;
+import forge.util.FileUtil;
+
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import forge.util.FileUtil;
-import java.io.File;
 import java.util.ArrayList;
 
 /**
@@ -37,35 +37,13 @@ import java.util.ArrayList;
  * @version $Id: AIProfile.java 20169 2013-03-08 08:24:17Z Agetian $
  */
 public class AiProfileUtil {
-    private static Map<String, Map<AIProps, String>> loadedProfiles = new HashMap<String, Map<AIProps, String>>();
+    private static Map<String, Map<AiProps, String>> loadedProfiles = new HashMap<String, Map<AiProps, String>>();
 
     private static final String AI_PROFILE_DIR = "res/ai";
     private static final String AI_PROFILE_EXT = ".ai";
 
     public static final String AI_PROFILE_RANDOM_MATCH = "* Random (Match) *";
     public static final String AI_PROFILE_RANDOM_DUEL = "* Random (Duel) *";
-
-    /** 
-     * AI personality profile settings identifiers, and their default values.
-     * When this class is instantiated, these enum values are used
-     * in a map that is populated with the current AI profile settings
-     * from the text file.
-     */
-    public enum AIProps { /** */
-        AI_MULLIGAN_THRESHOLD ("5"); /** */
-
-        private final String strDefaultVal;
-
-        /** @param s0 &emsp; {@link java.lang.String} */
-        AIProps(final String s0) {
-            this.strDefaultVal = s0;
-        }
-
-        /** @return {@link java.lang.String} */
-        public String getDefault() {
-            return strDefaultVal;
-        }
-    }
 
     /** Builds an AI profile file name with full relative 
      * path based on the profile name. 
@@ -91,8 +69,8 @@ public class AiProfileUtil {
      * Load a single profile.
      * @param profileName a profile to load.
      */
-    private static final Map<AIProps, String> loadProfile(final String profileName) {
-        Map<AIProps, String> profileMap = new HashMap<AIProps, String>();
+    private static final Map<AiProps, String> loadProfile(final String profileName) {
+        Map<AiProps, String> profileMap = new HashMap<AiProps, String>();
 
         List<String> lines = FileUtil.readFile(buildFileName(profileName));
         for (String line : lines) {
@@ -104,9 +82,9 @@ public class AiProfileUtil {
             final String[] split = line.split("=");
 
             if (split.length == 2) {
-                profileMap.put(AIProps.valueOf(split[0]), split[1]);
+                profileMap.put(AiProps.valueOf(split[0]), split[1]);
             } else if (split.length == 1 && line.endsWith("=")) {
-                profileMap.put(AIProps.valueOf(split[0]), "");
+                profileMap.put(AiProps.valueOf(split[0]), "");
             }
         }
 
@@ -119,7 +97,7 @@ public class AiProfileUtil {
      * @param fp0 an AI property.
      * @return String
      */
-    public static String getAIProp(final LobbyPlayer p, final AIProps fp0) {
+    public static String getAIProp(final LobbyPlayer p, final AiProps fp0) {
         String val = null;
         String profile = p.getAiProfile();
        
@@ -137,7 +115,7 @@ public class AiProfileUtil {
      * @param fp0 an AI property.
      * @return int
      */
-    public static int getAIPropInt(final LobbyPlayer p, final AIProps fp0) {
+    public static int getAIPropInt(final LobbyPlayer p, final AiProps fp0) {
         return Integer.parseInt(getAIProp(p, fp0));
     }
 
@@ -147,7 +125,7 @@ public class AiProfileUtil {
      * @param fp0 an AI property.
      * @return boolean
      */
-    public static boolean getAIPropBoolean(final LobbyPlayer p, final AIProps fp0) {
+    public static boolean getAIPropBoolean(final LobbyPlayer p, final AiProps fp0) {
         return Boolean.parseBoolean(getAIProp(p, fp0));
     }
 
@@ -212,13 +190,13 @@ public class AiProfileUtil {
             loadAllProfiles();
             System.out.println(String.format("Setting profile %s...", profiles.get(0)));
             activePlayer.setAiProfile(profiles.get(0));
-            for (AIProps property : AIProps.values()) {
+            for (AiProps property : AiProps.values()) {
                 System.out.println(String.format("%s = %s", property, getAIProp(activePlayer, property)));
             }
             String randomProfile = getRandomProfile();
             System.out.println(String.format("Loading random profile %s...", randomProfile));
             activePlayer.setAiProfile(randomProfile);
-            for (AIProps property : AIProps.values()) {
+            for (AiProps property : AiProps.values()) {
                 System.out.println(String.format("%s = %s", property, getAIProp(activePlayer, property)));
             }
         }

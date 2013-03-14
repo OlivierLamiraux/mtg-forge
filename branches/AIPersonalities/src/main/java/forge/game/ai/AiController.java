@@ -704,5 +704,17 @@ public class AiController {
         }
         return true;
     }
+
+    public String getProperty(AiProps propName) {
+        return AiProfileUtil.getAIProp(getPlayer().getLobbyPlayer(), propName);
+    }
+
+    public int getIntProperty(AiProps propName) {
+        return AiProfileUtil.getAIPropInt(getPlayer().getLobbyPlayer(), propName);
+    }
+
+    public boolean getBooleanProperty(AiProps propName) {
+        return AiProfileUtil.getAIPropBoolean(getPlayer().getLobbyPlayer(), propName);
+    }
 }
 

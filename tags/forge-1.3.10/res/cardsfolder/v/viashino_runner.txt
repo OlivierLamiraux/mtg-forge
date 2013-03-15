@@ -1,0 +1,9 @@
+Name:Viashino Runner
+ManaCost:3 R
+Types:Creature Viashino
+PT:3/2
+K:CARDNAME can't be blocked except by two or more creatures.
+SVar:Picture:http://www.wizards.com/global/images/magic/general/viashino_runner.jpg
+Oracle:Viashino Runner can't be blocked except by two or more creatures.
+SetInfo:10E Common
+SetInfo:USG Common

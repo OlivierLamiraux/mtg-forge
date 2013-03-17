@@ -24,6 +24,7 @@ import java.util.Random;
 
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 import forge.Card;
 import forge.CardLists;
@@ -1000,21 +1001,7 @@ public class ComputerUtil {
     
         for (final Card c : all) {
             for (final SpellAbility sa : c.getSpellAbility()) {
-    
-                if (sa.getApi() == null) {
-                    continue;
-                }
-    
-                /// ????
-                // if ( sa.isAbility() || sa.isSpell() && sa.getApi() != ApiType.Pump ) continue
-                if (sa.hasParam("AB") && !sa.getParam("AB").equals("Pump")) {
-                    continue;
-                }
-                if (sa.hasParam("SP") && !sa.getParam("SP").equals("Pump")) {
-                    continue;
-                }
-    
-                if (sa.hasParam("KW") && sa.getParam("KW").contains("Haste")) {
+                if (sa.getApi() == ApiType.Pump && sa.hasParam("KW") && sa.getParam("KW").contains("Haste")) {
                     return true;
                 }
             }
@@ -1220,5 +1207,78 @@ public class ComputerUtil {
         final boolean hasLittleCmc0Cards = CardLists.getValidCards(handList, "Card.cmcEQ0", ai, null).size() < 2;
         return (handList.size() > ai.getAi().getIntProperty(AiProps.AI_MULLIGAN_THRESHOLD)) && hasLittleCmc0Cards;
 
+    }
+
+
+    public static boolean scryWillMoveCardToBottomOfLibrary(AIPlayer player, Card c) {
+        boolean bottom = false;
+        if (c.isBasicLand()) {
+            List<Card> bl = player.getCardsIn(ZoneType.Battlefield);
+            int nBasicLands = Iterables.size(Iterables.filter(bl, CardPredicates.Presets.BASIC_LANDS));
+            bottom = nBasicLands > 5; // if control more than 5 Basic land, probably don't need more
+        } else if (c.isCreature()) {
+            List<Card> cl = player.getCardsIn(ZoneType.Battlefield);
+            cl = CardLists.filter(cl, CardPredicates.Presets.CREATURES);
+            bottom = cl.size() > 5; // if control more than 5 Creatures, probably don't need more
+        }
+        return bottom;
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     * @param chooser
+     * @param discarder
+     * @param sa
+     * @param validCards
+     * @param min
+     * @return
+     */
+    public static List<Card> getCardsToDiscardFromOpponent(AIPlayer chooser, Player discarder, SpellAbility sa, List<Card> validCards, int min) {
+        List<Card> goodChoices = CardLists.filter(validCards, new Predicate<Card>() {
+            @Override
+            public boolean apply(final Card c) {
+                if (!c.getSVar("DiscardMeByOpp").equals("") || !c.getSVar("DiscardMe").equals("")) {
+                    return false;
+                }
+                return true;
+            }
+        });
+        if (goodChoices.isEmpty()) {
+            goodChoices = validCards;
+        }
+        final List<Card> dChoices = new ArrayList<Card>();
+        if (sa.hasParam("DiscardValid")) {
+            final String validString = sa.getParam("DiscardValid");
+            if (validString.contains("Creature") && !validString.contains("nonCreature")) {
+                final Card c = ComputerUtilCard.getBestCreatureAI(goodChoices);
+                if (c != null) {
+                    dChoices.add(ComputerUtilCard.getBestCreatureAI(goodChoices));
+                }
+            }
+        }
+    
+        Collections.sort(goodChoices, CardLists.TextLenComparator);
+    
+        CardLists.sortByCmcDesc(goodChoices);
+        dChoices.add(goodChoices.get(0));
+    
+        return Aggregates.random(goodChoices, min);
+    }
+
+    /**
+     * TODO: Write javadoc for this method.
+     * @param aiChoser
+     * @param p
+     * @param sa
+     * @param validCards
+     * @param min
+     * @return
+     */
+    public static List<Card> getCardsToDiscardFromFriend(AIPlayer aiChooser, Player p, SpellAbility sa, List<Card> validCards, int min) {
+        if (p instanceof AIPlayer) { // ask that ai player what he would like to discard
+            return ((AIPlayer) p).getAi().getCardsToDiscard(min, validCards, sa);
+        } 
+        // no special options for human or remote friends
+        return getCardsToDiscardFromOpponent(aiChooser, p, sa, validCards, min);
     }
 }

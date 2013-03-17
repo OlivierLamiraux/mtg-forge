@@ -20,6 +20,7 @@ package forge.card.spellability;
 import java.security.InvalidParameterException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Iterables;
@@ -499,7 +500,7 @@ public class SpellPermanent extends Spell {
         for (final ReplacementEffect re : card.getReplacementEffects()) {
             // These Replacements all care for ETB effects
 
-            final HashMap<String, String> params = re.getMapParams();
+            final Map<String, String> params = re.getMapParams();
             if (!(re instanceof ReplaceMoved)) {
                 continue;
             }
@@ -574,7 +575,7 @@ public class SpellPermanent extends Spell {
     @Override
     public void resolve() {
         Card c = this.getSourceCard();
-        c.addController(this.getActivatingPlayer());
+        c.setController(this.getActivatingPlayer(), 0);
         Singletons.getModel().getGame().getAction().moveTo(ZoneType.Battlefield, c);
     }
 }

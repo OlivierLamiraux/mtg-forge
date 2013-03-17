@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import javax.swing.JOptionPane;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -43,6 +42,8 @@ import forge.Constant.Preferences;
 import forge.CounterType;
 import forge.GameEntity;
 import forge.Singletons;
+import forge.card.ability.AbilityFactory;
+import forge.card.ability.AbilityUtils;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
 import forge.card.mana.ManaPool;
@@ -51,6 +52,7 @@ import forge.card.replacement.ReplacementResult;
 import forge.card.spellability.Ability;
 import forge.card.spellability.Spell;
 import forge.card.spellability.SpellAbility;
+import forge.card.spellability.Target;
 import forge.card.staticability.StaticAbility;
 import forge.card.trigger.TriggerType;
 import forge.game.GameActionUtil;
@@ -62,9 +64,11 @@ import forge.game.event.CardDiscardedEvent;
 import forge.game.event.DrawCardEvent;
 import forge.game.event.LandPlayedEvent;
 import forge.game.event.LifeLossEvent;
+import forge.game.event.MulliganEvent;
 import forge.game.event.PoisonCounterEvent;
 import forge.game.event.ShuffleEvent;
 import forge.game.phase.PhaseHandler;
+import forge.game.phase.PhaseType;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.PlayerZoneBattlefield;
 import forge.game.zone.Zone;
@@ -125,6 +129,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
 
     /** The num drawn this turn. */
     private int numDrawnThisTurn = 0;
+    private int numDrawnThisDrawStep = 0;
 
     /** The slowtrip list. */
     private List<Card> slowtripList = new ArrayList<Card>();
@@ -191,6 +196,10 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         this.setName(lobbyPlayer.getName());
     }
 
+    public GameState getGame() { // I'll probably regret about this  
+        return game;
+    }
+    
     public final PlayerStatistics getStats() {
         return stats;
     }
@@ -1225,24 +1234,29 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     }
 
     /**
-     * <p>
-     * drawCards.
-     * </p>
      * 
-     * @return a List<Card> of cards actually drawn
+     * TODO Write javadoc for this method.
+     * 
+     * @param player
+     *            a Player object
+     * @param playerRating
+     *            a GamePlayerRating object
+     * @return an int
      */
-    public final List<Card> drawCards() {
-        return this.drawCards(1);
+    public void doMulligan() {
+        final List<Card> hand = new ArrayList<Card>(getCardsIn(ZoneType.Hand));
+        for (final Card c : hand) {
+            game.getAction().moveToLibrary(c);
+        }
+        shuffle();
+        drawCards(hand.size() - 1);
+        
+        game.getEvents().post(new MulliganEvent(this)); // quest listener may interfere here
+        final int newHand = getCardsIn(ZoneType.Hand).size();
+        game.getGameLog().add("Mulligan", this + " has mulliganed down to " + newHand + " cards.", 0);
+        stats.notifyHasMulliganed();
+        stats.notifyOpeningHandSize(newHand);
     }
-
-    /**
-     * <p>
-     * dredge.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public abstract boolean dredge();
 
     /**
      * <p>
@@ -1254,84 +1268,37 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      * @return a List<Card> of cards actually drawn
      */
     public final List<Card> drawCards(final int n) {
-        return this.drawCards(n, false);
-    }
-
-    /**
-     * <p>
-     * drawCards.
-     * </p>
-     * 
-     * @param n
-     *            a int.
-     * @param firstFromDraw
-     *            true if this is the card drawn from that player's draw step
-     *            each turn
-     * @return a List<Card> of cards actually drawn
-     */
-    public final List<Card> drawCards(final int n, final boolean firstFromDraw) {
         final List<Card> drawn = new ArrayList<Card>();
-
+    
         if (!this.canDraw()) {
             return drawn;
         }
-
+    
         for (int i = 0; i < n; i++) {
-
+    
             // TODO: multiple replacements need to be selected by the controller
-            if (this.getDredge().size() != 0) {
-                if (this.dredge()) {
+            List<Card> dredgers = this.getDredge();
+            if (!dredgers.isEmpty()) {
+                Card toDredge = getController().chooseCardToDredge(dredgers);
+                int dredgeNumber = toDredge == null ? Integer.MAX_VALUE : getDredgeNumber(toDredge);
+                if ( dredgeNumber <= getZone(ZoneType.Library).size()) {
+                    game.getAction().moveToHand(toDredge);
+
+                    for (int iD = 0; iD < dredgeNumber; iD++) {
+                        final Card c2 = getZone(ZoneType.Library).get(0);
+                        game.getAction().moveToGraveyard(c2);
+                    }
                     continue;
                 }
             }
-
-            if (!firstFromDraw && game.isCardInPlay("Chains of Mephistopheles")) {
-                if (!this.getZone(ZoneType.Hand).isEmpty()) {
-                    if (this.isHuman()) {
-                        this.discardChainsOfMephistopheles();
-                    } else { // Computer
-                        this.discard(1, null);
-                        // true causes this code not to be run again
-                        drawn.addAll(this.drawCards(1, true));
-                    }
-                } else {
-                    this.mill(1);
-                }
-            } else {
-                drawn.addAll(this.doDraw());
-            }
+    
+            drawn.addAll(this.doDraw());
         }
-
+    
         // Play the Draw sound
-        Singletons.getModel().getGame().getEvents().post(new DrawCardEvent());
-
+        game.getEvents().post(new DrawCardEvent());
+    
         return drawn;
-    }
-
-    /**
-     * 
-     * TODO Write javadoc for this method.
-     * 
-     * @param player
-     *            a Player object
-     * @param playerRating
-     *            a GamePlayerRating object
-     * @return an int
-     */
-    public  int doMulligan() {
-        final List<Card> hand = new ArrayList<Card>(getCardsIn(ZoneType.Hand));
-        for (final Card c : hand) {
-            game.getAction().moveToLibrary(c);
-        }
-        shuffle();
-        final int newHand = hand.size() - 1;
-        for (int i = 0; i < newHand; i++) {
-            drawCard();
-        }
-        game.getGameLog().add("Mulligan", this + " has mulliganed down to " + newHand + " cards.", 0);
-        stats.notifyHasMulliganed();
-        stats.notifyOpeningHandSize(newHand);
-        return newHand;
     }
 
     /**
@@ -1354,7 +1321,46 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             return drawn;
         }
 
-        if (library.size() != 0) {
+        // ======== Chains of Mephistopheles hardcode. ========= 
+        // This card requires player to either discard a card, and then he may proceed drawing, or mill 1 - then no draw will happen
+        // It's oracle-worded as a replacement effect ("If a player would draw a card ... discards a card instead") (rule 419.1a)
+        // Yet, gatherer's rulings read: The effect is cumulative. If there are two of these on the battlefield, each of them will modify each draw
+        // That means player isn't supposed to choose one replacement effect out of two (generated by Chains Of Mephistopheles), but both happen.
+        // So it's not a common replacement effect and has to handled by special code.
+
+        // This is why the code is placed after any other replacement effects could affect the draw event.  
+        List<Card> chainsList = null;
+        for(Card c: game.getCardsInGame()) {
+            if ( c.getName().equals("Chains of Mephistopheles") ) {
+                if ( null == chainsList )
+                    chainsList = new ArrayList<Card>();
+                chainsList.add(c);
+            }
+        }
+        if (chainsList != null && (numDrawnThisDrawStep > 0 || !game.getPhaseHandler().is(PhaseType.DRAW))) {
+            for(Card c : chainsList) {
+                // I have to target this player - don't know how to do it.
+                Target target = new Target(c, null, "");
+                target.addTarget(this);
+
+                if (getCardsIn(ZoneType.Hand).isEmpty()) {
+                    SpellAbility saMill = AbilityFactory.getAbility(c.getSVar("MillOne"), c);
+                    saMill.setActivatingPlayer(c.getController());
+                    saMill.setTarget(target);
+                    AbilityUtils.resolve(saMill, false);
+                    
+                    return drawn; // Draw is cancelled
+                } else { 
+                    SpellAbility saDiscard = AbilityFactory.getAbility(c.getSVar("DiscardOne"), c);
+                    saDiscard.setActivatingPlayer(c.getController());
+                    saDiscard.setTarget(target);
+                    AbilityUtils.resolve(saDiscard, false);
+                }
+            }
+        }
+        // End of = Chains of Mephistopheles hardcode. ========= 
+
+        if (!library.isEmpty()) {
 
             Card c = library.get(0);
             c = game.getAction().moveToHand(c);
@@ -1377,6 +1383,8 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
             this.setLastDrawnCard(c);
             c.setDrawnThisTurn(true);
             this.numDrawnThisTurn++;
+            if ( game.getPhaseHandler().is(PhaseType.DRAW))
+                this.numDrawnThisDrawStep++;
 
             // Miracle draws
             if (this.numDrawnThisTurn == 1 && game.getPhaseHandler().getTurn() != 0) {
@@ -1556,6 +1564,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      */
     public final void resetNumDrawnThisTurn() {
         this.numDrawnThisTurn = 0;
+        this.numDrawnThisDrawStep = 0;
     }
 
     /**
@@ -1574,11 +1583,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     // / replaces Singletons.getModel().getGameAction().discard* methods
     // /
     // //////////////////////////////
-
-    /**
-     * Discard_ chains_of_ mephistopheles.
-     */
-    protected abstract void discardChainsOfMephistopheles();
 
     /**
      * <p>
@@ -1682,18 +1686,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         return list;
     }
 
-    /**
-     * <p>
-     * discardRandom.
-     * </p>
-     * 
-     * @param sa
-     *            a {@link forge.card.spellability.SpellAbility} object.
-     * @return a List<Card> of cards discarded
-     */
-    public final List<Card> discardRandom(final SpellAbility sa) {
-        return this.discardRandom(1, sa);
-    }
 
     /**
      * <p>
@@ -1843,35 +1835,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
       // //////////////////////////////
 
     // //////////////////////////////
-    /**
-     * <p>
-     * doScry.
-     * </p>
-     * 
-     * @param topN
-     *            a {@link forge.CardList} object.
-     * @param n
-     *            a int.
-     */
-    protected abstract void doScry(List<Card> topN, int n);
 
-    /**
-     * <p>
-     * scry.
-     * </p>
-     * 
-     * @param numScry
-     *            a int.
-     */
-    public final void scry(int numScry) {
-        final List<Card> topN = new ArrayList<Card>();
-        final PlayerZone library = this.getZone(ZoneType.Library);
-        numScry = Math.min(numScry, library.size());
-        for (int i = 0; i < numScry; i++) {
-            topN.add(library.get(i));
-        }
-        this.doScry(topN, topN.size());
-    }
 
     // /////////////////////////////
 
@@ -1885,7 +1849,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
      */
     public final void playLand(final Card land) {
         if (this.canPlayLand(land)) {
-            land.addController(this);
+            land.setController(this, 0);
             game.getAction().moveTo(this.getZone(ZoneType.Battlefield), land);
             CardFactoryUtil.playLandEffects(land);
             this.numLandsPlayed++;
@@ -1933,9 +1897,7 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
         }
 
         // Dev Mode
-        if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.DEV_UNLIMITED_LAND)
-                && this.isHuman()
-                && Preferences.DEV_MODE) {
+        if (Singletons.getModel().getPreferences().getPrefBoolean(FPref.DEV_UNLIMITED_LAND) && this.getType() == PlayerType.HUMAN && Preferences.DEV_MODE) {
             return true;
         }
 
@@ -2162,19 +2124,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     public final void resetAttackersDeclaredThisTurn() {
         this.attackersDeclaredThisTurn = 0;
     }
-
-    // //////////////////////////////
-    /**
-     * <p>
-     * sacrificePermanent.
-     * </p>
-     * 
-     * @param prompt
-     *            a {@link java.lang.String} object.
-     * @param choices
-     *            a {@link forge.CardList} object.
-     */
-    public abstract void sacrificePermanent(String prompt, List<Card> choices);
 
     // Game win/loss
 
@@ -2695,87 +2644,6 @@ public abstract class Player extends GameEntity implements Comparable<Player> {
     public final void setLifeLostThisTurn(final int n) {
         this.lifeLostThisTurn = n;
     }
-
-    // //////////////////////////////
-    //
-    // Clash
-    //
-    // ///////////////////////////////
-
-    /**
-     * <p>
-     * clashWithOpponent.
-     * </p>
-     * 
-     * @param source
-     *            a {@link forge.Card} object.
-     * @return a boolean.
-     */
-    public final boolean clashWithOpponent(final Card source) {
-        /*
-         * Each clashing player reveals the top card of his or her library, then
-         * puts that card on the top or bottom. A player wins if his or her card
-         * had a higher mana cost.
-         * 
-         * Clash you win or win you don't. There is no tie.
-         */
-        final Player player = source.getController();
-        final Player opponent = player.getOpponent();
-        final ZoneType lib = ZoneType.Library;
-
-        final PlayerZone pLib = player.getZone(lib);
-        final PlayerZone oLib = opponent.getZone(lib);
-
-        final StringBuilder reveal = new StringBuilder();
-
-        Card pCard = null;
-        Card oCard = null;
-
-        if (pLib.size() > 0) {
-            pCard = pLib.get(0);
-        }
-        if (oLib.size() > 0) {
-            oCard = oLib.get(0);
-        }
-
-        if ((pLib.size() == 0) && (oLib.size() == 0)) {
-            return false;
-        } else if (pLib.size() == 0) {
-            opponent.clashMoveToTopOrBottom(oCard);
-            return false;
-        } else if (oLib.size() == 0) {
-            player.clashMoveToTopOrBottom(pCard);
-            return true;
-        } else {
-            final int pCMC = pCard.getCMC();
-            final int oCMC = oCard.getCMC();
-            reveal.append(player).append(" reveals: ").append(pCard.getName()).append(".  CMC = ").append(pCMC);
-            reveal.append("\r\n");
-            reveal.append(opponent).append(" reveals: ").append(oCard.getName()).append(".  CMC = ").append(oCMC);
-            reveal.append("\r\n\r\n");
-            if (pCMC > oCMC) {
-                reveal.append(player).append(" wins clash.");
-            } else {
-                reveal.append(player).append(" loses clash.");
-            }
-            JOptionPane.showMessageDialog(null, reveal.toString(), source.getName(), JOptionPane.PLAIN_MESSAGE);
-            player.clashMoveToTopOrBottom(pCard);
-            opponent.clashMoveToTopOrBottom(oCard);
-            // JOptionPane.showMessageDialog(null, reveal.toString(),
-            // source.getName(), JOptionPane.PLAIN_MESSAGE);
-            return pCMC > oCMC;
-        }
-    }
-
-    /**
-     * <p>
-     * clashMoveToTopOrBottom.
-     * </p>
-     * 
-     * @param c
-     *            a {@link forge.Card} object.
-     */
-    protected abstract void clashMoveToTopOrBottom(Card c);
 
     /**
      * a Player or Planeswalker that this Player must attack if able in an

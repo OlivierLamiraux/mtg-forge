@@ -265,7 +265,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                 if (getTurn() == 1 || this.getPlayerTurn().isSkippingDraw()) {
                     this.setPlayersPriorityPermission(false);
                 } else {
-                    this.getPlayerTurn().drawCards(1, true);
+                    this.getPlayerTurn().drawCard();
                 }
                 break;
 
@@ -550,8 +550,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
         if (game.getType() == GameType.Planechase) {
             Card p = game.getActivePlane();
             if (p != null) {
-                p.clearControllers();
-                p.addController(next);
+                p.setController(next, 0);
                 game.getAction().controllerChangeZoneCorrection(p);
             }
         }

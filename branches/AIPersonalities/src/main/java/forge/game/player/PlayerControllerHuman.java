@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.swing.JOptionPane;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import forge.Card;
 import forge.GameEntity;
@@ -287,5 +288,53 @@ public class PlayerControllerHuman extends PlayerController {
         if ( StringUtils.isBlank(message) ) 
             message = String.format("Looking at %s's %s", owner, zone);
         GuiChoose.oneOrNone(message, cards);
+    }
+
+    @Override
+    public ImmutablePair<List<Card>, List<Card>> arrangeForScry(List<Card> topN) {
+        List<Card> toBottom = null;
+        List<Card> toTop = null;
+        
+        if (topN.size() == 1) {
+            if (willPutCardOnTop(topN.get(0)))
+                toTop = topN;
+            else 
+                toBottom = topN;
+        } else { 
+            toBottom = GuiChoose.order("Select cards to be put on the bottom of your library", "Cards to put on the bottom", -1, topN, null, null);
+            topN.removeAll(toBottom);
+            if ( topN.isEmpty() )
+                toTop = null;
+            else if ( topN.size() == 1 )
+                toTop = topN;
+            else
+                toTop = GuiChoose.order("Arrange cards to be put on top of your library", "Cards arranged", 0, topN, null, null);
+        }
+        return ImmutablePair.of(toTop, toBottom);
+    }
+
+
+    @Override
+    public boolean willPutCardOnTop(Card c) {
+        return GuiDialog.confirm(c, "Where will you put " + c.getName() + " in your library", new String[]{"Top", "Bottom"} );
+    }
+
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseCardsToDiscardFrom(forge.game.player.Player, java.util.List, int)
+     */
+    @Override
+    public List<Card> chooseCardsToDiscardFrom(Player p, SpellAbility sa, List<Card> valid, int minDiscard) {
+        return GuiChoose.order("Choose cards to Discard", "Discarded", minDiscard == 0 ? -1 : minDiscard, valid, null, null);
+    }
+
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseCardToDredge(java.util.List)
+     */
+    @Override
+    public Card chooseCardToDredge(List<Card> dredgers) {
+        if (GuiDialog.confirm(null, "Do you want to dredge?", false)) {
+            return GuiChoose.oneOrNone("Select card to dredge", dredgers);
+        }
+        return null;
     }
 }

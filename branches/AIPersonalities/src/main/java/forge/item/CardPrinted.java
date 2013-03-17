@@ -23,7 +23,6 @@ import java.util.Map;
 import com.google.common.base.Function;
 
 import forge.Card;
-import forge.CardUtil;
 import forge.Singletons;
 import forge.card.CardRarity;
 import forge.card.CardRules;
@@ -51,100 +50,52 @@ public final class CardPrinted implements Comparable<IPaperCard>, InventoryItemF
     private final boolean foiled;
 
     // Calculated fields are below:
-    private final transient CardRarity rarity; // rarity is given in ctor when
-                                               // set is assigned
+    private final transient CardRarity rarity; // rarity is given in ctor when set is assigned
 
-    // image filename is calculated only after someone request it
-    private transient String imageFilename = null;
-
-    // field RO accessors
-    /*
-     * (non-Javadoc)
-     * 
-     * @see forge.item.InventoryItemFromSet#getName()
-     */
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getName()
-     */
     @Override
     public String getName() {
         return this.name;
     }
     
     @Override
-    public String getDescription() {
-        return name;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see forge.item.InventoryItemFromSet#getSet()
-     */
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getEdition()
-     */
-    @Override
     public String getEdition() {
         return this.edition;
     }
 
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getArtIndex()
-     */
     @Override
     public int getArtIndex() {
         return this.artIndex;
     }
 
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#isFoil()
-     */
     @Override
     public boolean isFoil() {
         return this.foiled;
     }
 
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getRules()
-     */
+    @Override
+    public boolean isToken() {
+        return false;
+    }
+
     @Override
     public CardRules getRules() {
         return this.card;
     }
 
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getRarity()
-     */
     @Override
     public CardRarity getRarity() {
         return this.rarity;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see forge.item.InventoryItemFromSet#getImageFilename()
-     */
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getImageFilename()
-     */
-    @Override
-    public String getImageFilename() {
-        if (this.imageFilename == null) {
-            this.imageFilename = CardUtil.buildFilename(this);
-        }
-        return this.imageFilename;
-    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see forge.item.InventoryItem#getType()
-     */
-    /* (non-Javadoc)
-     * @see forge.item.ICardPrinted#getItemType()
-     */
+    
+    
+//    @Override
+//    public String getImageKey() {
+//        return getImageLocator(getImageName(), getArtIndex(), true, false);
+//    }
+    
+    
     @Override
     public String getItemType() {
         return "Card";
@@ -152,7 +103,6 @@ public final class CardPrinted implements Comparable<IPaperCard>, InventoryItemF
 
     /**
      * Lambda to get rules for selects from list of printed cards.
-     * 
      */
     public static final Function<CardPrinted, CardRules> FN_GET_RULES = new Function<CardPrinted, CardRules>() {
         @Override
@@ -313,10 +263,5 @@ public final class CardPrinted implements Comparable<IPaperCard>, InventoryItemF
         }
         // TODO compare sets properly
         return this.edition.compareTo(o.getEdition());
-    }
-
-    @Override
-    public boolean isToken() {
-        return false;
     }
 }

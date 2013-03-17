@@ -21,16 +21,11 @@ import java.util.List;
 
 import com.google.common.base.Function;
 
-import forge.ImageCache;
 import forge.Singletons;
 import forge.card.BoosterData;
 import forge.card.BoosterGenerator;
 import forge.card.CardEdition;
 
-/**
- * TODO Write javadoc for this type.
- * 
- */
 public class TournamentPack extends OpenablePack {
 
     /** The Constant fnFromSet. */
@@ -42,26 +37,13 @@ public class TournamentPack extends OpenablePack {
         }
     };
 
-    /**
-     * Instantiates a new booster pack.
-     * 
-     * @param set
-     *            the set
-     */
     public TournamentPack(final String name0, final BoosterData boosterData) {
         super(name0, boosterData);
-    }
-
-
-    @Override
-    public final String getImageFilename() {
-        return ImageCache.SEALED_PRODUCT + "tournamentpacks/" + this.contents.getEdition();
     }
 
     public final boolean isStarterDeck() {
         return contents.getCommon() < 30;
     }
-
 
     @Override
     public final String getItemType() {
@@ -74,20 +56,8 @@ public class TournamentPack extends OpenablePack {
         return gen.getBoosterPack(this.contents);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#clone()
-     */
-    /**
-     * Clone.
-     * 
-     * @return Object
-     */
     @Override
     public final Object clone() {
         return new TournamentPack(name, contents);
     }
-
-
 }

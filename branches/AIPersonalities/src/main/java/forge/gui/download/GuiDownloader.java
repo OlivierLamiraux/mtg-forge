@@ -20,18 +20,20 @@ package forge.gui.download;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
-import java.util.ArrayList;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import javax.swing.AbstractButton;
@@ -107,8 +109,7 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
     private int type;
 
     // Progress variables
-    private ArrayList<DownloadObject> cards;
-    private int card;
+    private Map<String, String> cards; // local path -> url
     private boolean cancel;
     private final long[] times = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     private int tptr = 0;
@@ -225,16 +226,8 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
         return tTime / Math.max(1, numNonzero);
     }
 
-    private void update(final int card) {
-        this.card = card;
-
-        final class Worker implements Runnable {
-            private final int card;
-
-            Worker(final int card) {
-                this.card = card;
-            }
-
+    private void update(final int card, final File dest) {
+        EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
                 GuiDownloader.this.fireStateChanged();
@@ -243,30 +236,26 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
 
                 final int a = GuiDownloader.this.getAverageTimePerObject();
 
-                if (this.card != GuiDownloader.this.cards.size()) {
-                    sb.append(this.card + "/" + GuiDownloader.this.cards.size() + " - ");
+                if (card != GuiDownloader.this.cards.size()) {
+                    sb.append(card + "/" + GuiDownloader.this.cards.size() + " - ");
 
-                    long t2Go = (GuiDownloader.this.cards.size() - this.card) * a;
+                    long t2Go = (GuiDownloader.this.cards.size() - card) * a;
 
-                    boolean secOnly = true;
                     if (t2Go > 3600000) {
                         sb.append(String.format("%02d:", t2Go / 3600000));
                         t2Go = t2Go % 3600000;
-                        secOnly = false;
                     }
                     if (t2Go > 60000) {
                         sb.append(String.format("%02d:", t2Go / 60000));
                         t2Go = t2Go % 60000;
-                        secOnly = false;
-                    }
-                    if (!secOnly) {
-                        sb.append(String.format("%02d remaining.", t2Go / 1000));
                     } else {
-                        sb.append(String.format("0:%02d remaining.", t2Go / 1000));
+                        sb.append("00:");
                     }
+                    
+                    sb.append(String.format("%02d remaining.", t2Go / 1000));
                 } else {
                     sb.append(String.format("%d of %d items finished! Please close!",
-                            this.card, GuiDownloader.this.cards.size()));
+                            card, GuiDownloader.this.cards.size()));
                     btnStart.setText("OK");
                     btnStart.addActionListener(actOK);
                     btnStart.setEnabled(true);
@@ -274,18 +263,15 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
                 }
 
                 GuiDownloader.this.barProgress.setString(sb.toString());
-                System.out.println(this.card + "/" + GuiDownloader.this.cards.size() + " - " + a);
+                System.out.println(card + "/" + GuiDownloader.this.cards.size() + " - " + dest);
             }
-        }
-        EventQueue.invokeLater(new Worker(card));
+        });
     }
 
+    @Override
     public final void run() {
-        BufferedInputStream in;
-        BufferedOutputStream out;
-
         final Random r = MyRandom.getRandom();
-
+        
         Proxy p = null;
         if (this.type == 0) {
             p = Proxy.NO_PROXY;
@@ -301,81 +287,75 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
             }
         }
 
-        if (p != null) {
-            final byte[] buf = new byte[1024];
-            int len;
-            for (this.update(0); (this.card < this.cards.size()) && !this.cancel; this.update(this.card + 1)) {
-                final String url = this.cards.get(this.card).getSource();
-                final File fileDest =  this.cards.get(this.card).getDestination();
-                final File base = fileDest.getParentFile();
+        int iCard = 0;
+        for(Entry<String, String> kv : cards.entrySet()) {
+            if( cancel )
+                break;
 
-                try {
-                    // test for folder existence
-                    if (!base.exists() && !base.mkdir()) { // create folder if not found
-                        System.out.println("Can't create folder" + base.getAbsolutePath());
-                    }
-                    
-                    URL imageUrl = new URL(url);
-                    HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
-                    // don't allow redirections here -- they indicate 'file not found' on the server
-                    conn.setInstanceFollowRedirects(false);
-                    conn.connect();
+            String url = kv.getValue();
+            final File fileDest = new File(kv.getKey());
+            final File base = fileDest.getParentFile();
 
-                    if (conn.getResponseCode() != 200) {
-                        conn.disconnect();
-                        System.out.println("Skipped Download for: " + fileDest.getPath());
-                        continue;
-                    }
-
-                    in = new BufferedInputStream(conn.getInputStream());
-                    out = new BufferedOutputStream(new FileOutputStream(fileDest));
-
-                    while ((len = in.read(buf)) != -1) {
-                        // user cancelled
-                        if (this.cancel) {
-                            in.close();
-                            out.flush();
-                            out.close();
-
-                            // delete what was written so far
-                            fileDest.delete();
-                            this.close();
-                            return;
-                        } // if - cancel
-
-                        out.write(buf, 0, len);
-                    } // while - read and write file
-                    in.close();
-                    out.flush();
-                    out.close();
-                } catch (final ConnectException ce) {
-                    System.out.println("Connection refused for url: " + url);
-                } catch (final MalformedURLException mURLe) {
-                    System.out.println("Error - possibly missing URL for: " + fileDest.getName());
-                } catch (final FileNotFoundException fnfe) {
-                    String formatStr = "Error - the LQ picture %s could not be found on the server. [%s] - %s";
-                    System.out.println(String.format(formatStr, fileDest.getName(), url, fnfe.getMessage()));
-                } catch (final Exception ex) {
-                    Log.error("LQ Pictures", "Error downloading pictures", ex);
+            ReadableByteChannel rbc = null;
+            FileOutputStream    fos = null;
+            try {
+                // test for folder existence
+                if (!base.exists() && !base.mkdir()) { // create folder if not found
+                    System.out.println("Can't create folder" + base.getAbsolutePath());
                 }
 
-                // throttle to reduce load on the server
-                try {
-                    Thread.sleep(r.nextInt(250) + 250);
-                } catch (final InterruptedException e) {
-                    Log.error("GuiDownloader", "Sleep Error", e);
+                URL imageUrl = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection(p);
+                // don't allow redirections here -- they indicate 'file not found' on the server
+                conn.setInstanceFollowRedirects(false);
+                conn.connect();
+
+                if (conn.getResponseCode() != 200) {
+                    conn.disconnect();
+                    System.out.println("Skipped Download for: " + fileDest.getPath());
+                    continue;
                 }
-            } // for
-        }
+
+                rbc = Channels.newChannel(conn.getInputStream());
+                fos = new FileOutputStream(fileDest);
+                fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+            } catch (final ConnectException ce) {
+                System.out.println("Connection refused for url: " + url);
+            } catch (final MalformedURLException mURLe) {
+                System.out.println("Error - possibly missing URL for: " + fileDest.getName());
+            } catch (final FileNotFoundException fnfe) {
+                String formatStr = "Error - the LQ picture %s could not be found on the server. [%s] - %s";
+                System.out.println(String.format(formatStr, fileDest.getName(), url, fnfe.getMessage()));
+            } catch (final Exception ex) {
+                Log.error("LQ Pictures", "Error downloading pictures", ex);
+            } finally {
+                if (null != rbc) {
+                    try { rbc.close(); } catch (IOException e) { System.out.println("error closing input stream"); }
+                }
+                if (null != fos) {
+                    try { fos.close(); } catch (IOException e) { System.out.println("error closing output stream"); }
+                }
+            }
+
+            update(++iCard, fileDest);
+            
+            // throttle to reduce load on the server
+            try {
+                Thread.sleep(r.nextInt(50) + 50);
+            } catch (final InterruptedException e) {
+                Log.error("GuiDownloader", "Sleep Error", e);
+            }
+        } // for
     }
 
-    protected abstract ArrayList<DownloadObject> getNeededImages();
+    protected abstract Map<String, String> getNeededImages();
 
-    protected static void addMissingItems(ArrayList<DownloadObject> list, String nameUrlFile, String dir) {
+    protected static void addMissingItems(Map<String, String> list, String nameUrlFile, String dir) {
         for (Pair<String, String> nameUrlPair : FileUtil.readNameUrlFile(nameUrlFile)) {
             File f = new File(dir, nameUrlPair.getLeft());
+            //System.out.println(f.getAbsolutePath());
             if (!f.exists()) {
-                list.add(new DownloadObject(nameUrlPair.getRight(), f));
+                list.put(f.getAbsolutePath(), nameUrlPair.getRight());
             }
         }
     }
@@ -397,24 +377,4 @@ public abstract class GuiDownloader extends DefaultBoundedRangeModel implements 
         }
     }
 
-    protected static class DownloadObject {
-
-        private final String source;
-        private final File destination;
-
-        DownloadObject(final String srcUrl, final File destFile) {
-            source = srcUrl;
-            destination = destFile;
-            //System.out.println(String.format("downloading %s to %s", srcUrl, destFile));
-            System.out.println(String.format("Preparing to download %s", destFile));
-        }
-
-        public String getSource() {
-            return source;
-        }
-
-        public File getDestination() {
-            return destination;
-        }
-    }
 }

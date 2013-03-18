@@ -1079,6 +1079,9 @@ public class AbilityUtils {
             public void execute() {
                 if (isSwitched && execSubsWhenNotPaid || execSubsWhenPaid) {
                     resolveSubAbilities(sa, usedStack, game);
+                } else if (usedStack) {
+                    SpellAbility root = sa.getRootAbility();
+                    game.getStack().finishResolving(root, false);
                 }
             }
         };
@@ -1091,6 +1094,9 @@ public class AbilityUtils {
                 sa.resolve();
                 if (isSwitched && execSubsWhenPaid || execSubsWhenNotPaid) {
                     resolveSubAbilities(sa, usedStack, game);
+                } else if (usedStack) {
+                    SpellAbility root = sa.getRootAbility();
+                    game.getStack().finishResolving(root, false);
                 }
             }
         };
@@ -1112,8 +1118,8 @@ public class AbilityUtils {
         boolean paid = false;
         for (Player payer : payers) {
             if (payer.isComputer()) {
+                ability.setActivatingPlayer(payer);
                 if (AbilityUtils.willAIPayForAbility(sa, payer, ability, paid, payers)) {
-                    ability.setActivatingPlayer(payer);
                     ability.setTarget(sa.getTarget());
                     ComputerUtil.playNoStack((AIPlayer) payer, ability, game); // Unless cost was payed - no resolve
                     paid = true;
@@ -1204,6 +1210,7 @@ public class AbilityUtils {
                 && ComputerUtilCost.checkDamageCost(payer, ability.getPayCosts(), source, 4)
                 && ComputerUtilCost.checkDiscardCost(payer, ability.getPayCosts(), source)
                 && (!source.getName().equals("Tyrannize") || payer.getCardsIn(ZoneType.Hand).size() > 2)
+                && (!source.getName().equals("Perplex") || payer.getCardsIn(ZoneType.Hand).size() < 2)
                 && (!source.getName().equals("Breaking Point") || payer.getCreaturesInPlay().size() > 1)
                 && (!source.getName().equals("Chain of Vapor")
                         || (payer.getOpponent().getCreaturesInPlay().size() > 0 && payer.getLandsInPlay().size() > 3))) {

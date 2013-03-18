@@ -226,7 +226,7 @@ public class CardFactory {
         c.setRarity(cp.getRarity());
 
         // Would like to move this away from in-game entities
-        String originalPicture = ImageCache.getImageKey(cp);
+        String originalPicture = ImageCache.getImageKey(cp, false);
         //System.out.println(c.getName() + " -> " + originalPicture);
         c.setImageKey(originalPicture);
         c.setToken(cp.isToken());
@@ -508,6 +508,42 @@ public class CardFactory {
         for (String sVar : from.getSVars()) {
             to.setSVar(sVar, from.getSVar(sVar));
         }
+    }
+
+    public static List<Card> makeToken(final String name, final String imageName, final Player controller,
+            final String manaCost, final String[] types, final int baseAttack, final int baseDefense,
+            final String[] intrinsicKeywords) {
+        final List<Card> list = new ArrayList<Card>();
+        final Card c = new Card();
+        c.setName(name);
+        c.setImageKey(ImageCache.TOKEN_PREFIX + imageName);
+    
+        // TODO - most tokens mana cost is 0, this needs to be fixed
+        // c.setManaCost(manaCost);
+        c.addColor(manaCost);
+        c.setToken(true);
+    
+        for (final String t : types) {
+            c.addType(t);
+        }
+    
+        c.setBaseAttack(baseAttack);
+        c.setBaseDefense(baseDefense);
+    
+        final int multiplier = controller.getTokenDoublersMagnitude();
+        for (int i = 0; i < multiplier; i++) {
+            Card temp = copyStats(c);
+    
+            for (final String kw : intrinsicKeywords) {
+                temp.addIntrinsicKeyword(kw);
+            }
+            temp.setOwner(controller);
+            temp.setToken(true);
+            CardFactoryUtil.parseKeywords(temp, temp.getName());
+            CardFactoryUtil.setupKeywordedAbilities(temp);
+            list.add(temp);
+        }
+        return list;
     }
 
 } // end class AbstractCardFactory

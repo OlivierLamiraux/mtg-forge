@@ -15,10 +15,10 @@ b_1_1_thrull.jpg                       http://www.cardforge.org/fpics/tokens/b_1
 b_1_1_vampire_dka.jpg                  http://www.cardforge.org/fpics/tokens/b_1_1_vampire_dka.jpg
 b_1_1_wolf.jpg                         http://www.cardforge.org/fpics/tokens/b_1_1_wolf.jpg
 b_1_2_bat.jpg                          http://www.cardforge.org/fpics/tokens/b_1_2_bat.jpg
-b_20_20_marit_lage.jpg                 http://www.cardforge.org/fpics/tokens/b_20_20_marit_lage.jpg
 b_2_1_cat.jpg                          http://www.cardforge.org/fpics/tokens/b_2_1_cat.jpg
-b_2_2_vampire.jpg                      http://www.cardforge.org/fpics/tokens/b_2_2_vampire.jpg
+b_2_2_knight.jpg                       http://www.cardforge.org/fpics/tokens/b_2_2_knight.jpg
 b_2_2_tombspawn.jpg                    http://www.cardforge.org/fpics/tokens/b_2_2_tombspawn.jpg
+b_2_2_vampire.jpg                      http://www.cardforge.org/fpics/tokens/b_2_2_vampire.jpg
 b_2_2_zombie.jpg                       http://www.cardforge.org/fpics/tokens/b_2_2_zombie.jpg
 b_2_4_spider.jpg                       http://www.cardforge.org/fpics/tokens/b_2_4_spider.jpg
 b_3_3_angel.jpg                        http://www.cardforge.org/fpics/tokens/b_3_3_angel.jpg
@@ -29,6 +29,7 @@ b_5_5_demon_avr.jpg                    http://www.cardforge.org/fpics/tokens/b_5
 b_5_5_urami.jpg                        http://www.cardforge.org/fpics/tokens/b_5_5_urami.jpg
 b_5_5_zombie_giant.jpg                 http://www.cardforge.org/fpics/tokens/b_5_5_zombie_giant.jpg
 b_6_6_wurm.jpg                         http://www.cardforge.org/fpics/tokens/b_6_6_wurm.jpg
+b_20_20_marit_lage.jpg                 http://www.cardforge.org/fpics/tokens/b_20_20_marit_lage.jpg
 b_dx_dy_spirit.jpg                     http://www.cardforge.org/fpics/tokens/b_dx_dy_spirit.jpg
 b_x_x_demon.jpg                        http://www.cardforge.org/fpics/tokens/b_x_x_demon.jpg
 b_x_x_minion.jpg                       http://www.cardforge.org/fpics/tokens/b_x_x_minion.jpg
@@ -137,6 +138,7 @@ r_1_1_goblin_rtr.jpg                   http://www.cardforge.org/fpics/tokens/RTR
 r_1_1_goblin_scout.jpg                 http://www.cardforge.org/fpics/tokens/r_1_1_goblin_scout.jpg
 r_1_1_human_avr.jpg                    http://www.cardforge.org/fpics/tokens/r_1_1_human_avr.jpg 
 r_1_1_survivor.jpg                     http://www.cardforge.org/fpics/tokens/r_1_1_survivor.jpg
+r_1_1_warrior.jpg                      http://www.cardforge.org/fpics/tokens/r_1_1_warrior.jpg
 r_2_1_goblin.jpg                       http://www.cardforge.org/fpics/tokens/r_2_1_goblin.jpg
 r_3_1_carnivore.jpg                    http://www.cardforge.org/fpics/tokens/r_3_1_carnivore.jpg
 r_3_1_elemental.jpg                    http://www.cardforge.org/fpics/tokens/r_3_1_elemental.jpg
@@ -233,7 +235,6 @@ morph.jpg                              http://www.cardforge.org/fpics/effects/mo
 
 # //These tokens are not currently used by any cards in Forge, but links provided should they be scripted so the correct name is used:
 # //g_1_1_wolves_of_the_hunt.jpg           http://www.cardforge.org/fpics/tokens/g_1_1_wolves_of_the_hunt.jpg           [LEG] Master of the Hunt
-# //r_1_1_warrior.jpg                      http://www.cardforge.org/fpics/tokens/r_1_1_warrior.jpg                      [SOK] Rally the Horde
 # //rg_1_1_goblin_warrior.jpg              http://www.cardforge.org/fpics/tokens/rg_1_1_goblin_warrior.jpg              [SHM] Wort, the Raidmother
 # //u_1_1_merfolk.jpg                      http://www.cardforge.org/fpics/tokens/u_1_1_merfolk.jpg                      [ZEN] Lullmage Mentor
 # //w_1_1_knight.jpg                       http://www.cardforge.org/fpics/tokens/w_1_1_knight.jpg                       [ALL] Errand of Duty

@@ -507,6 +507,10 @@ public class Card extends GameEntity implements Comparable<Card> {
     public final boolean isFlipCard() {
         return this.isFlipCard;
     }
+    
+    public final boolean isSplitCard() { 
+        return cardRules != null && cardRules.getSplitType() == CardSplitType.Split;
+    }
 
     /**
      * Sets the flip card.
@@ -7021,7 +7025,7 @@ public class Card extends GameEntity implements Comparable<Card> {
         } else if (property.startsWith("greatestCMC")) {
             final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), Presets.CREATURES);
             for (final Card crd : list) {
-                if (crd.getRules() != null && crd.getRules().getSplitType() == CardSplitType.Split) {
+                if (crd.isSplitCard()) {
                     if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) > this.getCMC() || crd.getCMC(Card.SplitCMCMode.RightSplitCMC) > this.getCMC()) {
                         return false;
                     }
@@ -7032,7 +7036,7 @@ public class Card extends GameEntity implements Comparable<Card> {
                 }
             }
         } else if (property.startsWith("greatestRememberedCMC")) {
-            final List<Card> list = new ArrayList<Card>();
+            List<Card> list = new ArrayList<Card>();
             for (final Object o : source.getRemembered()) {
                 if (o instanceof Card) {
                     list.add(Singletons.getModel().getGame().getCardState((Card) o));
@@ -7041,22 +7045,15 @@ public class Card extends GameEntity implements Comparable<Card> {
             if (!list.contains(this)) {
                 return false;
             }
-            for (final Card crd : list) {
-                if (crd.getRules() != null && crd.getRules().getSplitType() == CardSplitType.Split) {
-                    if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) > this.getCMC() || crd.getCMC(Card.SplitCMCMode.RightSplitCMC) > this.getCMC()) {
-                        return false;
-                    }
-                } else {
-                    if (crd.getCMC() > this.getCMC()) {
-                        return false;
-                    }
-                }
+            list = CardLists.getCardsWithHighestCMC(list);
+            if (!list.contains(this)) {
+                return false;
             }
         } else if (property.startsWith("lowestCMC")) {
             final List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
             for (final Card crd : list) {
                 if (!crd.isLand() && !crd.isImmutable()) {
-                    if (crd.getRules() != null && crd.getRules().getSplitType() == CardSplitType.Split) {
+                    if (crd.isSplitCard()) {
                         if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) < this.getCMC() || crd.getCMC(Card.SplitCMCMode.RightSplitCMC) < this.getCMC()) {
                             return false;
                         }
@@ -7126,7 +7123,7 @@ public class Card extends GameEntity implements Comparable<Card> {
                 y = this.getNetDefense();
             } else if (property.startsWith("cmc")) {
                 rhs = property.substring(5);
-                if (getRules() != null && getRules().getSplitType() == CardSplitType.Split && getCurState() == CardCharacteristicName.Original) {
+                if (isSplitCard() && getCurState() == CardCharacteristicName.Original) {
                     y = getState(CardCharacteristicName.LeftSplit).getManaCost().getCMC();
                     y2 = getState(CardCharacteristicName.RightSplit).getManaCost().getCMC();
                 } else {
@@ -9133,7 +9130,7 @@ public class Card extends GameEntity implements Comparable<Card> {
         
         int requestedCMC = 0;
 
-        if (getRules() != null && getRules().getSplitType() == CardSplitType.Split) {
+        if (isSplitCard()) {
             switch(mode) {
                 case CurrentSideCMC:
                     // TODO: test if this returns combined CMC for the full face (then get rid of CombinedCMC mode?)

@@ -259,4 +259,42 @@ public class CardLists {
         res.add(c);
         return res;
     }
+
+    /**
+     * Given a List<Card> cardList, return a List<Card> that are tied for having the highest CMC.
+     * 
+     * @param cardList    the Card List to be filtered.
+     * @return CardList   the list of Cards sharing the highest CMC. 
+     */
+    public static List<Card> getCardsWithHighestCMC(Iterable<Card> cardList) {
+        final List<Card> tiedForHighest = new ArrayList<Card>();
+        int highest = 0;
+        for (final Card crd : cardList) {
+            if (crd.isSplitCard()) {
+                if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) > highest) {
+                    highest = crd.getCMC(Card.SplitCMCMode.LeftSplitCMC);
+                    tiedForHighest.clear();
+                    tiedForHighest.add(crd);
+                } else if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) == highest && !tiedForHighest.contains(crd)) {
+                    tiedForHighest.add(crd);
+                }
+                if (crd.getCMC(Card.SplitCMCMode.RightSplitCMC) > highest) {
+                    highest = crd.getCMC(Card.SplitCMCMode.RightSplitCMC);
+                    tiedForHighest.clear();
+                    tiedForHighest.add(crd);
+                } else if (crd.getCMC(Card.SplitCMCMode.RightSplitCMC) == highest && !tiedForHighest.contains(crd)) {
+                    tiedForHighest.add(crd);
+                }
+            } else {
+                if (crd.getCMC() > highest) {
+                    highest = crd.getCMC();
+                    tiedForHighest.clear();
+                    tiedForHighest.add(crd);
+                } else if (crd.getCMC() == highest && !tiedForHighest.contains(crd)) {
+                    tiedForHighest.add(crd);
+                }
+            }
+        }
+        return tiedForHighest;
+    }
 }

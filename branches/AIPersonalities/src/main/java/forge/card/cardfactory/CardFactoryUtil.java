@@ -1420,8 +1420,17 @@ public class CardFactoryUtil {
                 }
             }
             for (final Card crd : list) {
-                if (crd.getCMC() > highest) {
-                    highest = crd.getCMC();
+                if (crd.isSplitCard()) {
+                    if (crd.getCMC(Card.SplitCMCMode.LeftSplitCMC) > highest) {
+                        highest = crd.getCMC(Card.SplitCMCMode.LeftSplitCMC);
+                    }
+                    if (crd.getCMC(Card.SplitCMCMode.RightSplitCMC) > highest) {
+                        highest = crd.getCMC(Card.SplitCMCMode.RightSplitCMC);
+                    }
+                } else {
+                    if (crd.getCMC() > highest) {
+                        highest = crd.getCMC();
+                    }
                 }
             }
             return highest;

@@ -41,7 +41,6 @@ import forge.CounterType;
 import forge.ImageCache;
 import forge.Singletons;
 import forge.card.CardEdition;
-import forge.card.CardSplitType;
 import forge.card.mana.ManaCost;
 import forge.gui.CardContainer;
 import forge.gui.toolbox.CardFaceSymbols;
@@ -377,7 +376,7 @@ public class CardPanel extends JPanel implements CardContainer {
         if (this.showCastingCost) {
             if (this.cardWidth < 200) {
                 Card gameCard = this.getGameCard();
-                boolean showSplitMana = gameCard.getRules() != null && gameCard.getRules().getSplitType() == CardSplitType.Split && gameCard.getCurState() == CardCharacteristicName.Original;
+                boolean showSplitMana = gameCard.isSplitCard() && gameCard.getCurState() == CardCharacteristicName.Original;
                 if ( !showSplitMana ) {
                     drawManaCost(g, gameCard.getManaCost(), 0);
                 } else {

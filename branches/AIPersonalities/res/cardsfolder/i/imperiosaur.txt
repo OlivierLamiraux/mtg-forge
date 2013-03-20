@@ -1,8 +1,0 @@
-Name:Imperiosaur
-ManaCost:2 G G
-Types:Creature Lizard
-Text:(NOTE: "Spend only mana produced by basic lands to cast Imperiosaur." is not implemented.)
-PT:5/5
-SVar:Picture:http://resources.wizards.com/magic/cards/fut/en-us/card130634.jpg
-Oracle:Spend only mana produced by basic lands to cast Imperiosaur.
-SetInfo:FUT Uncommon

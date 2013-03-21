@@ -1,0 +1,226 @@
+package forge.card.ability.effects;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.base.Predicate;
+
+import forge.Card;
+import forge.CardCharacteristicName;
+import forge.CardLists;
+import forge.Singletons;
+import forge.card.ability.AbilityUtils;
+import forge.card.ability.SpellAbilityEffect;
+import forge.card.spellability.Spell;
+import forge.card.spellability.SpellAbility;
+import forge.card.spellability.SpellAbilityRestriction;
+import forge.game.GameState;
+import forge.game.ai.ComputerUtil;
+import forge.game.ai.ComputerUtilCard;
+import forge.game.player.AIPlayer;
+import forge.game.player.Player;
+import forge.game.zone.ZoneType;
+import forge.gui.GuiChoose;
+import forge.gui.GuiDialog;
+import forge.item.CardDb;
+
+public class PlayEffect extends SpellAbilityEffect {
+    @Override
+    protected String getStackDescription(SpellAbility sa) {
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("Play ");
+        final List<Card> tgtCards = getTargetCards(sa);
+
+        if (sa.hasParam("Valid")) {
+            sb.append("cards");
+        } else {
+            sb.append(StringUtils.join(tgtCards, ", "));
+        }
+        if (sa.hasParam("WithoutManaCost")) {
+            sb.append(" without paying the mana cost");
+        }
+        sb.append(".");
+        return sb.toString();
+    }
+
+    @Override
+    public void resolve(SpellAbility sa) {
+        final GameState game = Singletons.getModel().getGame();
+        final Card source = sa.getSourceCard();
+        Player activator = sa.getActivatingPlayer();
+        boolean optional = sa.hasParam("Optional");
+        boolean remember = sa.hasParam("RememberPlayed");
+        boolean wasFaceDown = false;
+        boolean useEncoded = false;
+        int amount = 1;
+        if (sa.hasParam("Amount") && !sa.getParam("Amount").equals("All")) {
+            amount = AbilityUtils.calculateAmount(source, sa.getParam("Amount"), sa);
+        }
+
+        if (sa.hasParam("Controller")) {
+            activator = AbilityUtils.getDefinedPlayers(source, sa.getParam("Controller"), sa).get(0);
+        }
+
+        final Player controller = activator;
+        List<Card> tgtCards = new ArrayList<Card>();
+
+        if (sa.hasParam("Valid")) {
+            ZoneType zone = ZoneType.Hand;
+            if (sa.hasParam("ValidZone")) {
+                zone = ZoneType.smartValueOf(sa.getParam("ValidZone"));
+            }
+            tgtCards = game.getCardsIn(zone);
+            tgtCards = AbilityUtils.filterListByType(tgtCards, sa.getParam("Valid"), sa);
+        }
+        else if (sa.hasParam("Encoded")) {
+            final ArrayList<Card> encodedCards = source.getEncoded();
+            final int encodedIndex = Integer.parseInt(sa.getParam("Encoded")) - 1;
+            tgtCards.add(encodedCards.get(encodedIndex));
+            useEncoded = true;
+        }
+        else {
+            tgtCards = getTargetCards(sa);
+        }
+
+        if (tgtCards.isEmpty()) {
+            return;
+        }
+
+        if (sa.hasParam("Amount") && sa.getParam("Amount").equals("All")) {
+            amount = tgtCards.size();
+        }
+
+        for (int i = 0; i < amount; i++) {
+            if (tgtCards.isEmpty()) {
+                return;
+            }
+            Card tgtCard = tgtCards.get(0);
+            if (tgtCards.size() > 1) {
+                if (controller.isHuman()) {
+                    tgtCard = GuiChoose.one("Select a card to play", tgtCards);
+                } else {
+                    // AI
+                    tgtCards = CardLists.filter(tgtCards, new Predicate<Card>() {
+                        @Override
+                        public boolean apply(final Card c) {
+                            List<SpellAbility> sas = new ArrayList<SpellAbility>();
+                            for (SpellAbility s : c.getBasicSpells()) {
+                                Spell spell = (Spell) s;
+                                s.setActivatingPlayer(controller);
+                                // timing restrictions still apply
+                                if (s.getRestrictions().checkTimingRestrictions(c, s) && spell.canPlayFromEffectAI(false, true)) {
+                                    sas.add(s);
+                                }
+                            }
+                            if (sas.isEmpty()) {
+                                return false;
+                            }
+                            return true;
+                        }
+                    });
+                    tgtCard = ComputerUtilCard.getBestAI(tgtCards);
+                    if (tgtCard == null) {
+                        return;
+                    }
+                }
+            }
+            if (tgtCard.isFaceDown()) {
+                tgtCard.setState(CardCharacteristicName.Original);
+                wasFaceDown = true;
+            }
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Do you want to play " + tgtCard + "?");
+            if (controller.isHuman() && optional
+                    && !GuiDialog.confirm(source, sb.toString())) {
+                // i--;  // This causes an infinite loop (ArsenalNut)
+                if (wasFaceDown) {
+                    tgtCard.setState(CardCharacteristicName.FaceDown);
+                }
+                continue;
+            }
+            if (sa.hasParam("ForgetRemembered")) {
+                source.clearRemembered();
+            }
+            if (sa.hasParam("CopyCard")) {
+                tgtCard = CardDb.getCard(tgtCard).toForgeCard(sa.getActivatingPlayer());
+
+                tgtCard.setToken(true);
+                tgtCard.setCopiedSpell(true);
+
+                if (useEncoded) {
+                    tgtCard.setSVar("IsEncoded", "Number$1");
+                }
+            }
+            // lands will be played
+            if (tgtCard.isLand()) {
+                controller.playLand(tgtCard);
+                if (remember && controller.canPlayLand(tgtCard)) {
+                    source.addRemembered(tgtCard);
+                }
+                tgtCards.remove(tgtCard);
+                continue;
+            }
+
+            // get basic spells (no flashback, etc.)
+            ArrayList<SpellAbility> sas = new ArrayList<SpellAbility>();
+            for (SpellAbility s : tgtCard.getBasicSpells()) {
+                final SpellAbility newSA = s.copy();
+                newSA.setActivatingPlayer(controller);
+                SpellAbilityRestriction res = new SpellAbilityRestriction();
+                // timing restrictions still apply
+                res.setPlayerTurn(s.getRestrictions().getPlayerTurn());
+                res.setOpponentTurn(s.getRestrictions().getOpponentTurn());
+                res.setPhases(s.getRestrictions().getPhases());
+                res.setZone(null);
+                newSA.setRestrictions(res);
+                // timing restrictions still apply
+                if (res.checkTimingRestrictions(tgtCard, newSA)) {
+                    sas.add(newSA);
+                }
+            }
+            if (sas.isEmpty()) {
+                return;
+            }
+            tgtCards.remove(tgtCard);
+            SpellAbility tgtSA = null;
+            // only one mode can be used
+            if (sas.size() == 1) {
+                tgtSA = sas.get(0);
+            } else if (sa.getActivatingPlayer().isHuman()) {
+                tgtSA = GuiChoose.one("Select a spell to cast", sas);
+            } else {
+                tgtSA = sas.get(0);
+            }
+
+            if (tgtSA.getTarget() != null && !optional) {
+                tgtSA.getTarget().setMandatory(true);
+            }
+
+            boolean noManaCost = sa.hasParam("WithoutManaCost"); 
+            if (controller.isHuman()) {
+                SpellAbility newSA = noManaCost ? tgtSA.copyWithNoManaCost() : tgtSA;
+                game.getActionPlay().playSpellAbility(newSA, activator);
+            } else {
+                if (tgtSA instanceof Spell) { // Isn't it ALWAYS a spell?
+                    Spell spell = (Spell) tgtSA;
+                    if (spell.canPlayFromEffectAI(!optional, noManaCost) || !optional) {
+                        if (noManaCost) {
+                            ComputerUtil.playSpellAbilityWithoutPayingManaCost((AIPlayer)controller, tgtSA, game);
+                        } else {
+                            ComputerUtil.playStack(tgtSA, (AIPlayer)controller, game);
+                        }
+                    } else 
+                        remember = false; // didn't play spell
+                }
+            }
+            if (remember) {
+                source.addRemembered(tgtSA.getSourceCard());
+            }
+       
+        }
+    } // end resolve
+
+}

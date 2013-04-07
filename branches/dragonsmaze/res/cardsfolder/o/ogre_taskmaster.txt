@@ -1,0 +1,12 @@
+Name:Ogre Taskmaster
+ManaCost:3 R
+Types:Creature Ogre
+PT:4/3
+K:CARDNAME can't block.
+SVar:Picture:http://resources.wizards.com/magic/cards/p2/en-us/card6588.jpg
+Oracle:Ogre Taskmaster can't block.
+SetInfo:PO2 Uncommon
+SetInfo:8ED Uncommon
+SetInfo:7ED Uncommon
+SetInfo:MMQ Uncommon
+SetInfo:9ED Uncommon

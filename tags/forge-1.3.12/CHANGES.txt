@@ -1,0 +1,252 @@
+Forge Beta: 04-12-2013 ver 1.3.12
+
+
+12516 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- User data migration -
+User data files, like decks, saved gauntlets, and card pictures, are now stored in new directories separate from the program data.  When this version of Forge is first run, it will scan the program directory for all user data and automatically migrate the files to their new homes.  There are three defined user data directores: userDir, cacheDir, and cardPicsDir, and their locations depend on the standard paths for your operating system:
+
+    Windows:
+        userDir=%APPDATA%/Forge/
+        cacheDir=%LOCALAPPDATA%/Forge/Cache/ (or %APPDATA%/Forge/Cache/ for windows versions before the local/roaming directory split)
+    OSX:
+        userDir=$HOME/Library/Application Support/Forge/
+        cacheDir=$HOME/Library/Caches/Forge/
+    Linux:
+        userDir=$HOME/.forge/
+        cacheDir=$HOME/.cache/forge/
+
+cardPicsDir is defined as <cacheDir>/pics/cards/ by default.  If you wish to use a non-default directory, please see the forge.profile.preferences.example file located in the Forge installation directory root.  You can use this file to, for example, share the card pics directory with another program, such as Magic Workstation.
+
+If you are using the Mac OS X version of Forge then you will find the forge.profile.preferences.example file by right clicking or control clicking on the Forge.app icon. Select "Show Package Contents" from the contextual menu. A Finder window will open and will display a folder named Contents. Navigate to the folder:
+    /Contents/Resources/Java/
+and you will find the file named forge.profile.preferences.example.
+
+
+For reference, here is the full list of moved directories and files:
+
+Old location      New location
+----------------  ----------------------
+res/decks/        <userDir>/decks/
+res/gauntlet/     <userDir>/gauntlet/
+res/layouts/      <userDir>/preferences/
+res/preferences/  <userDir>/preferences/
+res/quest/data/   <userDir>/quest/saves/
+res/pics/         <cacheDir>/pics/
+forge.log         <userDir>/forge.log
+
+
+- New Import Data dialog -
+The Import Pictures dialog, accessed via the Content Downloaders submenu, has received an overhaul and has been reincarnated as the Import Data dialog.  You may recognize it from the automatic data migration procedure if you had any data to migrate when this version was first started.  Instead of just importing pictures from a previous version of Forge, it can now import any kind of Forge data whatsoever.  If you have a directory full of deck files, you can use the Import Data dialog to copy or move them to the appropriate directory.  If you have just downloaded a torrent of high-quality pics for a particular set, use the Import Data dialog to get them to the proper place.  The dialog give you a full listing of all file copy/move operations, so you can see what will happen before you click 'Start Import'.
+
+An importer option was added for including pictures in set-specific card directories that don't map to any currently known card.  This handles the case where people have collected complete sets of pics in anticipation of when Forge supports them.
+
+
+- Flip, Transform and Morph cards -
+When you mouse over a flip, transform or Morph (controlled by you) card in battlefield, you may hold SHIFT to see other state of that card at the side panel that displays card picture and details.
+
+
+- Milestone reached -
+There are now under 700 unsupported cards and we now have implemented over 95% of all distinct cards. We should be at (Planechase 2012) or over 85% for all the sets.
+
+
+- Dragon's Maze -
+We have created a branch for Dragon's Maze spoilers. These new cards are not included in the Forge distributions at this time. Please be patient as these DGM cards will become available in the near future.
+
+
+- Deck Editor and Match layout file issues -
+On several occasions people have noticed that the Forge deck editor and/or quest mode card shop would not open or display. We have also received reports that some of the tabs/panels in the deck editor are missing. There has also been reports that Forge will crash while creating/populating display components during start up or crash when a match is started. One or both of your layout xml files may be corrupted in some fashion. Try deleting the file(s) named "editor.xml" and/or "match.xml" that are now located in your userDir/preferences/ directory. This should force Forge to then use the default layout xml files instead.
+
+
+- Alternate sound system -
+Implemented an alternative sound system for people who have issues with sound gradually or instantly disappearing on certain Linux systems. Can be switched on/off in the preferences without needing a restart. Uses the standard Java Sound API so it doesn't require an external dependency. It's non-caching and, as such, less efficient than the regular sound system, so only use it in case you have issues with the default system, otherwise leave the option unchecked.
+
+
+---------
+New Cards
+---------
+
+Auriok Siege Sled
+Benthic Explorers
+Blazing Effigy
+Bramble Elemental
+Breathstealer's Crypt
+Brine Hag
+Burning-Tree Bloodscale
+Cairn Wanderer
+Cathedral Membrane
+Chance Encounter
+Concerted Effort
+Curtain of Light
+Cut the Tethers
+Dazzling Beauty
+Death-Mask Duplicant
+Deflection
+Delay
+Divert
+Dream Salvage
+Dual Nature
+Earwig Squad
+Fold into AEther
+Giant Slug
+Grifter's Blade
+Harsh Mercy
+Heroism
+Hinder
+Horn of Plenty
+Illusionary Presence
+Imp's Mischief
+Kaboom!
+Kamahl's Summons
+Karmic Justice
+Killing Wave
+Konda's Banner
+Koskun Falls
+Latchkey Faerie
+Leech Bonder
+Lullmage Mentor
+Misdirection
+Moonlight Bargain
+Multani's Presence
+Myr Superion
+O-Naginata
+Oathkeeper, Takeno's Daisho
+Paralyze
+Rain of Gore
+Reroute
+Reverse the Sands
+Ricochet Trap
+Runed Halo
+Shieldmage Elder
+Shunt
+Soulbright Flamekin
+Spellshift
+Strength of the Tajuru
+Swift Silence
+Torchling
+Trap Runner
+Traveler's Cloak
+Unnatural Hunger
+Vexing Shusher
+Vodalian War Machine
+Warp World
+Weight of Conscience
+Willbender
+Zur's Weirding
+
+
+----------
+New Planes
+----------
+
+Astral Arena
+Bloodhill Bastion
+Gavony
+Hedron Fields of Agadeem
+Isle of Vesuva
+Izzet Steam Maze
+Kessig
+Murasa
+Nephalia
+Sea of Sand
+The Zephyr Maze
+Windriddle Palaces
+
+
+--------------------
+New Vanguard Avatars
+--------------------
+
+Akroma, Angel of Wrath Avatar
+Eight-and-a-Half-Tails Avatar
+Frenetic Efreet Avatar
+Jhoira of the Ghitu Avatar
+Karona, False God Avatar
+Kresh the Bloodbraided Avatar
+Peacekeeper Avatar
+Sliver Queen Avatar
+Stonehewer Giant Avatar
+
+
+------------------------------
+New Dragon's Maze branch Cards
+------------------------------
+
+Advent of the Wurm
+Beck // Call
+Blood Scrivener
+Deputy of Acquittals
+Exava, Rakdos Blood Witch
+Master of Cruelties
+Maze's End
+Melek, Izzet Paragon
+Ral Zarek
+Render Silent
+Renounce the Guilds
+Sin Collector
+Toil // Trouble
+Varolz, the Scar-Striped
+Voice of Resurgence
+Vorel of the Hull Clade
+Wear // Tear
+
+
+------------
+Known Issues
+------------
+
+A small number of cards including Wall of Corpses, Abu Ja'far and others with a similar ability are not functional. The common issue here is actually that they check the blocker/attacker after being removed from the battlefield. Probably need to use LKI. Regular destroy/destroy all effects work just fine. The problem cards are caring about battlefield specific properties, that no longer apply when the base card is no longer on the battlefield.
+
+On several occasions people have noticed that the Forge deck editor and/or quest mode card shop would not open or display. We have also received reports that some of the tabs/panels in the deck editor are missing. There has also been reports that Forge will crash while creating/populating display components during start up or crash when a match is started. One or both of your layout xml files may be corrupted in some fashion. Try deleting the file(s) named "editor.xml" and/or "match.xml" that are now located in your userDir/preferences/ directory. This should force Forge to then use the default layout xml files instead.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there are two remaining issues that we hope will be addressed in the near future.
+
+1. Leave play triggers don't work correct for clones.
+2. Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+There is currently a known issue with some of the cards that have effects triggering after the card goes to graveyard (e.g. Wall of Corpses, Abu Ja'Far) not working correctly.
+
+Forge is likely to be compatible with Java 7 at this time. Some people have used forge with Java 7 and have not reported any problems that are related to Java 7. If you would like to upgrade to Java 7 and have held off because of Forge then you may upgrade as we do not think that it will cause an incompatibility type of problem. We will continue to try to maintain compatibility with Java 6 for the foreseeable future.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+Gos
+Hellfish
+Marc
+Max
+Myk
+Nordos
+PowerClaws
+Sloth
+Sol
+Swordshine
+Xitax
+ZzzzSleep
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

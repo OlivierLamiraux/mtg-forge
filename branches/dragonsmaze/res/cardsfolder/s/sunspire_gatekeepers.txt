@@ -1,4 +1,4 @@
-Name:Sunspire Gatekeepers 
+Name:Sunspire Gatekeepers
 ManaCost:3 W
 Types:Creature Human Soldier
 PT:2/4

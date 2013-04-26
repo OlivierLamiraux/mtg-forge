@@ -20,6 +20,7 @@ public enum TriggerType {
     ChangesZone(TriggerChangesZone.class),
 
     Clashed(TriggerClashed.class),
+    Flipped(TriggerFlipped.class),
     Attached(TriggerAttached.class),
     Destroyed(TriggerDestroyed.class),
     Devoured(TriggerDevoured.class),
@@ -27,6 +28,7 @@ public enum TriggerType {
     TapsForMana(TriggerTapsForMana.class),
     CounterAdded(TriggerCounterAdded.class),
     CounterRemoved(TriggerCounterRemoved.class),
+    Evolved(TriggerEvolved.class),
     Unequip(TriggerUnequip.class),
     DamageDone(TriggerDamageDone.class),
     Championed(TriggerChampioned.class),
@@ -55,7 +57,8 @@ public enum TriggerType {
     PlanarDice(TriggerPlanarDice.class),
     PlaneswalkedTo(TriggerPlaneswalkedTo.class),
     PlaneswalkedFrom(TriggerPlaneswalkedFrom.class),
-    SetInMotion(TriggerSetInMotion.class);
+    SetInMotion(TriggerSetInMotion.class),
+    NewGame(TriggerNewGame.class);
 
     private final Class<? extends Trigger> classTrigger;
     private TriggerType(Class<? extends Trigger> clasz) {

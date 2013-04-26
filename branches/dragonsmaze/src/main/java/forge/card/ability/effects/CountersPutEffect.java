@@ -1,15 +1,16 @@
 package forge.card.ability.effects;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
 import forge.Card;
 import forge.CounterType;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.SpellAbilityEffect;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
+import forge.card.trigger.TriggerType;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
@@ -106,13 +107,18 @@ public class CountersPutEffect extends SpellAbilityEffect {
                 if (max != -1) {
                     counterAmount = max - tgtCard.getCounters(counterType);
                 }
-                final Zone zone = Singletons.getModel().getGame().getZoneOf(tgtCard);
+                final Zone zone = tgtCard.getGame().getZoneOf(tgtCard);
                 if (zone == null || zone.is(ZoneType.Battlefield) || zone.is(ZoneType.Stack)) {
                     if (remember) {
                         final int value = tgtCard.getTotalCountersToAdd(counterType, counterAmount, true);
                         tgtCard.addCountersAddedBy(card, counterType, value);
                     }
                     tgtCard.addCounter(counterType, counterAmount, true);
+                    if (sa.hasParam("Evolve")) {
+                        final HashMap<String, Object> runParams = new HashMap<String, Object>();
+                        runParams.put("Card", tgtCard);
+                        tgtCard.getController().getGame().getTriggerHandler().runTrigger(TriggerType.Evolved, runParams, false);
+                    }
                 } else {
                     // adding counters to something like re-suspend cards
                     tgtCard.addCounter(counterType, counterAmount, false);

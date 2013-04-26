@@ -1,6 +1,5 @@
 package forge.gui.deckeditor.views;
 
-import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
 import net.miginfocom.swing.MigLayout;
@@ -11,7 +10,6 @@ import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.IVDoc;
 import forge.gui.toolbox.DeckLister;
-import forge.gui.toolbox.FLabel;
 
 /** 
  * Assembles Swing components of all deck viewer in deck editor.
@@ -28,11 +26,6 @@ public enum VAllDecks implements IVDoc<CAllDecks> {
 
     private final DeckLister lstDecks = new DeckLister(GameType.Constructed);
     private JScrollPane scroller = new JScrollPane(lstDecks);
-
-    private final JLabel btnImport = new FLabel.Builder()
-        .fontSize(14)
-        .text("Import Deck").tooltip("Attempt to import a deck from a non-Forge format")
-        .opaque(true).hoverable(true).build();
 
     //========== Constructor
     private VAllDecks() {
@@ -91,8 +84,6 @@ public enum VAllDecks implements IVDoc<CAllDecks> {
     public void populate() {
         parentCell.getBody().setLayout(new MigLayout("insets 0, gap 0, wrap, ax center"));
 
-        parentCell.getBody().add(btnImport, "w 120px!, h 30px!, gap 0 0 5px 5px");
-
         parentCell.getBody().add(scroller, "w 96%!, growy, pushy, gap 2% 0 2% 0");
     }
 
@@ -102,8 +93,4 @@ public enum VAllDecks implements IVDoc<CAllDecks> {
         return lstDecks;
     }
 
-    /** @return {@link javax.swing.JLabel} */
-    public JLabel getBtnImport() {
-        return btnImport;
-    }
 }

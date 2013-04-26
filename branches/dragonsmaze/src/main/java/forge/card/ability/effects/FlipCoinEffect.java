@@ -1,14 +1,15 @@
 package forge.card.ability.effects;
 
+import java.util.HashMap;
 import java.util.List;
 
 import forge.Card;
-import forge.Singletons;
 import forge.card.ability.AbilityFactory;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.SpellAbilityEffect;
 import forge.card.spellability.AbilitySub;
 import forge.card.spellability.SpellAbility;
+import forge.card.trigger.TriggerType;
 import forge.game.event.FlipCoinEvent;
 import forge.game.player.Player;
 import forge.gui.GuiDialog;
@@ -30,6 +31,9 @@ public class FlipCoinEffect extends SpellAbilityEffect {
         return sb.toString();
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.ability.SpellAbilityEffect#resolve(forge.card.spellability.SpellAbility)
+     */
     @Override
     public void resolve(SpellAbility sa) {
         final Card host = sa.getSourceCard();
@@ -52,8 +56,11 @@ public class FlipCoinEffect extends SpellAbilityEffect {
         }
 
         // Run triggers
-        // HashMap<String,Object> runParams = new HashMap<String,Object>();
-        // runParams.put("Player", player);
+        HashMap<String,Object> runParams = new HashMap<String,Object>();
+        runParams.put("Player", caller.get(0));
+        runParams.put("Result", (Boolean) victory);
+        player.getGame().getTriggerHandler().runTrigger(TriggerType.Flipped, runParams, false);
+
         final boolean rememberResult = sa.hasParam("RememberResult");
 
         for (final Player flipper : playersToFlip) {
@@ -124,7 +131,7 @@ public class FlipCoinEffect extends SpellAbilityEffect {
     public static boolean flipCoinNoCall(final Card source, final Player flipper) {
         final boolean resultIsHeads = MyRandom.getRandom().nextBoolean();
 
-        Singletons.getModel().getGame().getEvents().post(new FlipCoinEvent());
+        flipper.getGame().getEvents().post(new FlipCoinEvent());
         final StringBuilder result = new StringBuilder();
         result.append(flipper.getName());
         result.append("'s flip comes up");

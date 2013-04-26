@@ -10,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import forge.Card;
 import forge.FThreads;
-import forge.Singletons;
 import forge.game.event.FlipCoinEvent;
 import forge.game.player.Player;
 import forge.gui.match.CMatchUI;
@@ -37,7 +36,9 @@ public class GuiDialog {
         Callable<Boolean> confirmTask = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                CMatchUI.SINGLETON_INSTANCE.setCard(c);
+                if ( null != c )
+                    CMatchUI.SINGLETON_INSTANCE.setCard(c);
+
                 final String title = c == null ? "Question" : c.getName() + " - Ability";
                 String questionToUse = StringUtils.isBlank(question) ? "Activate card's ability?" : question;
                 String[] opts = options == null ? defaultConfirmOptions : options;
@@ -99,7 +100,7 @@ public class GuiDialog {
         final String winMsg = winFlip ? " wins flip." : " loses flip.";
     
         // Play the Flip A Coin sound
-        Singletons.getModel().getGame().getEvents().post(new FlipCoinEvent());
+        caller.getGame().getEvents().post(new FlipCoinEvent());
     
         JOptionPane.showMessageDialog(null, source.getName() + " - " + caller + winMsg, source.getName(),
                 JOptionPane.PLAIN_MESSAGE);

@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import forge.Card;
-import forge.Singletons;
 import forge.card.CardType;
 import forge.card.ability.AbilityUtils;
+import forge.game.GameState;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 
@@ -63,6 +63,7 @@ public class Target {
     private boolean sameController = false;
     private boolean withoutSameCreatureType = false;
     private boolean singleTarget = false;
+    private boolean randomTarget = false;
     private String definedController = null;
 
     // How many can be targeted?
@@ -659,7 +660,8 @@ public class Target {
      * @return a boolean.
      */
     public final boolean hasCandidates(final SpellAbility sa, final boolean isTargeted) {
-        for (Player player : Singletons.getModel().getGame().getPlayers()) {
+        final GameState game = sa.getActivatingPlayer().getGame();
+        for (Player player : game.getPlayers()) {
             if (sa.canTarget(player)) {
                 return true;
             }
@@ -669,7 +671,7 @@ public class Target {
             // Stack Zone targets are considered later
             return true;
         } else {
-            for (final Card c : Singletons.getModel().getGame().getCardsIn(this.tgtZone)) {
+            for (final Card c : game.getCardsIn(this.tgtZone)) {
                 boolean isValidTarget = c.isValid(this.validTgts, this.srcCard.getController(), this.srcCard);
                 boolean canTarget = (!isTargeted || c.canBeTargetedBy(sa));
                 boolean isAlreadyTargeted = this.getTargetCards().contains(c);
@@ -695,29 +697,45 @@ public class Target {
      * @return a int.
      */
     public final int getNumCandidates(final SpellAbility sa, final boolean isTargeted) {
-        int candidates = 0;
-        for (Player player : Singletons.getModel().getGame().getPlayers()) {
+        return getAllCandidates(sa, isTargeted).size();
+    }
+
+    /**
+     * <p>
+     * getAllCandidates.
+     * </p>
+     * 
+     * @param sa
+     *            the sa
+     * @param isTargeted
+     *            Check Valid Candidates and Targeting
+     * @return a List<Object>.
+     */
+    public final List<Object> getAllCandidates(final SpellAbility sa, final boolean isTargeted) {
+        final GameState game = sa.getActivatingPlayer().getGame();
+        List<Object> candidates = new ArrayList<Object>();
+        for (Player player : game.getPlayers()) {
             if (sa.canTarget(player)) {
-                candidates++;
+                candidates.add(player);
             }
         }
 
         if (this.tgtZone.contains(ZoneType.Stack)) {
-            for (final Card c : Singletons.getModel().getGame().getStackZone().getCards()) {
+            for (final Card c : game.getStackZone().getCards()) {
                 boolean isValidTarget = c.isValid(this.validTgts, this.srcCard.getController(), this.srcCard);
                 boolean canTarget = (!isTargeted || c.canBeTargetedBy(sa));
                 boolean isAlreadyTargeted = this.getTargetCards().contains(c);
                 if (isValidTarget && canTarget && !isAlreadyTargeted) {
-                    candidates++;
+                    candidates.add(c);
                 }
             }
         } else {
-            for (final Card c : Singletons.getModel().getGame().getCardsIn(this.tgtZone)) {
+            for (final Card c : game.getCardsIn(this.tgtZone)) {
                 boolean isValidTarget = c.isValid(this.validTgts, this.srcCard.getController(), this.srcCard);
                 boolean canTarget = (!isTargeted || c.canBeTargetedBy(sa));
                 boolean isAlreadyTargeted = this.getTargetCards().contains(c);
                 if (isValidTarget && canTarget && !isAlreadyTargeted) {
-                    candidates++;
+                    candidates.add(c);
                 }
             }
         }
@@ -806,6 +824,20 @@ public class Target {
      */
     public void setDifferentZone(boolean different) {
         this.differentZone = different;
+    }
+
+    /**
+     * @return the randomTarget
+     */
+    public boolean isRandomTarget() {
+        return randomTarget;
+    }
+
+    /**
+     * @param random the randomTarget to set
+     */
+    public void setRandomTarget(boolean random) {
+        this.randomTarget = random;
     }
 
     /**

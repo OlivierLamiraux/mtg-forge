@@ -19,7 +19,9 @@ package forge.game.ai;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.google.common.base.Predicate;
@@ -30,14 +32,16 @@ import forge.CardLists;
 import forge.CardPredicates;
 import forge.CardPredicates.Presets;
 import forge.CardUtil;
-import forge.Singletons;
+import forge.Color;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.ability.effects.CharmEffect;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
+import forge.card.cost.CostDiscard;
+import forge.card.cost.CostPart;
 import forge.card.cost.CostPayment;
-import forge.card.cost.CostUtil;
+import forge.card.spellability.AbilityManaPart;
 import forge.card.spellability.AbilityStatic;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
@@ -124,6 +128,21 @@ public class ComputerUtil {
         return false;
     }
 
+    
+    private static boolean hasDiscardHandCost(final Cost cost) {
+        if (cost == null) {
+            return false;
+        }
+        for (final CostPart part : cost.getCostParts()) {
+            if (part instanceof CostDiscard) {
+                final CostDiscard disc = (CostDiscard) part;
+                if (disc.getType().equals("Hand")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     /**
      * <p>
      * counterSpellRestriction.
@@ -149,7 +168,7 @@ public class ComputerUtil {
         // String totalMana = source.getSVar("PayX"); // + cost.getCMC()
 
         // Consider the costs here for relative "scoring"
-        if (CostUtil.hasDiscardHandCost(cost)) {
+        if (hasDiscardHandCost(cost)) {
             // Null Brooch aid
             restrict -= (ai.getCardsIn(ZoneType.Hand).size() * 20);
         }
@@ -442,10 +461,11 @@ public class ComputerUtil {
      */
     public static List<Card> chooseExileFrom(final Player ai, final ZoneType zone, final String type, final Card activate,
             final Card target, final int amount) {
+        final GameState game = ai.getGame();
         List<Card> typeList = new ArrayList<Card>();
         if (zone.equals(ZoneType.Stack)) {
-            for (int i = 0; i < Singletons.getModel().getGame().getStack().size(); i++) {
-                typeList.add(Singletons.getModel().getGame().getStack().peekAbility(i).getSourceCard());
+            for (int i = 0; i < game.getStack().size(); i++) {
+                typeList.add(game.getStack().peekAbility(i).getSourceCard());
                 typeList = CardLists.getValidCards(typeList, type.split(","), activate.getController(), activate);
             }
         } else {
@@ -594,7 +614,7 @@ public class ComputerUtil {
     public static Combat getBlockers(final Player ai) {
         final List<Card> blockers = ai.getCardsIn(ZoneType.Battlefield);
 
-        return ComputerUtilBlock.getBlockers(ai, Singletons.getModel().getGame().getCombat(), blockers);
+        return ComputerUtilBlock.getBlockers(ai, ai.getGame().getCombat(), blockers);
     }
 
 
@@ -694,9 +714,10 @@ public class ComputerUtil {
         }
 
         final Player controller = card.getController();
+        final GameState game = controller.getGame();
         final List<Card> l = controller.getCardsIn(ZoneType.Battlefield);
         for (final Card c : l) {
-            for (final SpellAbility sa : c.getSpellAbility()) {
+            for (final SpellAbility sa : c.getSpellAbilities()) {
                 // This try/catch should fix the "computer is thinking" bug
                 try {
 
@@ -729,11 +750,10 @@ public class ComputerUtil {
 
                     final Target tgt = sa.getTarget();
                     if (tgt != null) {
-                        if (CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
+                        if (CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
                             return true;
                         }
-                    } else if (AbilityUtils.getDefinedCards(sa.getSourceCard(), sa.getParam("Defined"), sa)
-                            .contains(card)) {
+                    } else if (AbilityUtils.getDefinedCards(sa.getSourceCard(), sa.getParam("Defined"), sa).contains(card)) {
                         return true;
                     }
 
@@ -760,9 +780,11 @@ public class ComputerUtil {
         int prevented = 0;
 
         final Player controller = card.getController();
+        final GameState game = controller.getGame();
+
         final List<Card> l = controller.getCardsIn(ZoneType.Battlefield);
         for (final Card c : l) {
-            for (final SpellAbility sa : c.getSpellAbility()) {
+            for (final SpellAbility sa : c.getSpellAbilities()) {
                 // if SA is from AF_Counter don't add to getPlayable
                 // This try/catch should fix the "computer is thinking" bug
                 try {
@@ -777,7 +799,7 @@ public class ComputerUtil {
                         }
                         final Target tgt = sa.getTarget();
                         if (tgt != null) {
-                            if (CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
+                            if (CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), controller, sa.getSourceCard()).contains(card)) {
                                 prevented += AbilityUtils.calculateAmount(sa.getSourceCard(), sa.getParam("Amount"), sa);
                             }
 
@@ -803,7 +825,10 @@ public class ComputerUtil {
      */
     public static boolean castPermanentInMain1(final Player ai, final SpellAbility sa) {
         final Card card = sa.getSourceCard();
-        if (card.getSVar("PlayMain1").equals("TRUE")) {
+        if ("True".equals(card.getSVar("NonStackingEffect")) && card.getController().isCardInPlay(card.getName())) {
+            return false;
+        }
+        if (card.getSVar("PlayMain1").equals("TRUE") && (!card.getController().getCreaturesInPlay().isEmpty() || sa.getPayCosts().hasNoManaCost())) {
             return true;
         }
         if ((card.isCreature() && (ComputerUtil.hasACardGivingHaste(ai)
@@ -814,7 +839,7 @@ public class ComputerUtil {
         if (card.isEquipment()) {
             boolean playNow = false;
             for (Card c : card.getController().getCardsIn(ZoneType.Battlefield)) {
-                if (c.isEquipment() && ! c.isEquipping()) {
+                if (c.isEquipment() && !c.isEquipping()) {
                     playNow = false;
                     break;
                 }
@@ -894,7 +919,7 @@ public class ComputerUtil {
             List<Card> attackers = ai.getOpponent().getCreaturesInPlay();
             for (Card att : attackers) {
                 if (CombatUtil.canAttackNextTurn(att)) {
-                    combat.addAttacker(att);
+                    combat.addAttacker(att, att.getController().getOpponent());
                 }
             }
             combat = ComputerUtilBlock.getBlockers(ai, combat, ai.getCreaturesInPlay());
@@ -915,6 +940,8 @@ public class ComputerUtil {
         if (!discard.getSVar("DiscardMe").equals("")) {
             return true;
         }
+        
+        final GameState game = ai.getGame();
         final List<Card> landsInPlay = CardLists.filter(ai.getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.LANDS);
         final List<Card> landsInHand = CardLists.filter(ai.getCardsIn(ZoneType.Hand), CardPredicates.Presets.LANDS);
         final List<Card> nonLandsInHand = CardLists.getNotType(ai.getCardsIn(ZoneType.Hand), "Land");
@@ -931,8 +958,8 @@ public class ComputerUtil {
             if (discardCMC > landsInPlay.size() + landsInHand.size() + 2) {
                 // not castable for some time.
                 return true;
-            } else if (!Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)
-                    && Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.MAIN2)
+            } else if (!game.getPhaseHandler().isPlayerTurn(ai)
+                    && game.getPhaseHandler().getPhase().isAfter(PhaseType.MAIN2)
                     && discardCMC > landsInPlay.size() + landsInHand.size()
                     && discardCMC > landsInPlay.size() + 1
                     && nonLandsInHand.size() > 1) {
@@ -958,7 +985,8 @@ public class ComputerUtil {
      * @return a boolean (returns true if it's better to wait until blockers are declared).
      */
     public static boolean waitForBlocking(final SpellAbility sa) {
-        final PhaseHandler ph = Singletons.getModel().getGame().getPhaseHandler();
+        final GameState game = sa.getActivatingPlayer().getGame();
+        final PhaseHandler ph = game.getPhaseHandler();
 
         return (sa.getSourceCard().isCreature()
                 && sa.getPayCosts().hasTapCost()
@@ -999,7 +1027,7 @@ public class ComputerUtil {
         all.addAll(ai.getCardsIn(ZoneType.Hand));
     
         for (final Card c : all) {
-            for (final SpellAbility sa : c.getSpellAbility()) {
+            for (final SpellAbility sa : c.getSpellAbilities()) {
                 if (sa.getApi() == ApiType.Pump && sa.hasParam("KW") && sa.getParam("KW").contains("Haste")) {
                     return true;
                 }
@@ -1020,13 +1048,14 @@ public class ComputerUtil {
      * @since 1.0.15
      */
     public static ArrayList<Object> predictThreatenedObjects(final Player aiPlayer, final SpellAbility sa) {
+        final GameState game = aiPlayer.getGame();
         final ArrayList<Object> objects = new ArrayList<Object>();
-        if (Singletons.getModel().getGame().getStack().isEmpty()) {
+        if (game.getStack().isEmpty()) {
             return objects;
         }
     
         // check stack for something that will kill this
-        final SpellAbility topStack = Singletons.getModel().getGame().getStack().peekAbility();
+        final SpellAbility topStack = game.getStack().peekAbility();
         objects.addAll(ComputerUtil.predictThreatenedObjects(aiPlayer, sa, topStack));
     
         return objects;
@@ -1206,6 +1235,67 @@ public class ComputerUtil {
         final boolean hasLittleCmc0Cards = CardLists.getValidCards(handList, "Card.cmcEQ0", ai, null).size() < 2;
         return (handList.size() > ai.getAi().getIntProperty(AiProps.AI_MULLIGAN_THRESHOLD)) && hasLittleCmc0Cards;
 
+    }
+    
+    public static List<Card> getPartialParisCandidates(AIPlayer ai) {
+        final List<Card> candidates = new ArrayList<Card>();
+        final List<Card> handList = ai.getCardsIn(ZoneType.Hand);
+        
+        final List<Card> lands = CardLists.getValidCards(handList, "Card.Land", ai, null);
+        final List<Card> nonLands = CardLists.getValidCards(handList, "Card.nonLand", ai, null);
+        CardLists.sortByCmcDesc(nonLands);
+        
+        if(lands.size() >= 3 && lands.size() <= 4)
+            return candidates;
+        
+        if(lands.size() < 3)
+        {
+            //Not enough lands!
+            int tgtCandidates = Math.max(Math.abs(lands.size()-nonLands.size()), 3);
+            System.out.println("Partial Paris: " + ai.getName() + " lacks lands, aiming to exile " + tgtCandidates + " cards.");
+            
+            for(int i=0;i<tgtCandidates;i++)
+            {
+                candidates.add(nonLands.get(i));
+            }
+        }
+        else
+        {
+            //Too many lands!
+            //Init
+            Map<Color,List<Card>> numProducers = new HashMap<Color,List<Card>>();
+            for(Color col : Color.WUBRG)
+            {
+                numProducers.put(col, new ArrayList<Card>());
+            }
+            
+            
+            for(Card c : lands)
+            {
+                for(SpellAbility sa : c.getManaAbility())
+                {
+                    AbilityManaPart abmana = sa.getManaPart();
+                    for(Color col : Color.WUBRG)
+                    {
+                        if(abmana.canProduce(col.toString()))
+                        {
+                            numProducers.get(col).add(c);
+                        }
+                    }
+                }                
+            }
+        }
+
+        System.out.print("Partial Paris: " + ai.getName() + " may exile ");
+        for(Card c : candidates)
+        {
+            System.out.print(c.toString() + ", ");
+        }
+        System.out.println();
+        
+        if(candidates.size() < 2)
+            candidates.clear();
+        return candidates;
     }
 
 

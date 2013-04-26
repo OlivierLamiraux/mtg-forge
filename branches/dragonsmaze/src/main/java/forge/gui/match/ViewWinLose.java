@@ -103,14 +103,14 @@ public class ViewWinLose {
 
         // Assemble game log scroller.
         final FTextArea txtLog = new FTextArea();
-        txtLog.setText(Singletons.getModel().getGame().getGameLog().getLogText());
+        txtLog.setText(match.getCurrentGame().getGameLog().getLogText());
         txtLog.setFont(FSkin.getFont(14));
         txtLog.setFocusable(true); // allow highlighting and copying of log
         
         FLabel btnCopyLog = new FLabel.ButtonBuilder().text("Copy to clipboard").build();
         btnCopyLog.setCommand(new Command() {
             @Override
-            public void execute() {
+            public void run() {
                 StringSelection ss = new StringSelection(txtLog.getText());
                 try {
                     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);

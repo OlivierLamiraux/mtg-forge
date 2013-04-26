@@ -1,5 +1,6 @@
 package forge.gui.deckeditor.controllers;
 
+import java.awt.Dialog.ModalityType;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.io.File;
@@ -15,11 +16,13 @@ import forge.deck.DeckBase;
 import forge.deck.io.DeckSerializer;
 import forge.error.BugReporter;
 import forge.gui.deckeditor.CDeckEditorUI;
+import forge.gui.deckeditor.DeckImport;
 import forge.gui.deckeditor.SEditorIO;
 import forge.gui.deckeditor.tables.DeckController;
 import forge.gui.deckeditor.views.VCurrentDeck;
 import forge.gui.framework.ICDoc;
 import forge.gui.toolbox.FLabel;
+import forge.item.InventoryItem;
 import forge.properties.NewConstants;
 
 /** 
@@ -64,23 +67,23 @@ public enum CCurrentDeck implements ICDoc {
     public void initialize() {
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnSave())
             .setCommand(new Command() { @Override
-                public void execute() { SEditorIO.saveDeck(); } });
+                public void run() { SEditorIO.saveDeck(); } });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnSaveAs())
             .setCommand(new Command() { @Override
-                public void execute() { exportDeck(); } });
+                public void run() { exportDeck(); } });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnPrintProxies())
         .setCommand(new Command() { @Override
-            public void execute() { printProxies(); } });
+            public void run() { printProxies(); } });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnOpen())
             .setCommand(new Command() { @Override
-                public void execute() { openDeck(); } });
+                public void run() { openDeck(); } });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnNew())
             .setCommand(new Command() { @Override
-                public void execute() { newDeck(); } });
+                public void run() { newDeck(); } });
 
         VCurrentDeck.SINGLETON_INSTANCE.getTxfTitle().addFocusListener(new FocusAdapter() {
             @Override
@@ -99,16 +102,34 @@ public enum CCurrentDeck implements ICDoc {
         });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnRemove()).setCommand(new Command() {
-            @Override  public void execute() {
+            @Override  public void run() {
                 CDeckEditorUI.SINGLETON_INSTANCE.removeSelectedCards(false, 1);
             } });
 
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnRemove4()).setCommand(new Command() {
-            @Override  public void execute() {
+            @Override  public void run() {
                 CDeckEditorUI.SINGLETON_INSTANCE.removeSelectedCards(false, 4);
             }
         });
+
+        VCurrentDeck.SINGLETON_INSTANCE.getBtnImport()
+        .setCommand(new Command() { @Override
+            public void run() { importDeck(); } });
     }
+    
+    /**
+     * Opens dialog for importing a deck from a different MTG software.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <TItem extends InventoryItem, TModel extends DeckBase> void importDeck() {
+        final ACEditorBase<TItem, TModel> ed = (ACEditorBase<TItem, TModel>)
+                CDeckEditorUI.SINGLETON_INSTANCE.getCurrentEditorController();
+
+        final DeckImport dImport = new DeckImport(ed);
+        dImport.setModalityType(ModalityType.APPLICATION_MODAL);
+        dImport.setVisible(true);
+    }
+
 
     /* (non-Javadoc)
      * @see forge.gui.framework.ICDoc#update()

@@ -7,13 +7,13 @@ import forge.Card;
 import forge.CardLists;
 import forge.Command;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.ability.SpellAbilityEffect;
 import forge.card.ability.ai.AttachAi;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
+import forge.game.GameState;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
@@ -28,10 +28,12 @@ public class AttachEffect extends SpellAbilityEffect {
     public void resolve(SpellAbility sa) {
         if (sa.getSourceCard().isAura() && sa.isSpell()) {
 
+            final Player ap = sa.getActivatingPlayer();
             // The Spell_Permanent (Auras) version of this AF needs to
             // move the card into play before Attaching
-            sa.getSourceCard().setController(sa.getActivatingPlayer(), 0);
-            final Card c = Singletons.getModel().getGame().getAction().moveTo(sa.getActivatingPlayer().getZone(ZoneType.Battlefield), sa.getSourceCard());
+            
+            sa.getSourceCard().setController(ap, 0);
+            final Card c = ap.getGame().getAction().moveTo(ap.getZone(ZoneType.Battlefield), sa.getSourceCard());
             sa.setSourceCard(c);
         }
 
@@ -127,8 +129,6 @@ public class AttachEffect extends SpellAbilityEffect {
             final GameEntity oldEnchanted = card.getEnchanting();
             oldEnchanted.removeEnchantedBy(card);
             card.removeEnchanting(oldEnchanted);
-            card.clearEnchantCommand();
-            card.clearUnEnchantCommand();
             card.clearTriggers(); // not sure if cleartriggers is needed?
         }
 
@@ -136,7 +136,7 @@ public class AttachEffect extends SpellAbilityEffect {
             private static final long serialVersionUID = -639204333673364477L;
 
             @Override
-            public void execute() {
+            public void run() {
                 final GameEntity entity = card.getEnchanting();
                 if (entity == null) {
                     return;
@@ -184,13 +184,14 @@ public class AttachEffect extends SpellAbilityEffect {
             return false;
         }
         aura.setActivatingPlayer(source.getController());
+        final GameState game = source.getGame();
         final Target tgt = aura.getTarget();
 
         if (source.getController().isHuman()) {
             if (tgt.canTgtPlayer()) {
                 final ArrayList<Player> players = new ArrayList<Player>();
 
-                for (Player player : Singletons.getModel().getGame().getPlayers()) {
+                for (Player player : game.getPlayers()) {
                     if (player.isValid(tgt.getValidTgts(), aura.getActivatingPlayer(), source)) {
                         players.add(player);
                     }
@@ -202,7 +203,7 @@ public class AttachEffect extends SpellAbilityEffect {
                     return true;
                 }
             } else {
-                List<Card> list = Singletons.getModel().getGame().getCardsIn(tgt.getZone());
+                List<Card> list = game.getCardsIn(tgt.getZone());
                 list = CardLists.getValidCards(list, tgt.getValidTgts(), aura.getActivatingPlayer(), source);
                 if (list.isEmpty()) {
                     return false;

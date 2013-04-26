@@ -23,22 +23,20 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import forge.Singletons;
-import forge.card.BoosterGenerator;
 import forge.card.CardRules;
 import forge.card.CardRulesPredicates;
-import forge.card.UnOpenedProduct;
 import forge.item.BoosterPack;
 import forge.item.CardDb;
 import forge.item.CardPrinted;
 import forge.item.IPaperCard;
 import forge.item.InventoryItem;
+import forge.item.PrintSheet;
 import forge.item.TournamentPack;
 import forge.util.Aggregates;
 import forge.util.MyRandom;
@@ -83,11 +81,11 @@ public final class BoosterUtils {
                 colorFilters.add(CardRulesPredicates.Presets.IS_COLORLESS);
             }
 
-            colorFilters.add(CardRulesPredicates.Presets.IS_WHITE);
-            colorFilters.add(CardRulesPredicates.Presets.IS_RED);
-            colorFilters.add(CardRulesPredicates.Presets.IS_BLUE);
-            colorFilters.add(CardRulesPredicates.Presets.IS_BLACK);
-            colorFilters.add(CardRulesPredicates.Presets.IS_GREEN);
+            colorFilters.add(Predicates.and(CardRulesPredicates.Presets.IS_MONOCOLOR, CardRulesPredicates.Presets.IS_WHITE));
+            colorFilters.add(Predicates.and(CardRulesPredicates.Presets.IS_MONOCOLOR, CardRulesPredicates.Presets.IS_RED));
+            colorFilters.add(Predicates.and(CardRulesPredicates.Presets.IS_MONOCOLOR, CardRulesPredicates.Presets.IS_BLUE));
+            colorFilters.add(Predicates.and(CardRulesPredicates.Presets.IS_MONOCOLOR, CardRulesPredicates.Presets.IS_BLACK));
+            colorFilters.add(Predicates.and(CardRulesPredicates.Presets.IS_MONOCOLOR, CardRulesPredicates.Presets.IS_GREEN));
         }
 
         // This will save CPU time when sets are limited
@@ -228,9 +226,9 @@ public final class BoosterUtils {
      * 
      */
     public static Predicate<CardRules> parseRulesLimitation(final String input) {
-        if (null == input) {
-            return null;
-        }
+        if (null == input)
+            return Predicates.alwaysTrue();
+
         if (input.equalsIgnoreCase("black")) {
             return CardRulesPredicates.Presets.IS_BLACK;
         } else if (input.equalsIgnoreCase("blue")) {
@@ -260,8 +258,8 @@ public final class BoosterUtils {
         } else if (input.equalsIgnoreCase("enchantment")) {
             return CardRulesPredicates.Presets.IS_ENCHANTMENT;
         }
-        // No CardRules limitations could be parsed
-        return null;
+
+        throw new IllegalArgumentException("No CardRules limitations could be parsed from: " + input);
     }
     /**
      * parseReward - used internally to parse individual items in a challenge reward definition.
@@ -282,25 +280,17 @@ public final class BoosterUtils {
             final Predicate<CardPrinted> rar = IPaperCard.Predicates.Presets.IS_RARE_OR_MYTHIC;
 
             // Determine color ("random" defaults to null color)
-            Predicate<CardRules> col = Predicates.alwaysTrue();
-            final Predicate<CardRules> colorRules = parseRulesLimitation(temp[1]);
+            Predicate<CardRules> col = parseRulesLimitation(temp[1]);
 
-            if (colorRules != null) {
-                col = colorRules;
-            }
-
-            Function<BoosterGenerator, List<CardPrinted>> openWay = new Function<BoosterGenerator, List<CardPrinted>>() {
-                @Override
-                public List<CardPrinted> apply(BoosterGenerator arg1) {
-                    return arg1.getSingletonBoosterPack(qty);
-                }
-            };
             Predicate<CardPrinted> colorPred = Predicates.compose(col, CardPrinted.FN_GET_RULES);
             Predicate<CardPrinted> rarAndColor = Predicates.and(rar, colorPred);
             if (Singletons.getModel().getQuest().getFormat() != null) {
                 rarAndColor = Predicates.and(Singletons.getModel().getQuest().getFormat().getFilterPrinted(), rarAndColor);
             }
-            rewards.addAll(new UnOpenedProduct(openWay, new BoosterGenerator(rarAndColor)).open());
+
+            PrintSheet ps = new PrintSheet("Quest rewards");
+            ps.addAll(Iterables.filter(CardDb.instance().getAllCards(), rarAndColor));
+            rewards.addAll(ps.random(qty, true));
         } else if (temp.length == 2 && temp[0].equalsIgnoreCase("duplicate") && temp[1].equalsIgnoreCase("card")) {
             // Type 2: a duplicate card of the players choice
             rewards.add(new QuestRewardCardDuplicate());

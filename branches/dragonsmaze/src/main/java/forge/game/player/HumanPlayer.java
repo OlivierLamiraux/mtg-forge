@@ -17,7 +17,6 @@
  */
 package forge.game.player;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import forge.Card;
@@ -27,12 +26,14 @@ import forge.card.ability.ApiType;
 import forge.card.ability.effects.CharmEffect;
 import forge.card.cost.Cost;
 import forge.card.cost.CostPayment;
+import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostBeingPaid;
 import forge.card.mana.ManaCostShard;
 import forge.card.spellability.Ability;
 import forge.card.spellability.HumanPlaySpellAbility;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
+import forge.control.input.InputPayManaBase;
 import forge.control.input.InputPayManaSimple;
 import forge.control.input.InputSelectCards;
 import forge.control.input.InputSelectCardsFromList;
@@ -41,10 +42,12 @@ import forge.game.GameState;
 import forge.game.zone.ZoneType;
 
 public class HumanPlayer extends Player {
-    private PlayerControllerHuman controller;
+    private final PlayerControllerHuman controller;
+    private final LobbyPlayerHuman lobbyPlayer;
     
-    public HumanPlayer(final LobbyPlayer player, GameState game) {
-        super(player, game);
+    public HumanPlayer(final LobbyPlayerHuman player, GameState game) {
+        super(player.getName(), game);
+        lobbyPlayer = player;
         controller = new PlayerControllerHuman(game, this);
     }
 
@@ -85,10 +88,7 @@ public class HumanPlayer extends Player {
     }
 
     @Override
-    public PlayerType getType() {
-        return PlayerType.HUMAN;
-    }
-    public PlayerController getController() {
+    public PlayerControllerHuman getController() {
         return controller;
     }
     
@@ -133,7 +133,7 @@ public class HumanPlayer extends Player {
         if (newAbility) {
             CostPayment payment = null;
             if (sa.getPayCosts() == null) {
-                payment = new CostPayment(new Cost(sa.getSourceCard(), "0", sa.isAbility()), sa);
+                payment = new CostPayment(new Cost("0", sa.isAbility()), sa);
             } else {
                 payment = new CostPayment(sa.getPayCosts(), sa);
             }
@@ -141,24 +141,10 @@ public class HumanPlayer extends Player {
             final HumanPlaySpellAbility req = new HumanPlaySpellAbility(sa, payment);
             req.fillRequirements(false, false, false);
         } else {
-            ManaCostBeingPaid manaCost = new ManaCostBeingPaid(sa.getManaCost());
-            if (sa.getSourceCard().isCopiedSpell() && sa.isSpell()) {
-                manaCost = new ManaCostBeingPaid("0");
-            } else {
-                manaCost = new ManaCostBeingPaid(sa.getManaCost());
-                manaCost.applySpellCostChange(sa);
-            }
-
-            if  (!manaCost.isPaid()) {
-                FThreads.setInputAndWait(new InputPayManaSimple(game, sa, manaCost));
-            }
-
-            
-            if (manaCost.isPaid()) {
+            if (payManaCostIfNeeded(sa)) {
                 if (sa.isSpell() && !source.isCopiedSpell()) {
                     sa.setSourceCard(game.getAction().moveToStack(source));
                 }
-
                 game.getStack().add(sa);
             } 
         }
@@ -181,35 +167,36 @@ public class HumanPlayer extends Player {
         sa.setActivatingPlayer(this);
 
         if (sa.getPayCosts() != null) {
-            final CostPayment payment = new CostPayment(sa.getPayCosts(), sa);
-
-            if (!sa.isTrigger()) {
-                payment.changeCost();
-            }
-
-            final HumanPlaySpellAbility req = new HumanPlaySpellAbility(sa, payment);
+            final HumanPlaySpellAbility req = new HumanPlaySpellAbility(sa, new CostPayment(sa.getPayCosts(), sa));
             
             req.fillRequirements(useOldTargets, false, true);
         } else {
-            ManaCostBeingPaid manaCost = new ManaCostBeingPaid(sa.getManaCost());
-            if (sa.getSourceCard().isCopiedSpell() && sa.isSpell()) {
-                manaCost = new ManaCostBeingPaid("0");
-            } else {
-                manaCost = new ManaCostBeingPaid(sa.getManaCost());
-                manaCost.applySpellCostChange(sa);
-            }
-
-            if( !manaCost.isPaid() ) {
-                FThreads.setInputAndWait(new InputPayManaSimple(game, sa, manaCost));
-            }
-            
-            if (manaCost.isPaid()) {
+            if (payManaCostIfNeeded(sa)) {
                 AbilityUtils.resolve(sa, false);
             }
 
         }
     }
+
+    private boolean payManaCostIfNeeded(final SpellAbility sa) {
+        final ManaCostBeingPaid manaCost; 
+        if (sa.getSourceCard().isCopiedSpell() && sa.isSpell()) {
+            manaCost = new ManaCostBeingPaid(ManaCost.ZERO);
+        } else {
+            manaCost = new ManaCostBeingPaid(sa.getPayCosts().getTotalMana());
+            manaCost.applySpellCostChange(sa);
+        }
     
+        boolean isPaid = manaCost.isPaid();
+    
+        if( !isPaid ) {
+            InputPayManaBase inputPay = new InputPayManaSimple(game, sa, manaCost);
+            FThreads.setInputAndWait(inputPay);
+            isPaid = inputPay.isPaid();
+        }
+        return isPaid;
+    }
+
     /**
      * choose optional additional costs. For HUMAN only
      * @param activator 
@@ -220,7 +207,7 @@ public class HumanPlayer extends Player {
      */
     public SpellAbility chooseOptionalAdditionalCosts(final SpellAbility original) {
         //final HashMap<String, SpellAbility> map = new HashMap<String, SpellAbility>();
-        final ArrayList<SpellAbility> abilities = GameActionUtil.getOptionalAdditionalCosts(original);
+        final List<SpellAbility> abilities = GameActionUtil.getOptionalCosts(original);
         
         if (!original.isSpell()) {
             return original;
@@ -277,5 +264,10 @@ public class HumanPlayer extends Player {
 
             game.getStack().add(sa, x);
         }
+    }
+    
+    @Override
+    public LobbyPlayerHuman getLobbyPlayer() {
+        return lobbyPlayer;
     }
 } // end HumanPlayer class

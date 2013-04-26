@@ -17,7 +17,7 @@
  */
 package forge.control.input;
 
-import forge.Singletons;
+import forge.card.cost.Cost;
 import forge.card.mana.ManaCost;
 import forge.card.mana.ManaCostBeingPaid;
 import forge.card.spellability.SpellAbility;
@@ -62,15 +62,10 @@ public class InputPayManaExecuteCommands extends InputPayManaBase {
      *            a {@link forge.Command} object.
      */
     public InputPayManaExecuteCommands(final Player p, final String prompt, final ManaCost manaCost2) {
-        super(new SpellAbility(null) {
-            @Override
-            public void resolve() {}
-            
-            @Override 
-            public Player getActivatingPlayer() { return p; }
-
-            @Override
-            public boolean canPlay() { return false; }
+        super(new SpellAbility(null, Cost.Zero) {
+            @Override public void resolve() {}
+            @Override public Player getActivatingPlayer() { return p; }
+            @Override public boolean canPlay() { return false; }
         });
         this.originalManaCost = manaCost2;
         this.phyLifeToLose = 0;
@@ -99,9 +94,9 @@ public class InputPayManaExecuteCommands extends InputPayManaBase {
     @Override
     protected void done() {
         if (this.phyLifeToLose > 0) {
-            Singletons.getControl().getPlayer().payLife(this.phyLifeToLose, null);
+            player.payLife(this.phyLifeToLose, null);
         }
-        Singletons.getControl().getPlayer().getManaPool().clearManaPaid(this.saPaidFor, false);
+        player.getManaPool().clearManaPaid(this.saPaidFor, false);
         bPaid = true;
         this.stop();
     }
@@ -109,7 +104,7 @@ public class InputPayManaExecuteCommands extends InputPayManaBase {
     /** {@inheritDoc} */
     @Override
     protected final void onCancel() {
-        Singletons.getControl().getPlayer().getManaPool().refundManaPaid(this.saPaidFor, true);
+        player.getManaPool().refundManaPaid(this.saPaidFor, true);
         bPaid = false;
         this.stop();
     }

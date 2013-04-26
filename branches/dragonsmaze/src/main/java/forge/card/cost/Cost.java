@@ -28,6 +28,7 @@ import forge.card.mana.ManaCostBeingPaid;
 import forge.card.mana.ManaCostParser;
 import forge.card.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+import forge.gui.GuiChoose;
 import forge.util.TextUtil;
 
 /**
@@ -42,6 +43,16 @@ public class Cost {
     private boolean isAbility = true;
     private final ArrayList<CostPart> costParts = new ArrayList<CostPart>();
 
+    private boolean tapCost = false;
+
+    public final boolean hasTapCost() {
+        return this.tapCost;
+    }
+
+    public final boolean hasNoManaCost() {
+        return this.getTotalMana().isZero();
+    }
+
     /**
      * Gets the cost parts.
      * 
@@ -49,23 +60,6 @@ public class Cost {
      */
     public final List<CostPart> getCostParts() {
         return this.costParts;
-    }
-
-    private boolean tapCost = false;
-
-    public final boolean hasTapCost() {
-        return this.tapCost;
-    }
-
-    /**
-     * <p>
-     * hasNoManaCost.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public final boolean hasNoManaCost() {
-        return this.getTotalMana().isZero();
     }
 
     /**
@@ -96,19 +90,21 @@ public class Cost {
     public final ManaCost getTotalMana() {
         for (final CostPart part : this.costParts) {
             if (part instanceof CostPartMana) {
-                return new ManaCost(new ManaCostParser(part.toString()));
+                return ((CostPartMana) part).getManaToPay();
             }
         }
 
         return ManaCost.ZERO;
     }
 
-    private final String name;
-
+    private Cost(int colorlessmana) {
+        costParts.add(new CostPartMana(ManaCost.get(colorlessmana), null, false));
+    }
+    
     // Parsing Strings
 
-    public Cost(final Card card, ManaCost cost, final boolean bAbility) {
-        this(card, cost.toString(), bAbility);
+    public Cost(ManaCost cost, final boolean bAbility) {
+        this(cost.toString(), bAbility);
     }
 
     /**
@@ -122,10 +118,9 @@ public class Cost {
      * @param bAbility
      *            a boolean.
      */
-    public Cost(final Card card, String parse, final boolean bAbility) {
+    public Cost(String parse, final boolean bAbility) {
         this.isAbility = bAbility;
         // when adding new costs for cost string, place them here
-        this.name = card != null ? card.getName() : "";
 
         boolean xCantBe0 = false;
         boolean untapCost = false;
@@ -350,33 +345,14 @@ public class Cost {
         return splitStr;
     }
 
-    /**
-     * <p>
-     * changeCost.
-     * </p>
-     * 
-     * @param sa
-     *            a {@link forge.card.spellability.SpellAbility} object.
-     */
-    public final void changeCost(final SpellAbility sa) {
-        boolean costChanged = false;
-        // TODO: Change where ChangeCost happens
-        for (final CostPart part : this.costParts) {
-            if (part instanceof CostPartMana) {
-                final ManaCost mana = new ManaCost(new ManaCostParser(part.toString()));
-                final ManaCostBeingPaid changedCost = new ManaCostBeingPaid(mana);
-                changedCost.applySpellCostChange(sa);
-
-                ((CostPartMana)part).setAdjustedMana(changedCost.toManaCost());
-                costChanged = true;
-            }
+    public final Cost copyWithNoMana() {
+        Cost toRet = new Cost(0);
+        toRet.isAbility = this.isAbility;
+        for(CostPart cp : this.costParts) {
+            if (!(cp instanceof CostPartMana))
+                toRet.costParts.add(cp);
         }
-        if (!costChanged) {
-            // Spells with a cost of 0 should be affected too
-            final ManaCostBeingPaid changedCost = new ManaCostBeingPaid("0");
-            changedCost.applySpellCostChange(sa);
-            this.costParts.add(new CostPartMana(changedCost.toManaCost(), null, false));
-        }
+        return toRet;
     }
 
     public final CostPartMana getCostMana() {
@@ -501,7 +477,7 @@ public class Cost {
         boolean first = true;
 
         if (bFlag) {
-            cost.append("As an additional cost to cast ").append(this.name).append(", ");
+            cost.append("As an additional cost to cast selected card, ");
         } else {
             // usually no additional mana cost for spells
             // only three Alliances cards have additional mana costs, but they
@@ -647,4 +623,41 @@ public class Cost {
 
         return sb.toString();
     }
+    
+    public Cost add(Cost cost1) {
+        CostPartMana costPart2 = this.getCostMana();
+        for (final CostPart part : cost1.getCostParts()) {
+            if (part instanceof CostPartMana && costPart2 != null) {
+                ManaCostBeingPaid oldManaCost = new ManaCostBeingPaid(((CostPartMana) part).getMana());
+                boolean xCanBe0 = ((CostPartMana) part).canXbe0() && costPart2.canXbe0();
+                oldManaCost.combineManaCost(costPart2.getMana());
+                String r2 = costPart2.getRestiction();
+                String r1 = ((CostPartMana) part).getRestiction();
+                String r = r1 == null ? r2 : ( r2 == null ? r1 : r1+"."+r2);
+                getCostParts().remove(costPart2);
+                getCostParts().add(0, new CostPartMana(oldManaCost.toManaCost(), r, !xCanBe0));
+            } else { 
+                getCostParts().add(part);
+            }
+        }
+        return this;
+    }
+    
+    public static int chooseXValue(final Card card, final SpellAbility sa, final int maxValue) {
+        /*final String chosen = sa.getSVar("ChosenX");
+        if (chosen.length() > 0) {
+            return AbilityFactory.calculateAmount(card, "ChosenX", null);
+        }*/
+
+        final Integer[] choiceArray = new Integer[maxValue + 1];
+        for (int i = 0; i < choiceArray.length; i++) {
+            choiceArray[i] = i;
+        }
+        final Integer chosenX = GuiChoose.one(card.toString() + " - Choose a Value for X", choiceArray);
+        sa.setSVar("ChosenX", Integer.toString(chosenX));
+        card.setSVar("ChosenX", Integer.toString(chosenX));
+        return chosenX;
+    }
+    
+    public static final Cost Zero = new Cost(0);
 }

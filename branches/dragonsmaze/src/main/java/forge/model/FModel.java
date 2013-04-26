@@ -28,23 +28,21 @@ import java.util.List;
 import forge.Constant;
 import forge.Constant.Preferences;
 import forge.FThreads;
-import forge.card.BoosterData;
+import forge.card.BoosterTemplate;
 import forge.card.CardBlock;
 import forge.card.CardRulesReader;
 import forge.card.EditionCollection;
-import forge.card.FatPackData;
+import forge.card.FatPackTemplate;
 import forge.card.FormatCollection;
 import forge.card.cardfactory.CardStorageReader;
 import forge.deck.CardCollections;
 import forge.error.BugReporter;
 import forge.error.ExceptionHandler;
-import forge.game.GameState;
-import forge.game.GameType;
 import forge.game.MatchController;
 import forge.game.limited.GauntletMini;
-import forge.game.player.LobbyPlayer;
 import forge.gauntlet.GauntletData;
 import forge.item.CardDb;
+import forge.item.PrintSheet;
 import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.properties.NewConstants;
@@ -83,16 +81,16 @@ public enum FModel {
     private final CardCollections decks;
 
     private final MatchController match;
-    private GameState gameState;
 
     private final EditionCollection editions;
     private final FormatCollection formats;
-    private final IStorageView<BoosterData> boosters;
-    private final IStorageView<BoosterData> tournaments;
-    private final IStorageView<FatPackData> fatPacks;
+    private final IStorageView<BoosterTemplate> boosters;
+    private final IStorageView<BoosterTemplate> tournaments;
+    private final IStorageView<FatPackTemplate> fatPacks;
     private final IStorageView<CardBlock> blocks;
     private final IStorageView<CardBlock> fantasyBlocks;
     private final IStorageView<QuestWorld> worlds;
+    private final IStorageView<PrintSheet> printSheets;
 
     /**
      * Constructor.
@@ -148,9 +146,9 @@ public enum FModel {
 
         this.editions = CardRulesReader.editions; // CardRules ctor cannot refer to FModel, since it is not yet build by that moment
         this.formats = new FormatCollection("res/blockdata/formats.txt");
-        this.boosters = new StorageView<BoosterData>(new BoosterData.Reader("res/blockdata/boosters.txt"));
-        this.tournaments = new StorageView<BoosterData>(new BoosterData.Reader("res/blockdata/starters.txt"));
-        this.fatPacks = new StorageView<FatPackData>(new FatPackData.Reader("res/blockdata/fatpacks.txt"));
+        this.boosters = new StorageView<BoosterTemplate>(new BoosterTemplate.Reader("res/blockdata/boosters.txt"));
+        this.tournaments = new StorageView<BoosterTemplate>(new BoosterTemplate.Reader("res/blockdata/starters.txt"));
+        this.fatPacks = new StorageView<FatPackTemplate>(new FatPackTemplate.Reader("res/blockdata/fatpacks.txt"));
         this.blocks = new StorageView<CardBlock>(new CardBlock.Reader("res/blockdata/blocks.txt", editions));
         this.fantasyBlocks = new StorageView<CardBlock>(new CardBlock.Reader("res/blockdata/fantasyblocks.txt", editions));
         this.worlds = new StorageView<QuestWorld>(new QuestWorld.Reader("res/quest/world/worlds.txt"));
@@ -174,6 +172,8 @@ public enum FModel {
 
         this.decks = new CardCollections();
         this.quest = new QuestController();
+        
+        this.printSheets = new StorageView<PrintSheet>(new PrintSheet.Reader("res/blockdata/printsheets.txt"));
     }
 
     public final QuestController getQuest() {
@@ -315,15 +315,6 @@ public enum FModel {
     }
 
     /**
-     * Gets the game state model - that is, the data stored for a single game.
-     * 
-     * @return {@link forge.game.GameState}
-     */
-    public final GameState getGame() {
-        return this.gameState;
-    }
-
-    /**
      * TODO: Write javadoc for this method.
      *
      * @return the editions
@@ -371,21 +362,25 @@ public enum FModel {
         return fantasyBlocks;
     }
 
-    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.FatPackData}> */
-    public IStorageView<FatPackData> getFatPacks() {
+    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.FatPackTemplate}> */
+    public IStorageView<FatPackTemplate> getFatPacks() {
         return fatPacks;
     }
 
-    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.BoosterData}> */
-    public final IStorageView<BoosterData> getTournamentPacks() {
+    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.BoosterTemplate}> */
+    public final IStorageView<BoosterTemplate> getTournamentPacks() {
         return tournaments;
     }
 
-    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.BoosterData}> */
-    public final IStorageView<BoosterData> getBoosters() {
+    /** @return {@link forge.util.storage.IStorageView}<{@link forge.card.BoosterTemplate}> */
+    public final IStorageView<BoosterTemplate> getBoosters() {
         return boosters;
     }
 
+    public IStorageView<PrintSheet> getPrintSheets() {
+        return printSheets;
+    }
+    
     /**
      * TODO: Write javadoc for this method.
      * @param data0 {@link forge.gauntlet.GauntletData}
@@ -398,16 +393,6 @@ public enum FModel {
         return match;
     }
 
-    /**
-     * TODO: Write javadoc for this method.
-     * @param players
-     * @param input 
-     */
-    public GameState newGame(Iterable<LobbyPlayer> players, GameType type, final MatchController match0) {
-        gameState = new GameState(players,type, match0);
-        return gameState;
-    }
-
     public GauntletMini getGauntletMini() {
 
         if (gauntlet == null) {
@@ -415,4 +400,6 @@ public enum FModel {
         }
         return gauntlet;
     }
+
+
 }

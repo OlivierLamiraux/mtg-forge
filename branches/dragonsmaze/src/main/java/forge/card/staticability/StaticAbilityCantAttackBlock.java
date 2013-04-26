@@ -64,7 +64,7 @@ public class StaticAbilityCantAttackBlock {
      *            the card
      * @return a Cost
      */
-    public static Cost applyCantAttackUnlessAbility(final StaticAbility stAb, final Card card, final GameEntity target) {
+    public static Cost getAttackCost(final StaticAbility stAb, final Card card, final GameEntity target) {
         final HashMap<String, String> params = stAb.getMapParams();
         final Card hostCard = stAb.getHostCard();
 
@@ -82,9 +82,11 @@ public class StaticAbilityCantAttackBlock {
             costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar("X")));
         } else if ("Y".equals(costString)) {
             costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar("Y")));
+        } else if (params.containsKey("References")) {
+            costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar(params.get("References"))));
         }
 
-        final Cost cost = new Cost(hostCard, costString, true);
+        final Cost cost = new Cost(costString, true);
 
         return cost;
     }
@@ -94,20 +96,33 @@ public class StaticAbilityCantAttackBlock {
      * 
      * @param stAb
      *            a StaticAbility
-     * @param card
+     * @param blocker
      *            the card
      * @return a Cost
      */
-    public static Cost applyCantBlockUnlessAbility(final StaticAbility stAb, final Card card) {
+    public static Cost getBlockCost(final StaticAbility stAb, final Card blocker, final GameEntity attacker) {
         final HashMap<String, String> params = stAb.getMapParams();
         final Card hostCard = stAb.getHostCard();
 
         if (params.containsKey("ValidCard")
-                && !card.isValid(params.get("ValidCard").split(","), hostCard.getController(), hostCard)) {
+                && !blocker.isValid(params.get("ValidCard").split(","), hostCard.getController(), hostCard)) {
             return null;
         }
+        
+        if (params.containsKey("Attacker") && attacker != null
+                && !attacker.isValid(params.get("Attacker").split(","), hostCard.getController(), hostCard)) {
+            return null;
+        }
+        String costString = params.get("Cost");
+        if ("X".equals(costString)) {
+            costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar("X")));
+        } else if ("Y".equals(costString)) {
+            costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar("Y")));
+        } else if (params.containsKey("References")) {
+            costString = Integer.toString(CardFactoryUtil.xCount(hostCard, hostCard.getSVar(params.get("References"))));
+        }
 
-        final Cost cost = new Cost(hostCard, params.get("Cost"), true);
+        final Cost cost = new Cost(costString, true);
 
         return cost;
     }

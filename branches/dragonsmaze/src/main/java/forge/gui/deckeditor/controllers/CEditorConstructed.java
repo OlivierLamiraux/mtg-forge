@@ -295,6 +295,7 @@ public final class CEditorConstructed extends ACEditorBase<CardPrinted, Deck> {
         VCurrentDeck.SINGLETON_INSTANCE.getBtnSaveAs().setVisible(showOptions);
         VCurrentDeck.SINGLETON_INSTANCE.getBtnPrintProxies().setVisible(showOptions);
         VCurrentDeck.SINGLETON_INSTANCE.getTxfTitle().setVisible(showOptions);
+        VCurrentDeck.SINGLETON_INSTANCE.getBtnImport().setVisible(showOptions);
         VCurrentDeck.SINGLETON_INSTANCE.getLblTitle().setText(title);
 
         this.controller.notifyModelChanged();
@@ -317,7 +318,7 @@ public final class CEditorConstructed extends ACEditorBase<CardPrinted, Deck> {
         VCurrentDeck.SINGLETON_INSTANCE.getBtnDoSideboard().setVisible(true);
         ((FLabel) VCurrentDeck.SINGLETON_INSTANCE.getBtnDoSideboard()).setCommand(new Command() {
             @Override
-            public void execute() {
+            public void run() {
                 cycleEditorMode();
         } });
 

@@ -4,11 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.base.Predicate;
 
 import forge.Card;
 import forge.CardLists;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.ability.SpellAbilityEffect;
@@ -16,6 +17,7 @@ import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellAbilityStackInstance;
 import forge.card.spellability.Target;
+import forge.game.GameState;
 import forge.game.ai.ComputerUtilCard;
 import forge.game.ai.ComputerUtilCombat;
 import forge.game.player.Player;
@@ -39,11 +41,12 @@ public class ChooseSourceEffect extends SpellAbilityEffect {
     public void resolve(SpellAbility sa) {
         final Card host = sa.getSourceCard();
         final ArrayList<Card> chosen = new ArrayList<Card>();
+        final GameState game = sa.getActivatingPlayer().getGame();
 
         final Target tgt = sa.getTarget();
         final List<Player> tgtPlayers = getTargetPlayers(sa);
 
-        Stack<SpellAbilityStackInstance> stack = Singletons.getModel().getGame().getStack().getStack();
+        Stack<SpellAbilityStackInstance> stack = game.getStack().getStack();
 
         List<Card> permanentSources = new ArrayList<Card>();
         List<Card> stackSources = new ArrayList<Card>();
@@ -52,7 +55,7 @@ public class ChooseSourceEffect extends SpellAbilityEffect {
         List<Card> sourcesToChooseFrom = new ArrayList<Card>();
 
         // Get the list of permanent cards
-        permanentSources = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+        permanentSources = game.getCardsIn(ZoneType.Battlefield);
 
         // Get the list of cards that produce effects on the stack
         if (stack != null) {
@@ -122,9 +125,8 @@ public class ChooseSourceEffect extends SpellAbilityEffect {
             return;
         }
 
-        final String numericAmount = sa.hasParam("Amount") ? sa.getParam("Amount") : "1";
-        final int validAmount = !numericAmount.matches("[0-9][0-9]?")
-                ? CardFactoryUtil.xCount(host, host.getSVar(sa.getParam("Amount"))) : Integer.parseInt(numericAmount);
+        final String numericAmount = sa.getParamOrDefault("Amount", "1");
+        final int validAmount = StringUtils.isNumeric(numericAmount) ? Integer.parseInt(numericAmount) : CardFactoryUtil.xCount(host, host.getSVar(numericAmount));
 
         for (final Player p : tgtPlayers) {
             if ((tgt == null) || p.canBeTargetedBy(sa)) {
@@ -141,8 +143,8 @@ public class ChooseSourceEffect extends SpellAbilityEffect {
                     } else {
                         if (sa.hasParam("AILogic") && sa.getParam("AILogic").equals("NeedsPrevention")) {
                             final Player ai = sa.getActivatingPlayer();
-                            if (!Singletons.getModel().getGame().getStack().isEmpty()) {
-                                final SpellAbility topStack = Singletons.getModel().getGame().getStack().peekAbility();
+                            if (!game.getStack().isEmpty()) {
+                                final SpellAbility topStack = game.getStack().peekAbility();
                                 if (sa.hasParam("Choices") && !topStack.getSourceCard().isValid(sa.getParam("Choices"), ai, host)) {
                                     break;
                                 }
@@ -176,10 +178,10 @@ public class ChooseSourceEffect extends SpellAbilityEffect {
                                 sourcesToChooseFrom = CardLists.filter(sourcesToChooseFrom, new Predicate<Card>() {
                                     @Override
                                     public boolean apply(final Card c) {
-                                        if (!c.isAttacking(ai) || !Singletons.getModel().getGame().getCombat().isUnblocked(c)) {
+                                        if (!c.isAttacking(ai) || !game.getCombat().isUnblocked(c)) {
                                             return false;
                                         }
-                                        return ComputerUtilCombat.damageIfUnblocked(c, ai, Singletons.getModel().getGame().getCombat()) > 0;
+                                        return ComputerUtilCombat.damageIfUnblocked(c, ai, game.getCombat()) > 0;
                                     }
                                 });
                                 chosen.add(ComputerUtilCard.getBestCreatureAI(sourcesToChooseFrom));

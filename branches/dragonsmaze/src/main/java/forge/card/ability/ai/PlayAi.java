@@ -6,7 +6,6 @@ import java.util.Random;
 
 import forge.Card;
 import forge.CardLists;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.SpellAbilityAi;
 import forge.card.cost.Cost;
@@ -47,7 +46,7 @@ public class PlayAi extends SpellAbilityAi {
         }
 
         // don't use this as a response
-        if (!Singletons.getModel().getGame().getStack().isEmpty()) {
+        if (!ai.getGame().getStack().isEmpty()) {
             return false;
         }
 
@@ -58,7 +57,7 @@ public class PlayAi extends SpellAbilityAi {
         final Target tgt = sa.getTarget();
         if (tgt != null) {
             ZoneType zone = tgt.getZone().get(0);
-            cards = CardLists.getValidCards(Singletons.getModel().getGame().getCardsIn(zone), tgt.getValidTgts(), ai, source);
+            cards = CardLists.getValidCards(ai.getGame().getCardsIn(zone), tgt.getValidTgts(), ai, source);
             if (cards.isEmpty()) {
                 return false;
             }
@@ -70,5 +69,29 @@ public class PlayAi extends SpellAbilityAi {
             }
         }
         return chance;
+    }
+    
+    /**
+     * <p>
+     * doTriggerAINoCost
+     * </p>
+     * @param sa
+     *            a {@link forge.card.spellability.SpellAbility} object.
+     * @param mandatory
+     *            a boolean.
+     * @param af
+     *            a {@link forge.card.ability.AbilityFactory} object.
+     *
+     * @return a boolean.
+     */
+    @Override
+    protected boolean doTriggerAINoCost(final AIPlayer ai, final SpellAbility sa, final boolean mandatory) {
+
+        final Target tgt = sa.getTarget();
+        if (tgt != null) {
+            return false;
+        }
+
+        return true;
     }
 }

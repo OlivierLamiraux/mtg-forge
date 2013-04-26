@@ -21,16 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import forge.Singletons;
 import forge.card.BoosterGenerator;
 import forge.card.CardEdition;
 import forge.card.CardRarity;
 import forge.card.FormatCollection;
+import forge.card.SealedProductTemplate;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
 import forge.item.BoosterPack;
@@ -449,7 +453,7 @@ public final class QuestUtilCards {
      * @param count
      *            the count
      */
-    public void generateBoostersInShop(final int count) {
+    private void generateBoostersInShop(final int count) {
         for (int i = 0; i < count; i++) {
             final int rollD100 = MyRandom.getRandom().nextInt(100);
             Predicate<CardEdition> filter = rollD100 < 40 ? this.filterT2booster
@@ -468,7 +472,7 @@ public final class QuestUtilCards {
      * @param count
      *            the count
      */
-    public void generateTournamentsInShop(final int count) {
+    private void generateTournamentsInShop(final int count) {
         Predicate<CardEdition> formatFilter = CardEdition.Predicates.HAS_TOURNAMENT_PACK;
         if (qc.getFormat() != null) {
             formatFilter = Predicates.and(formatFilter, isLegalInQuestFormat(qc.getFormat()));
@@ -483,7 +487,7 @@ public final class QuestUtilCards {
      * @param count
      *            the count
      */
-    public void generateFatPacksInShop(final int count) {
+    private void generateFatPacksInShop(final int count) {
         Predicate<CardEdition> formatFilter = CardEdition.Predicates.HAS_FAT_PACK;
         if (qc.getFormat() != null) {
             formatFilter = Predicates.and(formatFilter, isLegalInQuestFormat(qc.getFormat()));
@@ -498,7 +502,7 @@ public final class QuestUtilCards {
      * @param count
      *            the count
      */
-    public void generatePreconsInShop(final int count) {
+    private void generatePreconsInShop(final int count) {
         final List<PreconDeck> meetRequirements = new ArrayList<PreconDeck>();
         for (final PreconDeck deck : QuestController.getPrecons()) {
             if (deck.getRecommendedDeals().meetsRequiremnts(this.qc.getAchievements()) &&
@@ -514,14 +518,9 @@ public final class QuestUtilCards {
      */
     private void generateCardsInShop() {
         Iterable<CardPrinted> cardList = null;
-        if (qc.getFormat() == null) {
-              cardList = CardDb.instance().getAllCards(); }
-        else {
-            cardList = Iterables.filter(CardDb.instance().getAllCards(),
-                    qc.getFormat().getFilterPrinted());
+        if (qc.getFormat() != null) {
+            cardList = Iterables.filter(CardDb.instance().getAllCards(), qc.getFormat().getFilterPrinted());
         }
-
-        final BoosterGenerator pack = new BoosterGenerator(cardList);
 
         int nLevel = this.qc.getAchievements().getLevel();
 
@@ -537,8 +536,13 @@ public final class QuestUtilCards {
         final int winPacks = this.qc.getAchievements().getWin() / winsForPack;
         final int totalPacks = Math.min(levelPacks + winPacks, maxPacks);
 
+        @SuppressWarnings("unchecked")
+        SealedProductTemplate template = new SealedProductTemplate(Lists.newArrayList(
+            Pair.of("Common", common), Pair.of("uncommon", uncommon), Pair.of("RareMythic", rare) 
+        ));
+        
         for (int i = 0; i < totalPacks; i++) {
-            this.qa.getShopList().addAllFlat(pack.getBoosterPack(common, uncommon, rare, 0, 0, 0, 0, 0, 0));
+            this.qa.getShopList().addAllFlat(BoosterGenerator.getBoosterPack(template, cardList));
         }
 
         this.generateBoostersInShop(totalPacks);
@@ -631,7 +635,7 @@ public final class QuestUtilCards {
     
     public int getCompletionPercent(String edition) {
         // get all cards in the specified edition
-        Predicate<CardPrinted> filter = IPaperCard.Predicates.printedInSets(edition);
+        Predicate<CardPrinted> filter = IPaperCard.Predicates.printedInSet(edition);
         Iterable<CardPrinted> editionCards = Iterables.filter(CardDb.instance().getAllCards(), filter);
 
         ItemPool<CardPrinted> ownedCards = qa.getCardPool();

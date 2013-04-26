@@ -44,15 +44,14 @@ import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerHandler;
 import forge.control.input.InputSelectCards;
 import forge.control.input.InputSelectCardsFromList;
+import forge.game.GameState;
 import forge.game.ai.ComputerUtilCard;
 import forge.game.ai.ComputerUtilCombat;
-import forge.game.event.TokenCreatedEvent;
 import forge.game.player.Player;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
-import forge.item.CardToken;
 import forge.util.Aggregates;
 
 /**
@@ -64,62 +63,6 @@ import forge.util.Aggregates;
  * @version $Id$
  */
 public class CardFactoryCreatures {
-    private static void getCard_Stangg(final Card card) {
-
-        final Ability ability = new Ability(card, ManaCost.ZERO) {
-            @Override
-            public void resolve() {
-                final List<Card> cl = CardFactory.makeToken("Stangg Twin",
-                        CardToken.makeTokenFileName("RG", 3, 4, "Stangg Twin"),
-                        card.getController(), "R G", new String[] { "Legendary", "Creature", "Human", "Warrior" },
-                        3, 4, new String[] { "" });
-                for(Card tok : cl) {
-                    Singletons.getModel().getGame().getAction().moveToPlay(tok);
-                }
-                Singletons.getModel().getGame().getEvents().post(new TokenCreatedEvent());
-                
-                cl.get(0).addLeavesPlayCommand(new Command() {
-                    private static final long serialVersionUID = 3367390368512271319L;
-
-                    @Override
-                    public void execute() {
-                        if (card.isInPlay()) {
-                            Singletons.getModel().getGame().getAction().sacrifice(card, null);
-                        }
-                    }
-                });
-            }
-        };
-        final StringBuilder sb = new StringBuilder();
-        sb.append("When Stangg enters the battlefield, if Stangg is on the battlefield, ");
-        sb.append("put a legendary 3/4 red and green Human Warrior creature token ");
-        sb.append("named Stangg Twin onto the battlefield.");
-        ability.setStackDescription(sb.toString());
-
-        card.addComesIntoPlayCommand(new Command() {
-            private static final long serialVersionUID = 6667896040611028600L;
-
-            @Override
-            public void execute() {
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
-
-            }
-        });
-
-        card.addLeavesPlayCommand(new Command() {
-            private static final long serialVersionUID = 1786900359843939456L;
-
-            @Override
-            public void execute() {
-                final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Stangg Twin"));
-
-                if (list.size() == 1) {
-                    Singletons.getModel().getGame().getAction().exile(list.get(0));
-                }
-            }
-        });
-    }
-
     private static void getCard_SphinxJwar(final Card card) {
         final SpellAbility ability1 = new AbilityStatic(card, ManaCost.ZERO) {
             @Override
@@ -152,7 +95,7 @@ public class CardFactoryCreatures {
     }
 
     private static void getCard_MasterOfTheWildHunt(final Card card) {
-        final Cost abCost = new Cost(card, "T", true);
+        final Cost abCost = new Cost("T", true);
         final Target abTgt = new Target(card, "Target a creature to Hunt", "Creature".split(","));
         class MasterOfTheWildHuntAbility extends AbilityActivated {
             public MasterOfTheWildHuntAbility(final Card ca, final Cost co, final Target t) {
@@ -299,115 +242,17 @@ public class CardFactoryCreatures {
         card.addSpellAbility(ability);
     }
 
-    private static void getCard_ApocalypseHydra(final Card card) {
-        final SpellAbility spell = new SpellPermanent(card) {
-            private static final long serialVersionUID = -11489323313L;
-
-            @Override
-            public void resolve() {
-                int xCounters = card.getXManaCostPaid();
-                final Card c = Singletons.getModel().getGame().getAction().moveToPlay(this.getSourceCard());
-
-                if (xCounters >= 5) {
-                    xCounters = 2 * xCounters;
-                }
-                c.addCounter(CounterType.P1P1, xCounters, true);
-            }
-        };
-        // Do not remove SpellAbilities created by AbilityFactory or
-        // Keywords.
-        card.clearFirstSpell();
-        card.addSpellAbility(spell);
-    }
-
-    private static void getCard_KinsbaileBorderguard(final Card card) {
-        final SpellAbility ability = new Ability(card, ManaCost.ZERO) {
-            @Override
-            public void resolve() {
-                card.addCounter(CounterType.P1P1, this.countKithkin(), true);
-            } // resolve()
-
-            public int countKithkin() {
-                final List<Card> kithkin =
-                        CardLists.filter(card.getController().getCardsIn(ZoneType.Battlefield), new Predicate<Card>() {
-
-                        @Override
-                        public boolean apply(final Card c) {
-                            return (c.isType("Kithkin")) && !c.equals(card);
-                        }
-
-                    });
-                return kithkin.size();
-
-            }
-        };
-        final Command intoPlay = new Command() {
-            private static final long serialVersionUID = -7067218066522935060L;
-
-            @Override
-            public void execute() {
-                final StringBuilder sb = new StringBuilder();
-                sb.append("Kinsbaile Borderguard enters the battlefield with a ");
-                sb.append("+1/+1 counter on it for each other Kithkin you control.");
-                ability.setStackDescription(sb.toString());
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
-
-            }
-        };
-
-        final SpellAbility ability2 = new Ability(card, ManaCost.ZERO) {
-            @Override
-            public void resolve() {
-                int n = card.sumAllCounters();
-                for (int i = 0; i < card.sumAllCounters(); i++) {
-                    for(Card tok : this.makeToken()) {
-                        Singletons.getModel().getGame().getAction().moveToPlay(tok);
-                    }
-                }
-                if (n > 0)
-                    Singletons.getModel().getGame().getEvents().post(new TokenCreatedEvent());
-            } // resolve()
-
-            public List<Card> makeToken() {
-                return CardFactory.makeToken("Kithkin Soldier", CardToken.makeTokenFileName("W", 1, 1, "Kithkin Soldier"),
-                        card.getController(), "W", new String[] { "Creature", "Kithkin", "Soldier" }, 1, 1, new String[] { "" });
-            }
-        };
-
-        final Command destroy = new Command() {
-            private static final long serialVersionUID = 304026662487997331L;
-
-            @Override
-            public void execute() {
-                final StringBuilder sb = new StringBuilder();
-                sb.append("When Kinsbaile Borderguard is put into a graveyard ");
-                sb.append("from play, put a 1/1 white Kithkin Soldier creature ");
-                sb.append("token onto the battlefield for each counter on it.");
-                ability2.setStackDescription(sb.toString());
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
-
-            }
-        };
-
-        card.addComesIntoPlayCommand(intoPlay);
-        card.addDestroyCommand(destroy);
-    }
-
     private static void getCard_SurturedGhoul(final Card card) {
-        final int[] numCreatures = new int[1];
-        final int[] sumPower = new int[1];
-        final int[] sumToughness = new int[1];
-
         final Command intoPlay = new Command() {
             private static final long serialVersionUID = -75234586897814L;
 
             @Override
-            public void execute() {
+            public void run() {
+                final GameState game = card.getGame();
                 int intermSumPower = 0;
                 int intermSumToughness = 0;
                 // intermSumPower = intermSumToughness = 0;
-                List<Card> creats =
-                        CardLists.filter(card.getController().getCardsIn(ZoneType.Graveyard), new Predicate<Card>() {
+                List<Card> creats = CardLists.filter(card.getController().getCardsIn(ZoneType.Graveyard), new Predicate<Card>() {
                     @Override
                     public boolean apply(final Card c) {
                         return c.isCreature() && !c.equals(card);
@@ -415,37 +260,31 @@ public class CardFactoryCreatures {
                 });
 
                 if (card.getController().isHuman()) {
-                    if (creats.size() > 0) {
-                        final List<Card> selection = GuiChoose.noneOrMany("Select creatures to sacrifice", creats);
+                    if (!creats.isEmpty()) {
+                        final List<Card> selection = GuiChoose.noneOrMany("Select creatures to exile", creats);
 
-                        numCreatures[0] = selection.size();
                         for (int m = 0; m < selection.size(); m++) {
                             intermSumPower += selection.get(m).getBaseAttack();
                             intermSumToughness += selection.get(m).getBaseDefense();
-                            Singletons.getModel().getGame().getAction().exile(selection.get(m));
+                            game.getAction().exile(selection.get(m));
                         }
                     }
 
                 } // human
                 else {
-                    int count = 0;
                     for (int i = 0; i < creats.size(); i++) {
                         final Card c = creats.get(i);
                         if ((c.getNetAttack() <= 2) && (c.getNetDefense() <= 3)) {
                             intermSumPower += c.getBaseAttack();
                             intermSumToughness += c.getBaseDefense();
-                            Singletons.getModel().getGame().getAction().exile(c);
-                            count++;
+                            game.getAction().exile(c);
                         }
                         // is this needed?
                         card.getController().getZone(ZoneType.Battlefield).updateObservers();
                     }
-                    numCreatures[0] = count;
                 }
-                sumPower[0] = intermSumPower;
-                sumToughness[0] = intermSumToughness;
-                card.setBaseAttack(sumPower[0]);
-                card.setBaseDefense(sumToughness[0]);
+                card.setBaseAttack(intermSumPower);
+                card.setBaseDefense(intermSumToughness);
             }
         };
         // Do not remove SpellAbilities created by AbilityFactory or
@@ -468,10 +307,11 @@ public class CardFactoryCreatures {
         final Ability sacOrSac = new Ability(card, ManaCost.NO_COST) {
             @Override
             public void resolve() {
+                final GameState game = player.getGame();
                 if (player.isHuman()) {
                     final InputSelectCards target = new InputSelectCards(0, Integer.MAX_VALUE) {
                         private static final long serialVersionUID = 2698036349873486664L;
-
+                        
                         @Override
                         public String getMessage() {
                             String toDisplay = cardName + " - Select any number of creatures to sacrifice.  ";
@@ -482,7 +322,7 @@ public class CardFactoryCreatures {
 
                         @Override
                         protected boolean isValidChoice(Card c) {
-                            Zone zone = Singletons.getModel().getGame().getZoneOf(c);
+                            Zone zone = game.getZoneOf(c);
                             return c.isCreature() && zone.is(ZoneType.Battlefield, player);
                         } // selectCard()
 
@@ -504,10 +344,10 @@ public class CardFactoryCreatures {
                     FThreads.setInputAndWait(target);
                     if(!target.hasCancelled()) {
                         for (final Card sac : target.getSelected()) {
-                            Singletons.getModel().getGame().getAction().sacrifice(sac, null);
+                            game.getAction().sacrifice(sac, null);
                         }
                     } else {
-                        Singletons.getModel().getGame().getAction().sacrifice(card, null);
+                        game.getAction().sacrifice(card, null);
                     }
                     
                     Singletons.getModel().getMatch().getInput().setInput(target);
@@ -535,16 +375,10 @@ public class CardFactoryCreatures {
 
     public static void buildCard(final Card card, final String cardName) {
 
-        if (cardName.equals("Stangg")) {
-            getCard_Stangg(card);
-        } else if (cardName.equals("Sphinx of Jwar Isle")) {
+        if (cardName.equals("Sphinx of Jwar Isle")) {
             getCard_SphinxJwar(card);
         } else if (cardName.equals("Master of the Wild Hunt")) {
             getCard_MasterOfTheWildHunt(card);
-        } else if (cardName.equals("Apocalypse Hydra")) {
-            getCard_ApocalypseHydra(card);
-        } else if (cardName.equals("Kinsbaile Borderguard")) {
-            getCard_KinsbaileBorderguard(card);
         } else if (cardName.equals("Sutured Ghoul")) {
             getCard_SurturedGhoul(card);
         } else if (cardName.equals("Phyrexian Dreadnought")) {
@@ -579,7 +413,7 @@ public class CardFactoryCreatures {
 
         class LevelUpAbility extends AbilityActivated {
             public LevelUpAbility(final Card ca, final String s) {
-                super(ca, new Cost(ca, manacost, true), null);
+                super(ca, new Cost(manacost, true), null);
             }
 
             @Override

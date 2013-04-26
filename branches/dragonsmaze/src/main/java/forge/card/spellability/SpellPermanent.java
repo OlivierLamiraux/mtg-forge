@@ -22,12 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.collect.Iterables;
 
 import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
-import forge.Singletons;
 import forge.card.ability.AbilityFactory;
 import forge.card.ability.ApiType;
 import forge.card.cost.Cost;
@@ -36,6 +37,7 @@ import forge.card.replacement.ReplaceMoved;
 import forge.card.replacement.ReplacementEffect;
 import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerType;
+import forge.game.GameState;
 import forge.game.GlobalRuleChange;
 import forge.game.ai.ComputerUtil;
 import forge.game.ai.ComputerUtilCost;
@@ -66,24 +68,7 @@ public class SpellPermanent extends Spell {
      *            a {@link forge.Card} object.
      */
     public SpellPermanent(final Card sourceCard) {
-        // Add Costs for all SpellPermanents
-        this(sourceCard, new Cost(sourceCard, sourceCard.getManaCost(), false), null);
-    } // Spell_Permanent()
-
-    /**
-     * Instantiates a new spell_ permanent.
-     * 
-     * @param sourceCard
-     *            the source card
-     * @param cost
-     *            the cost
-     * @param tgt
-     *            the tgt
-     * @param setDesc
-     *            the set desc
-     */
-    public SpellPermanent(final Card sourceCard, final Cost cost, final Target tgt) {
-        super(sourceCard, cost, tgt);
+        super(sourceCard, new Cost(sourceCard.getManaCost(), false));
 
         if (sourceCard.isCreature()) {
             final StringBuilder sb = new StringBuilder();
@@ -97,10 +82,8 @@ public class SpellPermanent extends Spell {
 
         this.setDescription(this.getStackDescription());
 
-        if (this.getManaCost().countX() > 0) {
-            if (!this.getSourceCard().getSVar("X").equals("")) {
-                this.setSVar("X", this.getSourceCard().getSVar("X"));
-            }
+        if (this.getPayCosts().getTotalMana().countX() > 0 && StringUtils.isNotBlank(getSourceCard().getSVar("X"))) {
+            this.setSVar("X", this.getSourceCard().getSVar("X"));
         }
 
     } // Spell_Permanent()
@@ -111,7 +94,8 @@ public class SpellPermanent extends Spell {
 
         final Card card = this.getSourceCard();
         ManaCost mana = this.getPayCosts().getTotalMana();
-        Player ai = getActivatingPlayer();
+        final Player ai = getActivatingPlayer();
+        final GameState game = ai.getGame();
         if (mana.countX() > 0) {
             // Set PayX here to maximum value.
             final int xPay = ComputerUtilMana.determineLeftoverMana(this, ai);
@@ -121,22 +105,22 @@ public class SpellPermanent extends Spell {
             card.setSVar("PayX", Integer.toString(xPay));
         }
         // Wait for Main2 if possible
-        if (Singletons.getModel().getGame().getPhaseHandler().is(PhaseType.MAIN1)
+        if (game.getPhaseHandler().is(PhaseType.MAIN1)
                 && !ComputerUtil.castPermanentInMain1(ai, this)
-                && Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)) {
+                && game.getPhaseHandler().isPlayerTurn(ai)) {
             return false;
         }
         // save cards with flash for surprise blocking
         if (card.hasKeyword("Flash")
                 && !card.hasETBTrigger()
-                && (Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai)
-                     || Singletons.getModel().getGame().getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY))) {
+                && (game.getPhaseHandler().isPlayerTurn(ai)
+                     || game.getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY))) {
             return false;
         }
         // Prevent the computer from summoning Ball Lightning type creatures after attacking
         if (card.hasKeyword("At the beginning of the end step, sacrifice CARDNAME.")
-                && (Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(ai.getOpponent())
-                     || Singletons.getModel().getGame().getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS))) {
+                && (game.getPhaseHandler().isPlayerTurn(ai.getOpponent())
+                     || game.getPhaseHandler().getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS))) {
             return false;
         }
 
@@ -181,7 +165,7 @@ public class SpellPermanent extends Spell {
 
         // check on legendary
         if (card.isType("Legendary")
-                && !Singletons.getModel().getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noLegendRule)) {
+                && !ai.getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noLegendRule)) {
             final List<Card> list = ai.getCardsIn(ZoneType.Battlefield);
             if (Iterables.any(list, CardPredicates.nameEquals(card.getName()))) {
                 return false;
@@ -227,9 +211,10 @@ public class SpellPermanent extends Spell {
 
     public static boolean checkETBEffects(final Card card, final SpellAbility sa, final ApiType api, final AIPlayer ai) {
         boolean rightapi = false;
+        final GameState game = ai.getGame();
 
         if (card.isCreature()
-                && Singletons.getModel().getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noCreatureETBTriggers)) {
+                && ai.getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.noCreatureETBTriggers)) {
             return api == null;
         }
 
@@ -255,29 +240,17 @@ public class SpellPermanent extends Spell {
                         continue;
                     }
                 } else if (params.get("ValidCard").contains("kicked")) {
-                    if (!params.get("ValidCard").contains("kicked ")) {
-                        if (!sa.isKicked()) {
-                            continue;
-                        }
-                    } else {
-                        String s = "Kicker " + params.get("ValidCard").split("kicked ")[1];
-                        boolean rightKicker = false;
-                        if (sa.getOptionalAdditionalCosts() != null) {
-                            for (String string : sa.getOptionalAdditionalCosts()) {
-                                if (string.startsWith(s)) {
-                                    rightKicker = true;
-                                }
-                            }
-                        }
-                        if (!rightKicker) {
-                            continue;
-                        }
+                    if (params.get("ValidCard").contains("kicked ")) { // want a specific kicker
+                        String s = params.get("ValidCard").split("kicked ")[1];
+                        if ( "1".equals(s) && !sa.isOptionalCostPaid(OptionalCost.Kicker1)) continue;
+                        if ( "2".equals(s) && !sa.isOptionalCostPaid(OptionalCost.Kicker2)) continue;
+                    } else if (!sa.isKicked()) { 
+                        continue;
                     }
-
                 }
             }
 
-            if (!tr.requirementsCheck()) {
+            if (!tr.requirementsCheck(game)) {
                 continue;
             }
 
@@ -352,28 +325,17 @@ public class SpellPermanent extends Spell {
                         continue;
                     }
                 } else if (params.get("ValidCard").contains("kicked")) {
-                    if (!params.get("ValidCard").contains("kicked ")) {
-                        if (!sa.isKicked()) {
-                            continue;
-                        }
-                    } else {
-                        String s = "Kicker " + params.get("ValidCard").split("kicked ")[1];
-                        boolean rightKicker = false;
-                        if (sa.getOptionalAdditionalCosts() != null) {
-                            for (String string : sa.getOptionalAdditionalCosts()) {
-                                if (string.startsWith(s)) {
-                                    rightKicker = true;
-                                }
-                            }
-                        }
-                        if (!rightKicker) {
-                            continue;
-                        }
+                    if (params.get("ValidCard").contains("kicked ")) { // want a specific kicker
+                        String s = params.get("ValidCard").split("kicked ")[1];
+                        if ( "1".equals(s) && !sa.isOptionalCostPaid(OptionalCost.Kicker1)) continue;
+                        if ( "2".equals(s) && !sa.isOptionalCostPaid(OptionalCost.Kicker2)) continue;
+                    } else if (!sa.isKicked()) { // otherwise just any must be present
+                        continue;
                     }
                 }
             }
 
-            if (!re.requirementsCheck()) {
+            if (!re.requirementsCheck(game)) {
                 continue;
             }
             final SpellAbility exSA = re.getOverridingAbility();
@@ -410,6 +372,6 @@ public class SpellPermanent extends Spell {
     public void resolve() {
         Card c = this.getSourceCard();
         c.setController(this.getActivatingPlayer(), 0);
-        Singletons.getModel().getGame().getAction().moveTo(ZoneType.Battlefield, c);
+        this.getActivatingPlayer().getGame().getAction().moveTo(ZoneType.Battlefield, c);
     }
 }

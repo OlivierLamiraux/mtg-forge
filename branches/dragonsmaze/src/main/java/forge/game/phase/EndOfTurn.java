@@ -18,12 +18,11 @@
 package forge.game.phase;
 
 import forge.Card;
-import forge.Singletons;
 import forge.card.mana.ManaCost;
 import forge.card.spellability.Ability;
 import forge.card.spellability.SpellAbility;
-import forge.game.GameLossReason;
 import forge.game.GameState;
+import forge.game.player.GameLossReason;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 
@@ -51,7 +50,7 @@ public class EndOfTurn extends Phase {
         // reset mustAttackEntity for me
         game.getPhaseHandler().getPlayerTurn().setMustAttackEntity(null);
 
-        game.getStaticEffects().rePopulateStateBasedList();
+        game.getStaticEffects().rePopulateStateBasedList(game);
 
         for (final Card c : game.getCardsIn(ZoneType.Battlefield)) {
             if (!c.isFaceDown() && c.hasKeyword("At the beginning of the end step, sacrifice CARDNAME.")) {
@@ -60,7 +59,7 @@ public class EndOfTurn extends Phase {
                     @Override
                     public void resolve() {
                         if (card.isInPlay()) {
-                            Singletons.getModel().getGame().getAction().sacrifice(card, null);
+                            card.getGame().getAction().sacrifice(card, null);
                         }
                     }
                 };
@@ -78,7 +77,7 @@ public class EndOfTurn extends Phase {
                     @Override
                     public void resolve() {
                         if (card.isInPlay()) {
-                            Singletons.getModel().getGame().getAction().exile(card);
+                            card.getGame().getAction().exile(card);
                         }
                     }
                 };
@@ -170,7 +169,7 @@ public class EndOfTurn extends Phase {
             game.getStack().addSimultaneousStackEntry(change);
         }
 
-        this.execute(this.getAt());
+        this.execute(this.at);
 
     } // executeAt()
 

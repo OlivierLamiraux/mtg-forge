@@ -18,6 +18,7 @@ import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
 import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerHandler;
+import forge.game.GameState;
 import forge.gui.GuiDialog;
 import forge.properties.ForgePreferences.FPref;
 
@@ -159,15 +160,12 @@ public class CloneEffect extends SpellAbilityEffect {
             if (keepName) {
                 tgtCard.setName(originalName);
             }
-            tgtCard.setFlipCard(true);
             //keep the Clone card image for the cloned card
             tgtCard.setImageKey(imageFileName);
 
-            if (!tgtCard.isFlipped()) {
+            if (tgtCard.getCurState() != CardCharacteristicName.Flipped) {
               tgtCard.setState(CardCharacteristicName.Original);
             }
-        } else {
-            tgtCard.setFlipCard(false);
         }
 
         //Clean up copy of cloned state
@@ -193,7 +191,7 @@ public class CloneEffect extends SpellAbilityEffect {
                 private static final long serialVersionUID = -78375985476256279L;
 
                 @Override
-                public void execute() {
+                public void run() {
                     if (cloneCard.isCloned()) {
                       cloneCard.switchStates(CardCharacteristicName.Cloner, CardCharacteristicName.Original);
                       cloneCard.setState(CardCharacteristicName.Original);
@@ -202,11 +200,12 @@ public class CloneEffect extends SpellAbilityEffect {
                 }
             };
 
+            final GameState game = sa.getActivatingPlayer().getGame();
             String duration = sa.getParam("Duration");
             if (duration.equals("UntilEndOfTurn")) {
-                Singletons.getModel().getGame().getEndOfTurn().addUntil(unclone);
+                game.getEndOfTurn().addUntil(unclone);
             } else if (duration.equals("UntilYourNextTurn")) {
-                Singletons.getModel().getGame().getCleanup().addUntilYourNextTurn(host.getController(), unclone);
+                game.getCleanup().addUntil(host.getController(), unclone);
             }
         }
 
@@ -251,7 +250,7 @@ public class CloneEffect extends SpellAbilityEffect {
                     final String actualAbility = origSVars.get(s);
                     // final SpellAbility grantedAbility = newAF.getAbility(actualAbility, tgtCard);
                     // tgtCard.addSpellAbility(grantedAbility);
-                    tgtCard.getIntrinsicAbilities().add(actualAbility);
+                    tgtCard.getUnparsedAbilities().add(actualAbility);
                 }
             }
         }

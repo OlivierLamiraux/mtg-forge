@@ -19,20 +19,13 @@ package forge.card.cardfactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
-import com.google.common.collect.Iterables;
-
 import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
 import forge.FThreads;
 import forge.CardPredicates.Presets;
-import forge.Constant;
-import forge.Singletons;
-import forge.card.CardType;
 import forge.card.cost.Cost;
 import forge.card.mana.ManaCost;
 import forge.card.spellability.Spell;
@@ -56,10 +49,10 @@ import forge.gui.GuiChoose;
  */
 public class CardFactorySorceries {
 
-    private static final void balanceLands(Spell card) {
+    private static final void balanceLands(GameState game, Spell card) {
 
         List<List<Card>> lands = new ArrayList<List<Card>>();
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
 
             lands.add(p.getLandsInPlay());
         }
@@ -70,7 +63,7 @@ public class CardFactorySorceries {
             min = Math.min(min, s);
         }
         Iterator<List<Card>> ll = lands.iterator();
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
 
             List<Card> l = ll.next();
             int sac = l.size() - min;
@@ -80,7 +73,7 @@ public class CardFactorySorceries {
             if (p.isComputer()) {
                 CardLists.shuffle(l);
                 for (int i = 0; i < sac; i++) {
-                    Singletons.getModel().getGame().getAction().sacrifice(l.get(i), card);
+                    game.getAction().sacrifice(l.get(i), card);
                 }
             } else {
                 final List<Card> list = CardLists.getType(p.getCardsIn(ZoneType.Battlefield), "Land");
@@ -94,13 +87,13 @@ public class CardFactorySorceries {
         }
     }
 
-    private static final void balanceHands(Spell spell) {
+    private static final void balanceHands(GameState game, Spell spell) {
         int min = Integer.MAX_VALUE;
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
             min = Math.min(min, p.getZone(ZoneType.Hand).size());
         }
 
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
             List<Card> hand = p.getCardsIn(ZoneType.Hand);
             int sac = hand.size() - min;
             if (sac == 0) {
@@ -121,9 +114,9 @@ public class CardFactorySorceries {
         }
     }
 
-    private static final void balanceCreatures(Spell card) {
+    private static final void balanceCreatures(GameState game, Spell card) {
         List<List<Card>> creats = new ArrayList<List<Card>>();
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
 
             creats.add(p.getCreaturesInPlay());
         }
@@ -133,7 +126,7 @@ public class CardFactorySorceries {
             min = Math.min(min, s);
         }
         Iterator<List<Card>> cc = creats.iterator();
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : game.getPlayers()) {
 
             List<Card> c = cc.next();
             int sac = c.size() - min;
@@ -165,9 +158,10 @@ public class CardFactorySorceries {
 
             @Override
             public void resolve() {
-                balanceLands(this);
-                balanceHands(this);
-                balanceCreatures(this);
+                final GameState game = this.getActivatingPlayer().getGame();
+                balanceLands(game, this);
+                balanceHands(game, this);
+                balanceCreatures(game, this);
             }
 
             @Override
@@ -193,57 +187,6 @@ public class CardFactorySorceries {
         };
     }
 
-    private static final SpellAbility getPatriarchsBidding(final Card card) {
-
-        final SpellAbility spell = new Spell(card) {
-            private static final long serialVersionUID = -2182173662547136798L;
-
-            @Override
-            public void resolve() {
-                List<String> types = new ArrayList<String>();
-                for (Player p : Singletons.getModel().getGame().getPlayers()) {
-                    if (p.isHuman()) {
-                         types.add(GuiChoose.one("Which creature type?", Constant.CardTypes.CREATURE_TYPES));
-                    } else {
-                        final HashMap<String, Integer> countInGraveyard = new HashMap<String, Integer>();
-                        final List<Card> aiGrave = p.getCardsIn(ZoneType.Graveyard);
-                        for (final Card c : Iterables.filter(aiGrave, CardPredicates.Presets.CREATURES)) {
-                            for (final String type : c.getType()) {
-                                if (CardType.isACreatureType(type)) {
-                                    Integer oldVal = countInGraveyard.get(type);
-                                    countInGraveyard.put(type, 1 + (oldVal != null ? oldVal : 0));
-                                 }
-                            }
-                        }
-                        String maxKey = "";
-                        int maxCount = -1;
-                        for (final Entry<String, Integer> entry : countInGraveyard.entrySet()) {
-                            if (entry.getValue() > maxCount) {
-                                maxKey = entry.getKey();
-                                maxCount = entry.getValue();
-                            }
-                        }
-                        types.add(maxKey.equals("") ? "Sliver" : maxKey);
-                    }
-                }
-
-                List<Card> bidded = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard), CardPredicates.Presets.CREATURES);
-                for (final Card c : bidded) {
-                    for (int i = 0; i < types.size(); i++) {
-                        if (c.isType(types.get(i))) {
-                            Singletons.getModel().getGame().getAction().moveToPlay(c);
-                            i = types.size(); // break inner loop
-                        }
-                    }
-                }
-            } // resolve()
-        }; // SpellAbility
-        final StringBuilder sb = new StringBuilder();
-        sb.append(card.getName()).append(" - choose a creature type.");
-        spell.setStackDescription(sb.toString());
-        return spell;
-    }
-
     private static final SpellAbility getTransmuteArtifact(final Card card) {
         /*
          * Sacrifice an artifact. If you do, search your library for an
@@ -255,8 +198,7 @@ public class CardFactorySorceries {
          * library.
          */
 
-        final Cost abCost = new Cost(card, "U U", false);
-        return new Spell(card, abCost, null) {
+        return new Spell(card, new Cost("U U", false)) {
             private static final long serialVersionUID = -8497142072380944393L;
 
             @Override
@@ -267,6 +209,7 @@ public class CardFactorySorceries {
             @Override
             public void resolve() {
                 final Player p = card.getController();
+                final GameState game = p.getGame();
                 int baseCMC = -1;
                 final Card[] newArtifact = new Card[1];
 
@@ -276,7 +219,7 @@ public class CardFactorySorceries {
                 if (toSac != null) {
                     final Card c = (Card) toSac;
                     baseCMC = c.getCMC();
-                    Singletons.getModel().getGame().getAction().sacrifice(c, this);
+                    game.getAction().sacrifice(c, this);
                 } else {
                     return;
                 }
@@ -295,7 +238,6 @@ public class CardFactorySorceries {
                 final int newCMC = newArtifact[0].getCMC();
 
                 // if <= baseCMC, put it onto the battlefield
-                final GameState game = Singletons.getModel().getGame(); 
                 if (newCMC <= baseCMC) {
                     game.getAction().moveToPlay(newArtifact[0]);
                 } else {
@@ -318,7 +260,6 @@ public class CardFactorySorceries {
     public static void buildCard(final Card card, final String cardName) {
 
         if (cardName.equals("Balance")) { card.addSpellAbility(getBalance(card));
-        } else if (cardName.equals("Patriarch's Bidding")) { card.addSpellAbility(getPatriarchsBidding(card));
         } else if (cardName.equals("Transmute Artifact")) { card.addSpellAbility(getTransmuteArtifact(card));
         }
     } // getCard

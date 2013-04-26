@@ -73,8 +73,16 @@ public class CostPayLife extends CostPart {
      */
     @Override
     public final boolean canPay(final SpellAbility ability) {
-        final Integer amount = this.convertAmount();
+        Integer amount = this.convertAmount();
         Player activator = ability.getActivatingPlayer();
+        if(amount == null) { // try to calculate when it's defined.
+            String sAmount = getAmount();
+            String sVar = ability.getSVar(sAmount);
+            if(!sVar.startsWith("XChoice")) {
+                amount = AbilityUtils.calculateAmount(ability.getSourceCard(), getAmount(), ability);
+            }
+        }
+        
         if ((amount != null) && !activator.canPayLife(amount)) {
             return false;
         }
@@ -120,7 +128,7 @@ public class CostPayLife extends CostPart {
                     limit = AbilityUtils.calculateAmount(source, sVar.split("LimitMax.")[1], ability);
                 }
                 int maxLifePayment = limit < life ? limit : life;
-                c = CostUtil.chooseXValue(source, ability, maxLifePayment);
+                c = Cost.chooseXValue(source, ability, maxLifePayment);
             } else {
                 c = AbilityUtils.calculateAmount(source, amount, ability);
             }

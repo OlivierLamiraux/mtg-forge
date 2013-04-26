@@ -186,9 +186,17 @@ public enum CSubmenuPreferences implements ICDoc {
             }
         });
 
+	view.getCbAltSoundSystem().addItemListener(new ItemListener() {
+	    @Override
+	    public void itemStateChanged(final ItemEvent arg0) {
+		prefs.setPref(FPref.UI_ALT_SOUND_SYSTEM, view.getCbAltSoundSystem().isSelected());
+		prefs.save();
+	    }
+	});
+
         view.getBtnReset().setCommand(new Command() {
             @Override
-            public void execute() {
+            public void run() {
                 ForgePreferences prefs = Singletons.getModel().getPreferences();
                 prefs.reset();
                 prefs.save();
@@ -222,6 +230,7 @@ public enum CSubmenuPreferences implements ICDoc {
         view.getCbScaleLarger().setSelected(prefs.getPrefBoolean(FPref.UI_SCALE_LARGER));
         view.getCbTextMana().setSelected(prefs.getPrefBoolean(FPref.UI_CARD_OVERLAY));
         view.getCbEnableSounds().setSelected(prefs.getPrefBoolean(FPref.UI_ENABLE_SOUNDS));
+	view.getCbAltSoundSystem().setSelected(prefs.getPrefBoolean(FPref.UI_ALT_SOUND_SYSTEM));
         view.reloadShortcuts();
 
         SwingUtilities.invokeLater(new Runnable() {
@@ -272,7 +281,7 @@ public enum CSubmenuPreferences implements ICDoc {
         view.getLblChooseSkin().setText("Please restart Forge (click here to close).");
         view.getLblChooseSkin().setHoverable(true);
         view.getLblChooseSkin().setCommand(new Command() { @Override
-            public void execute() { RestartUtil.restartApplication(null); } });
+            public void run() { RestartUtil.restartApplication(null); } });
 
         prefs.setPref(FPref.UI_SKIN, name);
         prefs.save();

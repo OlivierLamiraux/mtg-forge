@@ -19,6 +19,7 @@ package forge.game.zone;
 
 import java.util.List;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -27,14 +28,14 @@ import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
 import forge.CardPredicates.Presets;
-import forge.Command;
-import forge.Singletons;
 import forge.card.ability.AbilityFactory;
 import forge.card.mana.ManaCost;
 import forge.card.spellability.Ability;
 import forge.card.spellability.SpellAbility;
 import forge.card.staticability.StaticAbility;
+import forge.card.trigger.ZCTrigger;
 import forge.game.GameActionUtil;
+import forge.game.GameState;
 import forge.game.player.Player;
 
 /**
@@ -84,7 +85,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 c.setTapped(true);
             } else {
                 // ETBTapped static abilities
-                for (final Card ca : Singletons.getModel().getGame().getCardsIn(ZoneType.listValueOf("Battlefield,Command"))) {
+                for (final Card ca : c.getGame().getCardsIn(ZoneType.listValueOf("Battlefield,Command"))) {
                     for (final StaticAbility stAb : ca.getStaticAbilities()) {
                         if (stAb.applyAbility("ETBTapped", c)) {
                             // it enters the battlefield this way, and should
@@ -105,7 +106,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 final String[] k = keyword.split(":");
                 addMax = Integer.valueOf(k[2]);
                 if (k[1].equals("Each")) {
-                    for( Player p : Singletons.getModel().getGame().getPlayers() ){
+                    for( Player p : game.getPlayers() ){
                         p.addMaxLandsToPlay(addMax);
                     }
                 } else {
@@ -114,15 +115,15 @@ public class PlayerZoneBattlefield extends PlayerZone {
             }
         }*/
 
+        final GameState game = c.getGame();
         if (this.trigger) {
             c.setSickness(true); // summoning sickness
-            c.comesIntoPlay();
-
+            c.executeTrigger(ZCTrigger.ENTERFIELD);
+            
             if (c.isLand()) {
-
                 // Tectonic Instability
                 final List<Card> tis =
-                        CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tectonic Instability"));
+                        CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tectonic Instability"));
                 final Card tisLand = c;
                 for (final Card ti : tis) {
                     final Card source = ti;
@@ -139,7 +140,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                     sb.append(source).append(" - tap all lands ");
                     sb.append(tisLand.getController()).append(" controls.");
                     ability.setStackDescription(sb.toString());
-                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
+                    game.getStack().addSimultaneousStackEntry(ability);
 
                 }
 
@@ -151,16 +152,16 @@ public class PlayerZoneBattlefield extends PlayerZone {
                         
                         if (oLands.size() <= (pLands.size() - 1)) {
                             SpellAbility abSac = AbilityFactory.getAbility(le.getSVar("SacLand"), le);
-                            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(abSac);
+                            game.getStack().addSimultaneousStackEntry(abSac);
                         }
                     }
             } // isLand()
         }
 
-        if (Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
-            final String[] effects = Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().get(c.getName());
+        if (game.getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
+            final String[] effects = game.getStaticEffects().getCardToEffectsList().get(c.getName());
             for (final String effect : effects) {
-                Singletons.getModel().getGame().getStaticEffects().addStateBasedEffect(effect);
+                game.getStaticEffects().addStateBasedEffect(effect);
             }
         }
     } // end add()
@@ -205,7 +206,7 @@ public class PlayerZoneBattlefield extends PlayerZone {
                 final String[] k = keyword.split(":");
                 addMax = -Integer.valueOf(k[2]);
                 if (k[1].equals("Each")) {
-                    for(Player p: Singletons.getModel().getGame().getPlayers())
+                    for(Player p: game.getPlayers())
                         p.addMaxLandsToPlay(addMax);
                 } else {
                     c.getController().addMaxLandsToPlay(addMax);
@@ -213,19 +214,21 @@ public class PlayerZoneBattlefield extends PlayerZone {
             }
         }*/
 
+        final GameState game = c.getGame();
+        
         if (this.leavesTrigger) {
-            c.leavesPlay();
+            c.executeTrigger(ZCTrigger.LEAVEFIELD);
         }
 
-        if (Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
-            final String[] effects = Singletons.getModel().getGame().getStaticEffects().getCardToEffectsList().get(c.getName());
+        if (game.getStaticEffects().getCardToEffectsList().containsKey(c.getName())) {
+            final String[] effects = game.getStaticEffects().getCardToEffectsList().get(c.getName());
             String tempEffect = "";
             for (final String effect : effects) {
                 tempEffect = effect;
-                Singletons.getModel().getGame().getStaticEffects().removeStateBasedEffect(effect);
+                game.getStaticEffects().removeStateBasedEffect(effect);
                 // this is to make sure cards reset correctly
-                final Command comm = GameActionUtil.getCommands().get(tempEffect);
-                comm.execute();
+                final Function<GameState, ?> comm = GameActionUtil.getCommands().get(tempEffect);
+                comm.apply(game);
             }
         }
     }

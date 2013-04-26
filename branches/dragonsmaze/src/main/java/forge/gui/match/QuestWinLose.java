@@ -32,15 +32,15 @@ import javax.swing.SwingConstants;
 
 import forge.Card;
 import forge.Singletons;
-import forge.card.BoosterData;
+import forge.card.BoosterTemplate;
 import forge.card.CardEdition;
 import forge.card.UnOpenedProduct;
 import forge.control.FControl;
 import forge.game.GameEndReason;
 import forge.game.GameFormat;
-import forge.game.GameLossReason;
 import forge.game.GameOutcome;
 import forge.game.MatchController;
+import forge.game.player.GameLossReason;
 import forge.game.player.LobbyPlayer;
 import forge.game.player.Player;
 import forge.game.player.PlayerOutcome;
@@ -133,7 +133,7 @@ public class QuestWinLose extends ControlWinLose {
             if (!outcome.isDraw()) {
                 boolean isHumanWinner = outcome.getWinner().equals(questPlayer);
                 final List<CardPrinted> anteCards = new ArrayList<CardPrinted>();
-                for (Player p : Singletons.getModel().getGame().getRegisteredPlayers()) {
+                for (Player p : match.getCurrentGame().getRegisteredPlayers()) {
                     if (p.getLobbyPlayer().equals(questPlayer) == isHumanWinner) {
                         continue;
                     }
@@ -571,7 +571,7 @@ public class QuestWinLose extends ControlWinLose {
         } else {
             final List<String> sets = new ArrayList<String>();
 
-            for (BoosterData bd : Singletons.getModel().getBoosters()) {
+            for (BoosterTemplate bd : Singletons.getModel().getBoosters()) {
                 if (qData.getFormat().isSetLegal(bd.getEdition())) {
                     sets.add(bd.getEdition());
                 }
@@ -626,7 +626,7 @@ public class QuestWinLose extends ControlWinLose {
             }
             final CardEdition chooseEd = GuiChoose.one(setPrompt, chooseEditions);
 
-            cardsWon = (new UnOpenedProduct(Singletons.getModel().getBoosters().get(chooseEd.getCode()))).open();
+            cardsWon = (new UnOpenedProduct(Singletons.getModel().getBoosters().get(chooseEd.getCode()))).get();
             qData.getCards().addAllCards(cardsWon);
             this.lblTemp1 = new TitleLabel("Bonus " + chooseEd.getName() + " booster pack!");
         }

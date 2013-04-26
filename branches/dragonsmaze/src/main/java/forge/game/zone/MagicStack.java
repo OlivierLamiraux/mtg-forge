@@ -26,10 +26,8 @@ import com.esotericsoftware.minlog.Log;
 
 import forge.Card;
 import forge.CardLists;
-import forge.CardPredicates;
 import forge.FThreads;
 import forge.CardPredicates.Presets;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.cardfactory.CardFactory;
 import forge.card.cardfactory.CardFactoryUtil;
@@ -37,6 +35,7 @@ import forge.card.mana.ManaCost;
 import forge.card.spellability.Ability;
 import forge.card.spellability.AbilityStatic;
 import forge.card.spellability.AbilityTriggered;
+import forge.card.spellability.OptionalCost;
 import forge.card.spellability.Spell;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellAbilityStackInstance;
@@ -168,7 +167,7 @@ public class MagicStack extends MyObservable {
         if ((ability.getRestrictions().getActivationNumberSacrifice() != -1)
                 && (ability.getRestrictions().getNumberTurnActivations() >= ability.getRestrictions()
                         .getActivationNumberSacrifice())) {
-            ability.getSourceCard().addExtrinsicKeyword("At the beginning of the end step, sacrifice CARDNAME.");
+            ability.getSourceCard().addHiddenExtrinsicKeyword("At the beginning of the end step, sacrifice CARDNAME.");
         }
 
         // if the ability is a spell, but not a copied spell and its not already
@@ -199,7 +198,7 @@ public class MagicStack extends MyObservable {
             this.add(sa);
         }
         // Add all waiting triggers onto the stack
-        checkState |= Singletons.getModel().getGame().getTriggerHandler().runWaitingTriggers();
+        checkState |= game.getTriggerHandler().runWaitingTriggers();
         if (checkState) {
             this.chooseOrderOfSimultaneousStackEntryAll();
             game.getAction().checkStateEffects();
@@ -370,10 +369,9 @@ public class MagicStack extends MyObservable {
             game.getAction().checkStateEffects();
             //GuiDisplayUtil.updateGUI();
         } else {
-            if (sp.getOptionalAdditionalCosts() != null) {
-                for (String s : sp.getOptionalAdditionalCosts()) {
-                    sp.getSourceCard().addOptionalAdditionalCostsPaid(s);
-                }
+            for (OptionalCost s : sp.getOptionalCosts()) {
+                
+                sp.getSourceCard().addOptionalCostPaid(s);
             }
             if (sp.getSourceCard().isCopiedSpell()) {
                 this.push(sp);
@@ -385,7 +383,7 @@ public class MagicStack extends MyObservable {
 
                 if (activating.isHuman()) {
                     while(true) {
-                        int mkMagnitude = sa.getSourceCard().getMultiKickerMagnitude();
+                        int mkMagnitude = sa.getSourceCard().getKickerMagnitude();
                         String prompt = String.format("Multikicker for %s\r\nTimes Kicked: %d\r\n", sa.getSourceCard(), mkMagnitude );
                         InputPayManaExecuteCommands toSet = new InputPayManaExecuteCommands(activating, prompt, sp.getMultiKickerManaCost());
                         FThreads.setInputAndWait(toSet);
@@ -593,9 +591,10 @@ public class MagicStack extends MyObservable {
         this.freezeStack(); 
         this.setResolving(true);
 
-        final SpellAbility sa = this.pop();
-        // Sol(2012/04/06) Temporarily changed to fix multiple activation bug
-        //final SpellAbility sa = this.top();
+        // The SpellAbility isn't removed from the Stack until it finishes resolving
+        // temporarily reverted removing SAs after resolution
+        final SpellAbility sa = this.top();
+        //final SpellAbility sa = this.pop();
 
         // ActivePlayer gains priority first after Resolve
         game.getPhaseHandler().resetPriority(); 
@@ -633,6 +632,7 @@ public class MagicStack extends MyObservable {
                 }
             };
             for (int i = 0; i < creats.size(); i++) {
+                haunterDiesWork.setActivatingPlayer(sa.getActivatingPlayer());
                 if (!creats.get(i).canBeTargetedBy(haunterDiesWork)) {
                     creats.remove(i);
                     i--;
@@ -724,8 +724,9 @@ public class MagicStack extends MyObservable {
 
         // remove SA and card from the stack
         this.removeCardFromStack(sa, fizzle);
-        // Sol(2012/04/06) Temporarily removed to fix multiple activation bug
-        //this.remove(sa);
+        // SpellAbility is removed from the stack here
+        // temporarily removed removing SA after resolution
+        this.remove(sa);
 
         // After SA resolves we have to do a handful of things
         this.setResolving(false);
@@ -951,7 +952,7 @@ public class MagicStack extends MyObservable {
     public final SpellAbilityStackInstance getInstanceFromSpellAbility(final SpellAbility sa) {
         // TODO: Confirm this works!
         for (final SpellAbilityStackInstance si : this.getStack()) {
-            if (si.getSpellAbility().equals(sa)) {
+            if (si.compareToSpellAbility(sa)) {
                 return si;
             }
         }

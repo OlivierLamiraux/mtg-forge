@@ -24,9 +24,11 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang.math.IntRange;
 
+import forge.Constant;
 import forge.Singletons;
 import forge.card.CardCoreType;
 import forge.card.ColorSet;
+import forge.card.MagicColor;
 import forge.item.CardDb;
 import forge.item.CardPrinted;
 import forge.item.IPaperCard;
@@ -114,6 +116,10 @@ public enum DeckFormat {
 
     @SuppressWarnings("incomplete-switch")
     public String getDeckConformanceProblem(Deck deck) {
+        if(deck == null) {
+            return "is not selected";
+        }
+
         // That's really a bad dependence
         if (!Singletons.getModel().getPreferences().getPrefBoolean(FPref.ENFORCE_DECK_LEGALITY)) {
             return null;
@@ -146,17 +152,46 @@ public enum DeckFormat {
                 
                 ColorSet cmdCI = cmd.get(0).getRules().getColorIdentity();
                 List<CardPrinted> erroneousCI = new ArrayList<CardPrinted>();
-                
+                                
                 for(Entry<CardPrinted, Integer> cp : deck.get(DeckSection.Main)) {
                     if(!cp.getKey().getRules().getColorIdentity().hasNoColorsExcept(cmdCI.getColor()))
                     {
                         erroneousCI.add(cp.getKey());
                     }
-                }
-                for(Entry<CardPrinted, Integer> cp : deck.get(DeckSection.Sideboard)) {
-                    if(!cp.getKey().getRules().getColorIdentity().hasNoColorsExcept(cmdCI.getColor()))
+                    if(cp.getKey().getRules().getType().isLand())
                     {
-                        erroneousCI.add(cp.getKey());
+                        for(String key : Constant.Color.COLOR_TO_BASIC_LAND_TYPE_MAP.keySet())
+                        {
+                            if(!cmdCI.hasAnyColor(MagicColor.fromName(key)))
+                            {
+                                if(cp.getKey().getRules().getType().subTypeContains(Constant.Color.COLOR_TO_BASIC_LAND_TYPE_MAP.get(key)))
+                                {
+                                    erroneousCI.add(cp.getKey());
+                                }
+                            }
+                        }
+                    }
+                }
+                if(deck.get(DeckSection.Sideboard) != null)
+                {
+                    for(Entry<CardPrinted, Integer> cp : deck.get(DeckSection.Sideboard)) {
+                        if(!cp.getKey().getRules().getColorIdentity().hasNoColorsExcept(cmdCI.getColor()))
+                        {
+                            erroneousCI.add(cp.getKey());
+                        }
+                        if(cp.getKey().getRules().getType().isLand())
+                        {
+                            for(String key : Constant.Color.COLOR_TO_BASIC_LAND_TYPE_MAP.keySet())
+                            {
+                                if(!cmdCI.hasAnyColor(MagicColor.fromName(key)))
+                                {
+                                    if(cp.getKey().getRules().getType().subTypeContains(Constant.Color.COLOR_TO_BASIC_LAND_TYPE_MAP.get(key)))
+                                    {
+                                        erroneousCI.add(cp.getKey());
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 

@@ -7,7 +7,6 @@ import com.google.common.base.Predicate;
 
 import forge.Card;
 import forge.CardLists;
-import forge.Singletons;
 import forge.card.ability.SpellAbilityAi;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
@@ -25,7 +24,7 @@ import forge.util.MyRandom;
 public class EffectAi extends SpellAbilityAi {
     @Override
     protected boolean canPlayAI(AIPlayer ai, SpellAbility sa) {
-        final GameState game = Singletons.getModel().getGame();
+        final GameState game = ai.getGame();
         final Random r = MyRandom.getRandom();
         boolean randomReturn = r.nextFloat() <= .6667;
         final Player opp = ai.getOpponent();
@@ -63,7 +62,7 @@ public class EffectAi extends SpellAbilityAi {
                 final Target tgt = sa.getTarget();
                 if (tgt != null) {
                     tgt.resetTargets();
-                    List<Card> list = game.getCombat().getAttackerList();
+                    List<Card> list = game.getCombat().getAttackers();
                     list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getSourceCard());
                     list = CardLists.getTargetableCards(list, sa);
                     Card target = ComputerUtilCard.getBestCreatureAI(list);

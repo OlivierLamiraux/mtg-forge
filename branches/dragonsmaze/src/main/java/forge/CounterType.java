@@ -26,328 +26,220 @@ package forge;
  */
 public enum CounterType {
 
-    /** The AGE. */
+    M1M1("-1/-1"),
+    P1P1("+1/+1"),
+    LOYALTY,
+
     AGE(),
 
-    /** The ARROW. */
     ARROW(),
 
-    /** The ARROWHEAD. */
     ARROWHEAD(),
 
-    /** The AWAKENING. */
     AWAKENING(),
 
-    /** The BLAZE. */
     BLAZE(),
 
-    /** The BLOOD. */
     BLOOD(),
 
-    /** The BOUNTY. */
     BOUNTY(),
 
-    /** The BRIBERY. */
     BRIBERY(),
 
-    /** The CARRION. */
     CARRION(),
 
-    /** The CHARGE. */
     CHARGE(),
 
-    /** The CORPSE. */
     CORPSE(),
 
-    /** The CREDIT. */
     CREDIT(),
 
-    /** The CUBE. */
     CUBE(),
 
-    /** The CURRENCY. */
     CURRENCY(),
 
-    /** The DEATH. */
     DEATH(),
 
-    /** The DELAY. */
     DELAY(),
 
-    /** The DEPLETION. */
     DEPLETION(),
 
-    /** The DESPAIR. */
     DESPAIR(),
 
-    /** The DEVOTION. */
     DEVOTION(),
 
-    /** The DIVINITY. */
     DIVINITY(),
 
-    /** The DOOM. */
     DOOM(),
 
-    /** The ELIXIR. */
     ELIXIR(),
 
-    /** The ENERGY. */
     ENERGY(),
 
-    /** The EON. */
     EON(),
 
-    /** The EYEBALL. */
     EYEBALL(),
 
-    /** The FADE. */
     FADE(),
 
-    /** The FATE. */
     FATE(),
 
-    /** The FEATHER. */
     FEATHER(),
 
-    /** The FILIBUSTER. */
     FILIBUSTER(),
 
-    /** The FLOOD. */
     FLOOD(),
 
-    /** The FUNGUS. */
     FUNGUS(),
 
-    /** The FUSE. */
     FUSE(),
 
-    /** The GLYPH. */
     GLYPH(),
 
-    /** The GOLD. */
     GOLD(),
 
-    /** The GROWTH. */
     GROWTH(),
 
-    /** The HATCHLING. */
     HATCHLING(),
 
-    /** The HEALING. */
     HEALING(),
 
-    /** The HOOFPRINT. */
     HOOFPRINT(),
 
-    /** The HOURGLASS. */
     HOURGLASS(),
 
-    /** The ICE. */
     ICE(),
 
-    /** The INFECTION. */
     INFECTION(),
 
-    /** The INTERVENTION. */
     INTERVENTION(),
 
-    /** The JAVELIN. */
     JAVELIN(),
 
-    /** The KI. */
     KI(),
 
-    /** The LEVEL. */
     LEVEL("Level"),
 
-    /** The LORE. */
     LORE(),
 
-    /** The LOYALTY. */
-    LOYALTY(),
-
-    /** The LUCK. */
     LUCK(),
 
-    /** The M0 m1. */
     M0M1("-0/-1"),
 
-    /** The M0 m2. */
     M0M2("-0/-2"),
 
-    /** The M1 m0. */
     M1M0("-1/-0"),
 
-    /** The M1 m1. */
-    M1M1("-1/-1"),
-
-    /** The M2 m1. */
     M2M1("-2/-1"),
 
-    /** The M2 m2. */
     M2M2("-2/-2"),
 
-    /** The MANA. */
     MANA(),
 
-    /** The MANNEQUIN. */
     MANNEQUIN(),
 
-    /** The MATRIX. */
     MATRIX(),
 
-    /** The MINE. */
     MINE(),
 
-    /** The MINING. */
     MINING(),
 
-    /** The MIRE. */
     MIRE(),
 
-    /** The MUSIC. */
     MUSIC(),
-    
-    /** The MUSTER. */
+
     MUSTER(),
-    
-    /** The OMEN. */
+
     OMEN(),
 
-    /** The ORE. */
     ORE(),
 
-    /** The PAGE. */
     PAGE(),
 
-    /** The PAIN. */
     PAIN(),
 
-    /** The PARALYZATION. */
     PARALYZATION(),
 
-    /** The PETAL. */
     PETAL(),
 
-    /** The PETRIFICATION. */
     PETRIFICATION(),
 
-    /** The PIN. */
     PIN(),
 
-    /** The PLAGUE. */
     PLAGUE(),
 
-    /** The PRESSURE. */
     PRESSURE(),
 
-    /** The PHYLACTERY. */
     PHYLACTERY,
 
-    /** The POLYP. */
     POLYP(),
 
-    /** The PUPA. */
     PUPA(),
 
-    /** The P0 p1. */
     P0P1("+0/+1"),
 
-    /** The P1 p0. */
     P1P0("+1/+0"),
 
-    /** The P1 p1. */
-    P1P1("+1/+1"),
-
-    /** The P1 p2. */
     P1P2("+1/+2"),
 
-    /** The P2 p2. */
     P2P2("+2/+2"),
 
-    /** The QUEST. */
     QUEST(),
 
-    /** The SCREAM. */
+    RUST(),
+
     SCREAM(),
 
-    /** The SCROLL. */
     SCROLL(),
 
-    /** The SHELL. */
     SHELL(),
 
-    /** The SHIELD. */
     SHIELD(),
 
-    /** The SHRED. */
     SHRED(),
 
-    /** The SLEEP. */
     SLEEP(),
 
-    /** The SLEIGHT. */
     SLEIGHT(),
 
-    /** The SLIME. */
     SLIME(),
 
-    /** The SOOT. */
     SOOT(),
 
-    /** The SPORE. */
     SPORE(),
 
-    /** The STORAGE. */
     STORAGE(),
 
-    /** The STRIFE. */
     STRIFE(),
 
-    /** The STUDY. */
     STUDY(),
 
-    /** The THEFT. */
     THEFT(),
 
-    /** The TIDE. */
     TIDE(),
 
-    /** The TIME. */
     TIME(),
 
-    /** The TOWER. */
     TOWER("tower"),
 
-    /** The TRAINING. */
     TRAINING(),
 
-    /** The TRAP. */
     TRAP(),
 
-    /** The TREASURE. */
     TREASURE(),
 
-    /** The VELOCITY. */
     VELOCITY(),
 
-    /** The VERSE. */
     VERSE(),
 
-    /** The VITALITY. */
     VITALITY(),
 
-    /** The WAGE. */
     WAGE(),
 
-    /** The WINCH. */
     WINCH(),
 
-    /** The WIND. */
     WIND(),
 
-    /** The WISH. */
     WISH();
 
     private String name;
@@ -383,12 +275,6 @@ public enum CounterType {
     public String getName() {
         return this.name;
     }
-    
-
-    @Override
-    public String toString() {
-        return this.name;
-    }
 
     /**
      * <p>
@@ -402,5 +288,13 @@ public enum CounterType {
     public static CounterType getType(final String name) {
         final String replacedName = name.replace("/", "").replaceAll("\\+", "p").replaceAll("\\-", "m").toUpperCase();
         return Enum.valueOf(CounterType.class, replacedName);
+    }
+    
+    // although this should be in AI's code 
+    public boolean isNegativeCounter() {
+        CounterType c = this;
+        return (c == CounterType.AGE) || (c == CounterType.BLAZE) || (c == CounterType.BRIBERY) || (c == CounterType.DOOM)
+                || (c == CounterType.ICE) || (c == CounterType.M1M1) || (c == CounterType.M0M2) || (c == CounterType.M0M1)
+                || (c == CounterType.TIME);
     }
 }

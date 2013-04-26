@@ -35,7 +35,6 @@ import forge.CardPredicates;
 import forge.CardPredicates.Presets;
 import forge.Constant;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.card.ability.ApiType;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.CostDiscard;
@@ -173,7 +172,7 @@ public class AiController {
         final List<SpellAbility> result = new ArrayList<SpellAbility>();
         for (SpellAbility sa : newAbilities) {
             sa.setActivatingPlayer(player);
-            result.addAll(GameActionUtil.getOptionalAdditionalCosts(sa));
+            result.addAll(GameActionUtil.getOptionalCosts(sa));
         }
         result.addAll(newAbilities);
         return result;
@@ -281,7 +280,7 @@ public class AiController {
             public boolean apply(final Card c) {
                 if (c.getSVar("NeedsToPlay").length() > 0) {
                     final String needsToPlay = c.getSVar("NeedsToPlay");
-                    List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+                    List<Card> list = game.getCardsIn(ZoneType.Battlefield);
     
                     list = CardLists.getValidCards(list, needsToPlay.split(","), c.getController(), c);
                     if (list.isEmpty()) {
@@ -484,8 +483,8 @@ public class AiController {
         public int compare(final SpellAbility a, final SpellAbility b) {
             // sort from highest cost to lowest
             // we want the highest costs first
-            int a1 = a.getManaCost().getCMC();
-            int b1 = b.getManaCost().getCMC();
+            int a1 = a.getPayCosts() == null ? 0 : a.getPayCosts().getTotalMana().getCMC();
+            int b1 = b.getPayCosts() == null ? 0 : b.getPayCosts().getTotalMana().getCMC();
 
             // cast 0 mana cost spells first (might be a Mox)
             if (a1 == 0) {
@@ -502,12 +501,17 @@ public class AiController {
         
         private int getSpellAbilityPriority(SpellAbility sa) {
             int p = 0;
+            Card source = sa.getSourceCard();
             // puts creatures in front of spells
-            if (sa.getSourceCard().isCreature()) {
+            if (source.isCreature()) {
                 p += 1;
             }
             // don't play equipments before having any creatures
-            if (sa.getSourceCard().isEquipment() && sa.getSourceCard().getController().getCreaturesInPlay().isEmpty()) {
+            if (source.isEquipment() && sa.getSourceCard().getController().getCreaturesInPlay().isEmpty()) {
+                p -= 9;
+            }
+            // artifacts and enchantments with effects that do not stack
+            if ("True".equals(source.getSVar("NonStackingEffect")) && source.getController().isCardInPlay(source.getName())) {
                 p -= 9;
             }
             // sort planeswalker abilities for ultimate
@@ -666,16 +670,24 @@ public class AiController {
             
             case Encode:
                 if (logic == null) {
-                    List<Card> attackers = CardLists.filter(options, new Predicate<Card>() {
+                    final List<Card> attackers = CardLists.filter(options, new Predicate<Card>() {
                         @Override
                         public boolean apply(final Card c) {
                             return CombatUtil.canAttackNextTurn(c);
                         }
                     });
-                    if (attackers.isEmpty()) {
-                        choice = ComputerUtilCard.getBestAI(options);
-                    } else {
+                    final List<Card> unblockables = CardLists.filter(options, new Predicate<Card>() {
+                        @Override
+                        public boolean apply(final Card c) {
+                            return CombatUtil.canBeBlocked(c);
+                        }
+                    });
+                    if (!unblockables.isEmpty()) {
+                        choice = ComputerUtilCard.getBestAI(unblockables);
+                    } else if (!attackers.isEmpty()) {
                         choice = ComputerUtilCard.getBestAI(attackers);
+                    } else {
+                        choice = ComputerUtilCard.getBestAI(options);
                     }
                 }
                 return choice;
@@ -822,9 +834,8 @@ public class AiController {
         game.setCombat(new AiAttackController(player, player.getOpponent()).getAttackers());
 
         final List<Card> att = game.getCombat().getAttackers();
-        if (!att.isEmpty()) {
-            game.getPhaseHandler().setCombat(true);
-        }
+        game.getPhaseHandler().setCombat(!att.isEmpty());
+
 
         for (final Card element : att) {
             // tapping of attackers happens after Propaganda is paid for

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.collect.Lists;
 
@@ -37,15 +38,15 @@ import forge.card.trigger.Trigger;
  */
 public class CardCharacteristics {
     private String name = "";
-    private ArrayList<String> type = new ArrayList<String>();
+    private List<String> type = new CopyOnWriteArrayList<String>();
     private ManaCost manaCost = ManaCost.NO_COST;
     private ArrayList<CardColor> cardColor = new ArrayList<CardColor>();
     private int baseAttack = 0;
     private int baseDefense = 0;
     private ArrayList<String> intrinsicKeyword = new ArrayList<String>();
-    private final ArrayList<SpellAbility> spellAbility = new ArrayList<SpellAbility>();
+    private final List<SpellAbility> spellAbility = new ArrayList<SpellAbility>();
     private final List<SpellAbility> manaAbility = new ArrayList<SpellAbility>();
-    private ArrayList<String> intrinsicAbility = new ArrayList<String>();
+    private List<String> unparsedAbilities = new ArrayList<String>();
     private ArrayList<Trigger> triggers = new ArrayList<Trigger>();
     private ArrayList<ReplacementEffect> replacementEffects = new ArrayList<ReplacementEffect>();
     private ArrayList<StaticAbility> staticAbilities = new ArrayList<StaticAbility>();
@@ -80,7 +81,7 @@ public class CardCharacteristics {
      * 
      * @return the type
      */
-    public final ArrayList<String> getType() {
+    public final List<String> getType() {
         return this.type;
     }
 
@@ -91,7 +92,8 @@ public class CardCharacteristics {
      *            the type to set
      */
     public final void setType(final ArrayList<String> type0) {
-        this.type = type0;
+        this.type.clear();
+        this.type.addAll(type0);
     }
 
     /**
@@ -203,7 +205,7 @@ public class CardCharacteristics {
      * 
      * @return the spellAbility
      */
-    public final ArrayList<SpellAbility> getSpellAbility() {
+    public final List<SpellAbility> getSpellAbility() {
         return this.spellAbility;
     }
 
@@ -213,18 +215,18 @@ public class CardCharacteristics {
      * 
      * @return the intrinsicAbility
      */
-    public final ArrayList<String> getIntrinsicAbility() {
-        return this.intrinsicAbility;
+    public final List<String> getUnparsedAbilities() {
+        return this.unparsedAbilities;
     }
 
     /**
      * Sets the intrinsic ability.
      * 
-     * @param intrinsicAbility0
+     * @param list
      *            the intrinsicAbility to set
      */
-    public final void setIntrinsicAbility(final ArrayList<String> intrinsicAbility0) {
-        this.intrinsicAbility = intrinsicAbility0;
+    public final void setUnparsedAbilities(final List<String> list) {
+        this.unparsedAbilities = list;
     }
 
     /**
@@ -388,13 +390,13 @@ public class CardCharacteristics {
      * @param source
      *            a Map object.
      */
-    public final void copy(final CardCharacteristics source) {
+    public final void copyFrom(final CardCharacteristics source) {
         // Makes a "deeper" copy of a CardCharacteristics object
 
         // String name : just copy reference
         this.name = source.getName();
         // ArrayList<String> type : list of String objects so use copy constructor
-        this.type = new ArrayList<String>(source.getType());
+        this.type = new CopyOnWriteArrayList<String>(source.getType());
         // CardManaCost manaCost : not sure if a deep copy is needed
         this.manaCost = source.getManaCost();
         // ArrayList<CardColor> cardColor : not sure if a deep copy is needed
@@ -406,7 +408,7 @@ public class CardCharacteristics {
         // ArrayList<String> intrinsicKeyword : list of String objects so use copy constructor
         this.intrinsicKeyword =  new ArrayList<String>(source.getIntrinsicKeyword());
         // ArrayList<String> intrinsicAbility : list of String objects so use copy constructor
-        this.intrinsicAbility = new ArrayList<String>(source.getIntrinsicAbility());
+        this.unparsedAbilities = new ArrayList<String>(source.getUnparsedAbilities());
         // ArrayList<String> staticAbilityStrings : list of String objects so use copy constructor
         this.staticAbilityStrings = new ArrayList<String>(source.getStaticAbilityStrings());
         // String imageFilename = copy reference

@@ -20,6 +20,7 @@ package forge.game.phase;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.esotericsoftware.minlog.Log;
 
@@ -71,7 +72,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
     private Player pPlayerPriority = null;
     private Player pFirstPriority = null;
     private boolean bPhaseEffects = true;
-    private boolean bCombat = false;
+    private AtomicBoolean bCombat = new AtomicBoolean(false);
     private boolean bRepeat = false;
 
     /** The need to next phase. */
@@ -203,7 +204,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      * @return a boolean.
      */
     public final boolean inCombat() {
-        return this.bCombat;
+        return this.bCombat.get();
     }
 
     /**
@@ -214,8 +215,8 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
      * @param b
      *            a boolean.
      */
-    public final void setCombat(final boolean b) {
-        this.bCombat = b;
+    public final void setCombat(boolean value) {
+        this.bCombat.set(value);
     }
 
     /**
@@ -292,8 +293,8 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
 
             case COMBAT_DECLARE_ATTACKERS_INSTANT_ABILITY:
                 if (this.inCombat()) {
-                    PhaseUtil.handleDeclareAttackers(game.getCombat());
-                    CombatUtil.showCombat();
+                    PhaseUtil.handleDeclareAttackers(game);
+                    CombatUtil.showCombat(game);
                 } else {
                     this.setPlayersPriorityPermission(false);
                 }
@@ -302,7 +303,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
             case COMBAT_DECLARE_BLOCKERS:
                 if (this.inCombat()) {
                     game.getCombat().verifyCreaturesInPlay();
-                    CombatUtil.showCombat();
+                    CombatUtil.showCombat(game);
                 } else {
                     this.setPlayersPriorityPermission(false);
                 }
@@ -313,7 +314,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                 // blocked and trigger blocking things
                 if (this.inCombat()) {
                     PhaseUtil.handleDeclareBlockers(game);
-                    CombatUtil.showCombat();
+                    CombatUtil.showCombat(game);
                 } else {
                     this.setPlayersPriorityPermission(false);
                 }
@@ -331,7 +332,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                     } else {
                         game.getCombat().dealAssignedDamage();
                         game.getAction().checkStateEffects();
-                        CombatUtil.showCombat();
+                        CombatUtil.showCombat(game);
                     }
                 }
                 break;
@@ -347,7 +348,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                     } else {
                         game.getCombat().dealAssignedDamage();
                         game.getAction().checkStateEffects();
-                        CombatUtil.showCombat();
+                        CombatUtil.showCombat(game);
                     }
                 }
                 break;
@@ -356,12 +357,12 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                 // End Combat always happens
                 game.getEndOfCombat().executeUntil();
                 game.getEndOfCombat().executeAt();
-                CombatUtil.showCombat();
+                CombatUtil.showCombat(game);
                 //SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
                 break;
 
             case MAIN2:
-                CombatUtil.showCombat();
+                CombatUtil.showCombat(game);
                 //SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
                 break;
 
@@ -382,7 +383,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                     player.getController().autoPassCancel(); // autopass won't wrap to next turn
                 }
                 this.getPlayerTurn().removeKeyword("Skip all combat phases of this turn.");
-                game.getCleanup().executeUntilTurn(this.getNextTurn());
+                game.getCleanup().executeUntil(this.getNextTurn());
                 break;
 
             default:
@@ -439,7 +440,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                 p.loseLife(burn);
 
                 // Play the Mana Burn sound
-                Singletons.getModel().getGame().getEvents().post(new ManaBurnEvent());
+                game.getEvents().post(new ManaBurnEvent());
             }
             p.updateObservers();
         }
@@ -460,9 +461,9 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
 
             case COMBAT_END:
                 //SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
-                game.getCombat().reset();
+                game.getCombat().reset(playerTurn);
                 this.getPlayerTurn().resetAttackedThisCombat();
-                this.bCombat = false;
+                this.bCombat.set(false);
 
                 break;
 
@@ -473,7 +474,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
                 }
                 this.planarDiceRolledthisTurn = 0;
                 // Play the End Turn sound
-                Singletons.getModel().getGame().getEvents().post(new EndOfTurnEvent());
+                game.getEvents().post(new EndOfTurnEvent());
                 break;
             default: // no action
         }
@@ -538,6 +539,7 @@ public class PhaseHandler extends MyObservable implements java.io.Serializable {
 
             p.resetProwl();
             p.setLifeLostThisTurn(0);
+            p.setLifeGainedThisTurn(0);
 
             p.removeKeyword("At the beginning of this turn's end step, you lose the game.");
             p.removeKeyword("Skip the untap step of this turn.");

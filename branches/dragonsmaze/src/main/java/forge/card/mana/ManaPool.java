@@ -28,7 +28,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import forge.Constant;
-import forge.Singletons;
 import forge.card.spellability.AbilityManaPart;
 import forge.card.spellability.SpellAbility;
 import forge.game.GlobalRuleChange;
@@ -164,7 +163,7 @@ public class ManaPool {
         for (final Mana m : manaList) {
             this.addManaToPool(this.floatingMana, m);
         }
-        Singletons.getModel().getGame().getAction().checkStateEffects();
+        owner.getGame().getAction().checkStateEffects();
         owner.updateObservers();
     }
 
@@ -178,8 +177,7 @@ public class ManaPool {
     public final int clearPool(boolean isEndOfPhase) {
         int numRemoved = 0;
 
-        if (isEndOfPhase
-                && Singletons.getModel().getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.manapoolsDontEmpty)) {
+        if (isEndOfPhase && owner.getGame().getStaticEffects().getGlobalRuleChange(GlobalRuleChange.manapoolsDontEmpty)) {
             return numRemoved;
         }
 
@@ -348,7 +346,7 @@ public class ManaPool {
         }
 
         int numColorless = 0;
-        if (manaStr.matches("[0-9][0-9]?")) {
+        if (StringUtils.isNumeric(manaStr)) {
             numColorless = Integer.parseInt(manaStr);
         }
         if (numColorless >= totalMana) {
@@ -422,11 +420,11 @@ public class ManaPool {
      *            a {@link forge.card.mana.ManaCostBeingPaid} object.
      * @return a {@link forge.card.mana.ManaCostBeingPaid} object.
      */
-    public final ManaCostBeingPaid payManaFromPool(final SpellAbility saBeingPaidFor, ManaCostBeingPaid manaCost) {
+    public final void payManaFromPool(final SpellAbility saBeingPaidFor, ManaCostBeingPaid manaCost) {
 
         // paying from Mana Pool
         if (manaCost.isPaid() || this.isEmpty()) {
-            return manaCost;
+            return;
         }
 
         final ArrayList<Mana> manaPaid = saBeingPaidFor.getPayingMana();
@@ -447,8 +445,6 @@ public class ManaPool {
                 }
             }
         }
-
-        return manaCost;
     }
 
     /**
@@ -497,11 +493,7 @@ public class ManaPool {
      *            a {@link forge.card.spellability.AbilityMana} object.
      * @return a {@link forge.card.mana.ManaCostBeingPaid} object.
      */
-    public final ManaCostBeingPaid payManaFromAbility(final SpellAbility sa, ManaCostBeingPaid manaCost, final SpellAbility ma) {
-        if (manaCost.isPaid() || this.isEmpty()) {
-            return manaCost;
-        }
-
+    public final void payManaFromAbility(final SpellAbility sa, ManaCostBeingPaid manaCost, final SpellAbility ma) {
         // Mana restriction must be checked before this method is called
 
         final List<SpellAbility> paidAbs = sa.getPayingManaAbilities();
@@ -526,7 +518,6 @@ public class ManaPool {
                 }
             }
         }
-        return manaCost;
     }
 
     /**
@@ -551,10 +542,9 @@ public class ManaPool {
      *            a boolean.
      */
     public final void clearManaPaid(final SpellAbility ability, final boolean refund) {
-        final List<SpellAbility> abilitiesUsedToPay = ability.getPayingManaAbilities();
         final List<Mana> manaPaid = ability.getPayingMana();
 
-        abilitiesUsedToPay.clear();
+        ability.getPayingManaAbilities().clear();
         // move non-undoable paying mana back to floating
         if (refund) {
             if (ability.getSourceCard() != null) {

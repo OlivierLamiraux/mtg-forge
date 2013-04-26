@@ -5,10 +5,10 @@ import java.util.List;
 
 import forge.Card;
 import forge.Command;
-import forge.Singletons;
 import forge.card.ability.SpellAbilityEffect;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.Target;
+import forge.game.GameState;
 
 public class RegenerateEffect extends SpellAbilityEffect {
 
@@ -45,20 +45,21 @@ public class RegenerateEffect extends SpellAbilityEffect {
     @Override
     public void resolve(SpellAbility sa) {
         final Target tgt = sa.getTarget();
+        final GameState game = sa.getActivatingPlayer().getGame();
 
         for (final Card tgtC : getTargetCards(sa)) {
             final Command untilEOT = new Command() {
                 private static final long serialVersionUID = 1922050611313909200L;
 
                 @Override
-                public void execute() {
+                public void run() {
                     tgtC.resetShield();
                 }
             };
 
             if (tgtC.isInPlay() && ((tgt == null) || tgtC.canBeTargetedBy(sa))) {
                 tgtC.addShield();
-                Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
+                game.getEndOfTurn().addUntil(untilEOT);
             }
         }
     } // regenerateResolve

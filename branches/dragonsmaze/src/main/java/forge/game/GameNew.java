@@ -11,8 +11,6 @@ import java.util.Set;
 
 import javax.swing.JOptionPane;
 
-import org.apache.commons.lang.time.StopWatch;
-
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -21,7 +19,6 @@ import com.google.common.collect.Lists;
 import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates;
-import forge.FThreads;
 import forge.Singletons;
 import forge.card.trigger.TriggerHandler;
 import forge.card.trigger.TriggerType;
@@ -95,7 +92,6 @@ public class GameNew {
         // need this code here, otherwise observables fail
         forge.card.trigger.Trigger.resetIDs();
         TriggerHandler trigHandler = game.getTriggerHandler();
-        trigHandler.clearTriggerSettings();
         trigHandler.clearDelayedTrigger();
 
         // friendliness
@@ -120,12 +116,7 @@ public class GameNew {
             boolean canSideBoard = !isFirstGame && gameType.isSideboardingAllowed() && hasSideboard;
          
             if (canSideBoard) {
-                StopWatch sw = new StopWatch();
-                sw.start();
-                System.out.println(FThreads.debugGetCurrThreadId() + " > " + "entering sideboard routine");
                 Deck sideboarded = player.getController().sideboard(psc.getCurrentDeck(), gameType);
-                sw.stop();
-                System.out.println(FThreads.debugGetCurrThreadId() + " > " + "sideboard routine returned after " + sw.getTime() + " ms");
                 psc.setCurrentDeck(sideboarded);
             } else { 
                 psc.restoreOriginalDeck();
@@ -227,7 +218,6 @@ public class GameNew {
         // need this code here, otherwise observables fail
         forge.card.trigger.Trigger.resetIDs();
         TriggerHandler trigHandler = game.getTriggerHandler();
-        trigHandler.clearTriggerSettings();
         trigHandler.clearDelayedTrigger();
         trigHandler.cleanUpTemporaryTriggers();
         trigHandler.suppressMode(TriggerType.ChangesZone);

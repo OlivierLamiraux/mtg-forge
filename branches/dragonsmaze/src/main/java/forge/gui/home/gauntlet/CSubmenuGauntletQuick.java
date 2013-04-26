@@ -63,14 +63,14 @@ public enum CSubmenuGauntletQuick implements ICDoc {
 
     private final Command cmdRandomRegular = new Command() {
         @Override
-        public void execute() {
+        public void run() {
             DeckgenUtil.randomSelect(view.getLstDecks());
         }
     };
 
     private final Command cmdRandomColors = new Command() {
         @Override
-        public void execute() {
+        public void run() {
             view.getLstDecks().setSelectedIndices(DeckgenUtil.randomSelectColors());
         }
     };
@@ -299,8 +299,9 @@ public enum CSubmenuGauntletQuick implements ICDoc {
 
                 MatchStartHelper starter = new MatchStartHelper();
                 Lobby lobby = Singletons.getControl().getLobby();
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.HUMAN), gd.getUserDeck());
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.COMPUTER), aiDeck);
+
+                starter.addPlayer(lobby.getGuiPlayer(), gd.getUserDeck());
+                starter.addPlayer(lobby.getAiPlayer(), aiDeck);
 
                 MatchController mc = Singletons.getModel().getMatch();
                 mc.initMatch(GameType.Gauntlet, starter.getPlayerMap());

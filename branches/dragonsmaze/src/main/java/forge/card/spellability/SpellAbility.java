@@ -18,6 +18,7 @@
 package forge.card.spellability;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +28,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import forge.Card;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.cost.Cost;
-import forge.card.cost.CostPart;
 import forge.card.cost.CostPartMana;
 import forge.card.mana.Mana;
 import forge.card.mana.ManaCost;
+import forge.game.GameState;
 import forge.game.player.AIPlayer;
 import forge.game.player.Player;
 import forge.util.TextUtil;
@@ -54,14 +54,12 @@ public abstract class SpellAbility implements ISpellAbility {
     // choices for constructor isPermanent argument
     private String description = "";
     private String stackDescription = "";
-    private ManaCost manaCost = null;
     private ManaCost multiKickerManaCost = null;
     private ManaCost replicateManaCost = null;
     private Player activatingPlayer = null;
 
     private String type = "Intrinsic"; // set to Intrinsic by default
 
-    private Card targetCard;
     private Card sourceCard;
     private Card originalHost = null;
 
@@ -80,12 +78,12 @@ public abstract class SpellAbility implements ISpellAbility {
     private boolean cycling = false;
     private boolean delve = false;
 
-    /** The pay costs. */
-    private Cost payCosts = null;
-
+    private Card targetCard;
     /** The chosen target. */
     private Target chosenTarget = null;
 
+    /** The pay costs. */
+    private Cost payCosts = null;
     private SpellAbilityRestriction restrictions = new SpellAbilityRestriction();
     private SpellAbilityCondition conditions = new SpellAbilityCondition();
     private AbilitySub subAbility = null;
@@ -95,7 +93,6 @@ public abstract class SpellAbility implements ISpellAbility {
 
     private final ArrayList<Mana> payingMana = new ArrayList<Mana>();
     private final List<SpellAbility> paidAbilities = new ArrayList<SpellAbility>();
-    private ArrayList<String> optionalAdditionalCosts = new ArrayList<String>();
 
     private HashMap<String, List<Card>> paidLists = new HashMap<String, List<Card>>();
 
@@ -172,8 +169,9 @@ public abstract class SpellAbility implements ISpellAbility {
      * @param iSourceCard
      *            a {@link forge.Card} object.
      */
-    public SpellAbility(final Card iSourceCard) {
+    public SpellAbility(final Card iSourceCard, Cost toPay) {
         this.sourceCard = iSourceCard;
+        this.payCosts = toPay;
     }
 
     // Spell, and Ability, and other Ability objects override this method
@@ -218,29 +216,6 @@ public abstract class SpellAbility implements ISpellAbility {
      */
     public boolean doTrigger(final boolean mandatory, AIPlayer ai) {
         return false;
-    }
-
-    /**
-     * <p>
-     * Getter for the field <code>manaCost</code>.
-     * </p>
-     * 
-     * @return a {@link java.lang.String} object.
-     */
-    public ManaCost getManaCost() {
-        return this.manaCost;
-    }
-
-    /**
-     * <p>
-     * Setter for the field <code>manaCost</code>.
-     * </p>
-     * 
-     * @param cost
-     *            a {@link java.lang.String} object.
-     */
-    public void setManaCost(final ManaCost cost) {
-        this.manaCost = cost;
     }
 
     /**
@@ -326,43 +301,6 @@ public abstract class SpellAbility implements ISpellAbility {
     public boolean isSpell() { return false; }
     public boolean isAbility() { return true; }
 
-    /**
-     * <p>
-     * isBuyBackAbility.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public boolean isBuyBackAbility() {
-        return this.optionalAdditionalCosts.contains("Buyback");
-    }
-
-    /**
-     * <p>
-     * isKicked.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public boolean isKicked() {
-        return isOptionalAdditionalCostPaid("Kicker");
-    }
-
-    /**
-     * <p>
-     * isOptionalAdditionalCostPaid.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public boolean isOptionalAdditionalCostPaid(String cost) {
-        for (String s : this.optionalAdditionalCosts) {
-            if (s.startsWith(cost)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
      /**
      * <p>
@@ -466,6 +404,10 @@ public abstract class SpellAbility implements ISpellAbility {
      */
     public Card getOriginalHost() {
         return this.originalHost;
+    }
+
+    public String getParamOrDefault(String key, String defaultValue) { 
+        return params == null || !params.containsKey(key) ? defaultValue : params.get(key);
     }
 
     public String getParam(String key) {
@@ -688,27 +630,37 @@ public abstract class SpellAbility implements ISpellAbility {
         this.paidLists = new HashMap<String, List<Card>>();
     }
 
+    private EnumSet<OptionalCost> optionalCosts = EnumSet.noneOf(OptionalCost.class);
     /**
      * @return the optionalAdditionalCosts
      */
-    public ArrayList<String> getOptionalAdditionalCosts() {
-        return optionalAdditionalCosts;
-    }
-
-    /**
-     * @param costs the optionalAdditionalCosts to set
-     */
-    public final void setOptionalAdditionalCosts(ArrayList<String> costs) {
-        this.optionalAdditionalCosts = costs;
+    public Iterable<OptionalCost> getOptionalCosts() {
+        return optionalCosts;
     }
 
     /**
      * @param cost the optionalAdditionalCost to add
      */
-    public final void addOptionalAdditionalCosts(String cost) {
-        this.optionalAdditionalCosts.add(cost);
+    public final void addOptionalCost(OptionalCost cost) {
+        // Optional costs are added to swallow copies of original SAs, 
+        // Thus, to protect the original's set from changes, we make a copy right here.
+        this.optionalCosts = EnumSet.copyOf(optionalCosts);
+        this.optionalCosts.add(cost);
     }
 
+    public boolean isBuyBackAbility() {
+        return isOptionalCostPaid(OptionalCost.Buyback);
+    }
+
+    public boolean isKicked() {
+        return isOptionalCostPaid(OptionalCost.Kicker1) || isOptionalCostPaid(OptionalCost.Kicker2);
+    }
+
+    public boolean isOptionalCostPaid(OptionalCost cost) {
+        SpellAbility saRoot = this.getRootAbility();
+        return saRoot.optionalCosts.contains(cost);
+    }
+    
     /**
      * <p>
      * Getter for the field <code>triggeringObjects</code>.
@@ -959,6 +911,15 @@ public abstract class SpellAbility implements ISpellAbility {
         return sb.toString();
     }
 
+    public void appendSubAbility(final AbilitySub toAdd) {
+        SpellAbility tailend = this;
+        while (tailend.getSubAbility() != null) {
+            tailend = tailend.getSubAbility();
+        }
+        tailend.setSubAbility(toAdd);
+    }
+    
+    
     /**
      * <p>
      * Setter for the field <code>subAbility</code>.
@@ -1122,17 +1083,8 @@ public abstract class SpellAbility implements ISpellAbility {
     }
     
     public SpellAbility copyWithNoManaCost() {
-        final SpellAbility newSA = this;
-        final Cost cost = new Cost(this.getSourceCard(), "", false);
-        if (newSA.getPayCosts() != null) {
-            for (final CostPart part : newSA.getPayCosts().getCostParts()) {
-                if (!(part instanceof CostPartMana)) {
-                    cost.getCostParts().add(part);
-                }
-            }
-        }
-        newSA.setPayCosts(cost);
-        newSA.setManaCost(ManaCost.NO_COST);
+        final SpellAbility newSA = this.copy();
+        newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
         newSA.setDescription(newSA.getDescription() + " (without paying its mana cost)");
         return newSA;
     }
@@ -1402,9 +1354,10 @@ public abstract class SpellAbility implements ISpellAbility {
     public List<Card> knownDetermineDefined(final String defined) {
         final List<Card> ret = new ArrayList<Card>();
         final List<Card> list = AbilityUtils.getDefinedCards(getSourceCard(), defined, this);
-
+        final GameState game = getActivatingPlayer().getGame();
+        
         for (final Card c : list) {
-            final Card actualCard = Singletons.getModel().getGame().getCardState(c);
+            final Card actualCard = game.getCardState(c);
             ret.add(actualCard);
         }
         return ret;
@@ -1743,5 +1696,5 @@ public abstract class SpellAbility implements ISpellAbility {
     public boolean isXCost() {
         CostPartMana cm = payCosts != null ? getPayCosts().getCostMana() : null;
         return cm != null && cm.getAmountOfX() > 0; 
-    }    
+    }
 }

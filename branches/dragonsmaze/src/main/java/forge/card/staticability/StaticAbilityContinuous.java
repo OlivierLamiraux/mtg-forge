@@ -22,10 +22,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import forge.Card;
 import forge.CardLists;
 import forge.CardUtil;
-import forge.Singletons;
 import forge.StaticEffect;
 import forge.StaticEffects;
 import forge.card.CardType;
@@ -38,6 +39,7 @@ import forge.card.spellability.AbilityActivated;
 import forge.card.spellability.SpellAbility;
 import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerHandler;
+import forge.game.GameState;
 import forge.game.GlobalRuleChange;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
@@ -62,13 +64,14 @@ public class StaticAbilityContinuous {
         final StaticEffect se = new StaticEffect();
         final List<Card> affectedCards = StaticAbilityContinuous.getAffectedCards(stAb);
         final ArrayList<Player> affectedPlayers = StaticAbilityContinuous.getAffectedPlayers(stAb);
+        final GameState game = hostCard.getGame();
 
         se.setAffectedCards(affectedCards);
         se.setAffectedPlayers(affectedPlayers);
         se.setParams(params);
         se.setTimestamp(hostCard.getTimestamp());
         se.setSource(hostCard);
-        Singletons.getModel().getGame().getStaticEffects().addStaticEffect(se);
+        game.getStaticEffects().addStaticEffect(se);
 
         String addP = "";
         int powerBonus = 0;
@@ -98,36 +101,32 @@ public class StaticAbilityContinuous {
 
         //Global rules changes
         if (params.containsKey("GlobalRule")) {
-            final StaticEffects effects = Singletons.getModel().getGame().getStaticEffects();
+            final StaticEffects effects = game.getStaticEffects();
             effects.setGlobalRuleChange(GlobalRuleChange.fromString(params.get("GlobalRule")));
         }
 
         if (params.containsKey("SetPower")) {
             setP = params.get("SetPower");
-            setPower = setP.matches("[0-9][0-9]?") ? Integer.parseInt(setP)
-                    : AbilityUtils.calculateAmount(hostCard, setP, null);
+            setPower = AbilityUtils.calculateAmount(hostCard, setP, null);
         }
 
         if (params.containsKey("SetToughness")) {
             setT = params.get("SetToughness");
-            setToughness = setT.matches("[0-9][0-9]?") ? Integer.parseInt(setT)
-                    : AbilityUtils.calculateAmount(hostCard, setT, null);
+            setToughness = AbilityUtils.calculateAmount(hostCard, setT, null);
         }
 
         if (params.containsKey("AddPower")) {
             addP = params.get("AddPower");
-            powerBonus = addP.matches("[0-9][0-9]?") ? Integer.parseInt(addP)
-                    : AbilityUtils.calculateAmount(hostCard, addP, null);
-            if (!addP.matches("[0-9][0-9]?") && !addP.equals("AffectedX")) {
+            powerBonus = AbilityUtils.calculateAmount(hostCard, addP, null);
+            if (!StringUtils.isNumeric(addP) && !addP.equals("AffectedX")) {
                 se.setXValue(powerBonus);
             }
         }
 
         if (params.containsKey("AddToughness")) {
             addT = params.get("AddToughness");
-            toughnessBonus = addT.matches("[0-9][0-9]?") ? Integer.parseInt(addT)
-                    : AbilityUtils.calculateAmount(hostCard, addT, null);
-            if (!addT.matches("[0-9][0-9]?") && !addT.equals("AffectedX")) {
+            toughnessBonus = AbilityUtils.calculateAmount(hostCard, addT, null);
+            if (!StringUtils.isNumeric(addT) && !addT.equals("AffectedX")) {
                 se.setYValue(toughnessBonus);
             }
         }
@@ -275,7 +274,7 @@ public class StaticAbilityContinuous {
                 }
             }
 
-            List<Card> cardsIGainedAbilitiesFrom = Singletons.getModel().getGame().getCardsIn(validZones);
+            List<Card> cardsIGainedAbilitiesFrom = game.getCardsIn(validZones);
             cardsIGainedAbilitiesFrom = CardLists.getValidCards(cardsIGainedAbilitiesFrom, valids, hostCard.getController(), hostCard);
 
             if (cardsIGainedAbilitiesFrom.size() > 0) {
@@ -312,16 +311,14 @@ public class StaticAbilityContinuous {
                 if (mhs.equals("Unlimited")) {
                     p.setUnlimitedHandSize(true);
                 } else {
-                    int max = mhs.matches("[0-9][0-9]?") ? Integer.parseInt(mhs)
-                            : AbilityUtils.calculateAmount(hostCard, mhs, null);
+                    int max = AbilityUtils.calculateAmount(hostCard, mhs, null);
                     p.setMaxHandSize(max);
                 }
             }
 
             if (params.containsKey("RaiseMaxHandSize")) {
                 String rmhs = params.get("RaiseMaxHandSize");
-                int rmax = rmhs.matches("[0-9][0-9]?") ? Integer.parseInt(rmhs)
-                        : AbilityUtils.calculateAmount(hostCard, rmhs, null);
+                int rmax = AbilityUtils.calculateAmount(hostCard, rmhs, null);
                 p.setMaxHandSize(p.getMaxHandSize() + rmax);
             }
         }
@@ -405,7 +402,13 @@ public class StaticAbilityContinuous {
 
             // add abilities
             if (addAbilities != null) {
-                for (final String abilty : addAbilities) {
+                for (String abilty : addAbilities) {
+                    if (abilty.contains("CardManaCost")) {
+                        abilty = abilty.replace("CardManaCost", affectedCard.getManaCost().toString());
+                    } else if (abilty.contains("ConvertedManaCost")) {
+                        final String costcmc = Integer.toString(affectedCard.getCMC());
+                        abilty = abilty.replace("ConvertedManaCost", costcmc);
+                    }
                     if (abilty.startsWith("AB")) { // grant the ability
                         final SpellAbility sa = AbilityFactory.getAbility(abilty, affectedCard);
                         sa.setType("Temporary");
@@ -473,7 +476,7 @@ public class StaticAbilityContinuous {
 
         final String[] strngs = params.get("Affected").split(",");
 
-        for (Player p : Singletons.getModel().getGame().getPlayers()) {
+        for (Player p : controller.getGame().getPlayers()) {
             if (p.isValid(strngs, controller, hostCard)) {
                 players.add(p);
             }
@@ -485,6 +488,7 @@ public class StaticAbilityContinuous {
     private static List<Card> getAffectedCards(final StaticAbility stAb) {
         final HashMap<String, String> params = stAb.getMapParams();
         final Card hostCard = stAb.getHostCard();
+        final GameState game = hostCard.getGame();
         final Player controller = hostCard.getController();
 
         if (params.containsKey("CharacteristicDefining")) {
@@ -495,9 +499,9 @@ public class StaticAbilityContinuous {
         List<Card> affectedCards = new ArrayList<Card>();
 
         if (params.containsKey("AffectedZone")) {
-            affectedCards.addAll(Singletons.getModel().getGame().getCardsIn(ZoneType.listValueOf(params.get("AffectedZone"))));
+            affectedCards.addAll(game.getCardsIn(ZoneType.listValueOf(params.get("AffectedZone"))));
         } else {
-            affectedCards = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+            affectedCards = game.getCardsIn(ZoneType.Battlefield);
         }
 
         if (params.containsKey("Affected") && !params.get("Affected").contains(",")) {

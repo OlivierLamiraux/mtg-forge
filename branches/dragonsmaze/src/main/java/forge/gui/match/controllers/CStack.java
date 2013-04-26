@@ -5,6 +5,7 @@ import java.util.Observer;
 
 import forge.Command;
 import forge.FThreads;
+import forge.game.zone.MagicStack;
 import forge.gui.framework.EDocID;
 import forge.gui.framework.ICDoc;
 import forge.gui.framework.SDisplayUtil;
@@ -19,6 +20,8 @@ import forge.gui.match.views.VStack;
 public enum CStack implements ICDoc, Observer {
     /** */
     SINGLETON_INSTANCE;
+    
+    private MagicStack model;
 
     /* (non-Javadoc)
      * @see forge.gui.framework.ICDoc#getCommandOnSelect()
@@ -35,22 +38,27 @@ public enum CStack implements ICDoc, Observer {
     public void initialize() {
     }
 
-    /* (non-Javadoc)
-     * @see forge.gui.framework.ICDoc#update()
-     */
-    @Override
-    public void update() {
-        VStack.SINGLETON_INSTANCE.updateStack();
-    }
+    private final Runnable upd = new Runnable() { @Override public void run() {
+        SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
+        VStack.SINGLETON_INSTANCE.updateStack(model); 
+    } };
 
     /* (non-Javadoc)
      * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
      */
     @Override
-    public void update(Observable arg0, Object arg1) {
-        SDisplayUtil.showTab(EDocID.REPORT_STACK.getDoc());
-        FThreads.invokeInEdtNowOrLater(doUpdate);
+    public void update(final Observable arg0, Object arg1) {
+        update();
+    }
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#update()
+     */
+    @Override
+    public void update() {
+        FThreads.invokeInEdtNowOrLater(upd);
     }
     
-    private final Runnable doUpdate = new Runnable() { @Override public void run() {update(); } };
+    public void setModel(MagicStack model) { this.model = model; }
+
 }

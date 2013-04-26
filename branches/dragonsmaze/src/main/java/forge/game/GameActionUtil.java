@@ -20,8 +20,11 @@ package forge.game;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -34,8 +37,8 @@ import forge.Command;
 import forge.Constant;
 import forge.CounterType;
 import forge.FThreads;
-import forge.Singletons;
 import forge.card.ability.AbilityFactory;
+import forge.card.ability.AbilityFactory.AbilityRecordType;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.ApiType;
 import forge.card.cardfactory.CardFactoryUtil;
@@ -53,11 +56,11 @@ import forge.card.cost.CostReturn;
 import forge.card.cost.CostReveal;
 import forge.card.cost.CostSacrifice;
 import forge.card.cost.CostTapType;
-import forge.card.cost.CostUtil;
 import forge.card.mana.ManaCost;
 import forge.card.spellability.Ability;
 import forge.card.spellability.AbilityManaPart;
 import forge.card.spellability.AbilitySub;
+import forge.card.spellability.OptionalCost;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellAbilityRestriction;
 import forge.control.input.InputPayManaExecuteCommands;
@@ -73,6 +76,7 @@ import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
 import forge.gui.GuiDialog;
 import forge.sound.SoundEffectType;
+import forge.util.TextUtil;
 
 
 /**
@@ -102,7 +106,7 @@ public final class GameActionUtil {
 
         @Override
         public void resolve() {
-            final GameState game = Singletons.getModel().getGame(); 
+            final GameState game = affected.getGame(); 
             if ( canRegenerate )
                 game.getAction().destroy(affected, this);
             else
@@ -129,7 +133,7 @@ public final class GameActionUtil {
 
         @Override
         public void resolve() {
-            final GameState game = Singletons.getModel().getGame(); 
+            final GameState game =controller.getGame(); 
             final List<Card> topOfLibrary = controller.getCardsIn(ZoneType.Library);
             final List<Card> revealed = new ArrayList<Card>();
 
@@ -186,9 +190,9 @@ public final class GameActionUtil {
         }
 
         @Override
-        public void execute() {
+        public void run() {
             if (!c.isCopiedSpell()) {
-                final List<Card> maelstromNexii = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Maelstrom Nexus"));
+                final List<Card> maelstromNexii = CardLists.filter(controller.getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Maelstrom Nexus"));
 
                 for (final Card nexus : maelstromNexii) {
                     if (CardUtil.getThisTurnCast("Card.YouCtrl", nexus).size() == 1) {
@@ -288,7 +292,7 @@ public final class GameActionUtil {
             }
             CardLists.shuffle(revealed);
             for (final Card bottom : revealed) {
-                Singletons.getModel().getGame().getAction().moveToBottomOfLibrary(bottom);
+                controller.getGame().getAction().moveToBottomOfLibrary(bottom);
             }
         }
     
@@ -314,7 +318,7 @@ public final class GameActionUtil {
         }
 
         @Override
-        public void execute() {
+        public void run() {
 
             final List<Card> thrummingStones = controller.getCardsIn(ZoneType.Battlefield, "Thrumming Stone");
             for (int i = 0; i < thrummingStones.size(); i++) {
@@ -341,7 +345,7 @@ public final class GameActionUtil {
                 ability.setDescription(sb.toString());
                 ability.setActivatingPlayer(controller);
 
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
+                controller.getGame().getStack().addSimultaneousStackEntry(ability);
 
             }
         }
@@ -362,11 +366,11 @@ public final class GameActionUtil {
     public static void executePlayCardEffects(final SpellAbility sa) {
         // (called in MagicStack.java)
 
-        final GameState game = Singletons.getModel().getGame(); 
+        final GameState game = sa.getActivatingPlayer().getGame(); 
         final Command cascade = new CascadeExecutor(sa.getActivatingPlayer(), sa.getSourceCard(), game);
-        cascade.execute();
+        cascade.run();
         final Command ripple = new RippleExecutor(sa.getActivatingPlayer(), sa.getSourceCard());
-        ripple.execute();
+        ripple.run();
     }
 
     private static int getAmountFromPart(CostPart part, Card source, SpellAbility sourceAbility) {
@@ -458,7 +462,7 @@ public final class GameActionUtil {
                 CounterType counterType = ((CostPutCounter) part).getCounter();
                 int amount = getAmountFromPartX(part, source, sourceAbility);
                 
-                if (false == source.canHaveCountersPlacedOnIt(counterType)) {
+                if (false == source.canReceiveCounters(counterType)) {
                     String message = String.format("Won't be able to pay upkeep for %s but it can't have %s counters put on it.", source, counterType.getName());
                     p.getGame().getGameLog().add("ResolveStack", message, 2);
                     return false;
@@ -543,7 +547,7 @@ public final class GameActionUtil {
             }
             
             else if (part instanceof CostPartMana ) {
-                if (!((CostPartMana) part).getManaToPay().equals("0")) // non-zero costs require input
+                if (!((CostPartMana) part).getManaToPay().isZero()) // non-zero costs require input
                     mayRemovePart = false; 
             } else
                 throw new RuntimeException("GameActionUtil.payCostDuringAbilityResolve - An unhandled type of cost was met: " + part.getClass());
@@ -565,8 +569,8 @@ public final class GameActionUtil {
             throw new RuntimeException("GameActionUtil.payCostDuringAbilityResolve - The remaining payment type is not Mana.");
 
         InputPayment toSet = current == null 
-                ? new InputPayManaExecuteCommands(p, source + "\r\n", ability.getManaCost())
-                : new InputPayManaExecuteCommands(p, source + "\r\n" + "Current Card: " + current + "\r\n" , ability.getManaCost());
+                ? new InputPayManaExecuteCommands(p, source + "\r\n", cost.getCostMana().getManaToPay())
+                : new InputPayManaExecuteCommands(p, source + "\r\n" + "Current Card: " + current + "\r\n" , cost.getCostMana().getManaToPay());
         FThreads.setInputAndWait(toSet);
         return toSet.isPaid();
     }
@@ -585,7 +589,9 @@ public final class GameActionUtil {
         for(Card c : inp.getSelected()) {
             cpl.executePayment(sourceAbility, c);
         }
-        cpl.reportPaidCardsTo(sourceAbility);
+        if (sourceAbility != null) {
+            cpl.reportPaidCardsTo(sourceAbility);
+        }
         return true;
     }
 
@@ -632,6 +638,7 @@ public final class GameActionUtil {
         if (damage <= 0) {
             return;
         }
+        final GameState game = source.getGame();
 
         if (affected.hasStartOfKeyword("When CARDNAME is dealt damage, destroy it.")) {
             final Ability ability = new AbilityDestroy(source, affected, true);
@@ -644,17 +651,17 @@ public final class GameActionUtil {
             final int amount = affected.getAmountOfKeyword("When CARDNAME is dealt damage, destroy it. It can't be regenerated.");
 
             for (int i = 0; i < amount; i++) {
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
+                game.getStack().addSimultaneousStackEntry(ability2);
             }
             final int amount2 = affected.getAmountOfKeyword("When CARDNAME is dealt damage, destroy it.");
 
             for (int i = 0; i < amount2; i++) {
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
+                game.getStack().addSimultaneousStackEntry(ability);
             }
         }
 
         // Play the Damage sound
-        Singletons.getModel().getGame().getEvents().post(new CardDamagedEvent());
+        game.getEvents().post(new CardDamagedEvent());
     }
 
     // this is for cards like Sengir Vampire
@@ -697,7 +704,7 @@ public final class GameActionUtil {
             }
             ability2.setStackDescription(sb.toString());
 
-            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability2);
+            c.getGame().getStack().addSimultaneousStackEntry(ability2);
 
         }
     }
@@ -723,7 +730,7 @@ public final class GameActionUtil {
         c.getDamageHistory().registerDamage(player);
 
         // Play the Life Loss sound
-        Singletons.getModel().getGame().getEvents().post(new LifeLossEvent());
+        player.getGame().getEvents().post(new LifeLossEvent());
     }
 
     // restricted to combat damage, restricted to players
@@ -777,7 +784,7 @@ public final class GameActionUtil {
 
             for (String kw : c.getKeyword()) {
                 if (kw.startsWith("Poisonous")) {
-                    Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
+                    player.getGame().getStack().addSimultaneousStackEntry(ability);
                 }
             }
         }
@@ -792,7 +799,7 @@ public final class GameActionUtil {
         c.getDamageHistory().registerCombatDamage(player);
 
         // Play the Life Loss sound
-        Singletons.getModel().getGame().getEvents().post(SoundEffectType.LifeLoss);
+        player.getGame().getEvents().post(SoundEffectType.LifeLoss);
     } // executeCombatDamageToPlayerEffects
 
     /**
@@ -817,7 +824,7 @@ public final class GameActionUtil {
                 doubleLife.setStackDescription(aura.getName() + " - " + enchanted.getController()
                         + " doubles his or her life total.");
 
-                Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(doubleLife);
+                enchanted.getGame().getStack().addSimultaneousStackEntry(doubleLife);
 
             }
         }
@@ -834,6 +841,7 @@ public final class GameActionUtil {
     private static void playerCombatDamageScalpelexis(final Card c) {
         final Player player = c.getController();
         final Player opponent = player.getOpponent();
+        final GameState game = player.getGame();
 
         if (c.getNetAttack() > 0) {
             final Ability ability = new Ability(c, ManaCost.ZERO) {
@@ -887,7 +895,7 @@ public final class GameActionUtil {
 
                     for (int j = 0; j < max; j++) {
                         final Card c = libList.get(j);
-                        Singletons.getModel().getGame().getAction().exile(c);
+                        game.getAction().exile(c);
                     }
                 }
             }; // ability
@@ -899,19 +907,17 @@ public final class GameActionUtil {
             ability.setStackDescription(sb.toString());
             ability.setDescription(sb.toString());
 
-            Singletons.getModel().getGame().getStack().addSimultaneousStackEntry(ability);
+            game.getStack().addSimultaneousStackEntry(ability);
 
         }
     }
 
     /** stores the Command. */
-    private static Command umbraStalker = new Command() {
-        private static final long serialVersionUID = -3500747003228938898L;
-
+    private static Function<GameState, ?> umbraStalker = new Function<GameState, Object>() {
         @Override
-        public void execute() {
+        public Object apply(GameState game) {
             // get all creatures
-            final List<Card> cards = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Umbra Stalker"));
+            final List<Card> cards = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Umbra Stalker"));
             for (final Card c : cards) {
                 final Player player = c.getController();
                 final List<Card> grave = player.getCardsIn(ZoneType.Graveyard);
@@ -919,37 +925,36 @@ public final class GameActionUtil {
                 c.setBaseAttack(pt);
                 c.setBaseDefense(pt);
             }
+            return null;
         } // execute()
     };
 
     /** Constant <code>oldManOfTheSea</code>. */
-    private static Command oldManOfTheSea = new Command() {
-        private static final long serialVersionUID = 8076177362922156784L;
+    private static Function<GameState, ?> oldManOfTheSea = new Function<GameState, Object>() {
 
         @Override
-        public void execute() {
-            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Old Man of the Sea"));
+        public Object apply(GameState game) {
+            final List<Card> list = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Old Man of the Sea"));
             for (final Card oldman : list) {
                 if (!oldman.getGainControlTargets().isEmpty()) {
                     if (oldman.getNetAttack() < oldman.getGainControlTargets().get(0).getNetAttack()) {
                         final List<Command> coms = oldman.getGainControlReleaseCommands();
                         for (int i = 0; i < coms.size(); i++) {
-                            coms.get(i).execute();
+                            coms.get(i).run();
                         }
                     }
                 }
             }
+            return null;
         }
     }; // Old Man of the Sea
 
     /** Constant <code>liuBei</code>. */
-    private static Command liuBei = new Command() {
-
-        private static final long serialVersionUID = 4235093010715735727L;
+    private static Function<GameState, ?> liuBei = new Function<GameState, Object>() {
 
         @Override
-        public void execute() {
-            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Liu Bei, Lord of Shu"));
+        public Object apply(GameState game) {
+            final List<Card> list = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Liu Bei, Lord of Shu"));
 
             if (list.size() > 0) {
                 for (int i = 0; i < list.size(); i++) {
@@ -965,6 +970,7 @@ public final class GameActionUtil {
 
                 }
             }
+            return null;
         } // execute()
 
         private boolean getsBonus(final Card c) {
@@ -980,24 +986,22 @@ public final class GameActionUtil {
     }; // Liu_Bei
 
     /** Constant <code>Tarmogoyf</code>. */
-    private static Command tarmogoyf = new Command() {
-        private static final long serialVersionUID = 5895665460018262987L;
-
+    private static Function<GameState, ?> tarmogoyf = new Function<GameState, Object>() {
         @Override
-        public void execute() {
+        public Object apply(GameState game) {
             // get all creatures
-            final List<Card> list = CardLists.filter(Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tarmogoyf"));
+            final List<Card> list = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.nameEquals("Tarmogoyf"));
 
             for (int i = 0; i < list.size(); i++) {
                 final Card c = list.get(i);
-                c.setBaseAttack(this.countDiffTypes());
+                c.setBaseAttack(this.countDiffTypes(game));
                 c.setBaseDefense(c.getBaseAttack() + 1);
             }
-
+            return null;
         } // execute()
 
-        private int countDiffTypes() {
-            final List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Graveyard);
+        private int countDiffTypes(GameState game) {
+            final List<Card> list = game.getCardsIn(ZoneType.Graveyard);
 
             int count = 0;
             for (Card c : list) {
@@ -1057,7 +1061,7 @@ public final class GameActionUtil {
     };
 
     /** Constant <code>commands</code>. */
-    private final static HashMap<String, Command> commands = new HashMap<String, Command>();
+    private final static HashMap<String, Function<GameState, ?>> commands = new HashMap<String, Function<GameState, ?>>();
 
     static {
         // Please add cards in alphabetical order so they are easier to find
@@ -1075,16 +1079,17 @@ public final class GameActionUtil {
      * 
      * @return the commands
      */
-    public static HashMap<String, Command> getCommands() {
+    public static Map<String, Function<GameState, ?>> getCommands() {
         return GameActionUtil.commands;
     }
 
     /**
      * Gets the st land mana abilities.
+     * @param game 
      * 
      * @return the stLandManaAbilities
      */
-    public static void grantBasicLandsManaAbilities() {
+    public static void grantBasicLandsManaAbilities(GameState game) {
         final HashMap<String, String> produces = new HashMap<String, String>();
         /*
          * for future use boolean naked =
@@ -1104,7 +1109,7 @@ public final class GameActionUtil {
         produces.put("Plains", "W");
         produces.put("Swamp", "B");
 
-        List<Card> lands = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+        List<Card> lands = game.getCardsIn(ZoneType.Battlefield);
         lands = CardLists.filter(lands, Presets.LANDS);
 
         // remove all abilities granted by this Command
@@ -1160,8 +1165,7 @@ public final class GameActionUtil {
 
                 // there is a flashback cost (and not the cards cost)
                 if (!keyword.equals("Flashback")) {
-                    final Cost fbCost = new Cost(source, keyword.substring(10), false);
-                    flashback.setPayCosts(fbCost);
+                    flashback.setPayCosts(new Cost(keyword.substring(10), false));
                 }
                 alternatives.add(flashback);
             }
@@ -1171,17 +1175,8 @@ public final class GameActionUtil {
                 sar.setVariables(sa.getRestrictions());
                 sar.setZone(null);
                 newSA.setRestrictions(sar);
-                final Cost cost = new Cost(source, "", false);
-                if (newSA.getPayCosts() != null) {
-                    for (final CostPart part : newSA.getPayCosts().getCostParts()) {
-                        if (!(part instanceof CostPartMana)) {
-                            cost.getCostParts().add(part);
-                        }
-                    }
-                }
                 newSA.setBasicSpell(false);
-                newSA.setPayCosts(cost);
-                newSA.setManaCost(ManaCost.NO_COST);
+                newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
                 newSA.setDescription(sa.getDescription() + " (without paying its mana cost)");
                 alternatives.add(newSA);
             }
@@ -1192,17 +1187,8 @@ public final class GameActionUtil {
                 sar.setZone(null);
                 sar.setOpponentOnly(true);
                 newSA.setRestrictions(sar);
-                final Cost cost = new Cost(source, "", false);
-                if (newSA.getPayCosts() != null) {
-                    for (final CostPart part : newSA.getPayCosts().getCostParts()) {
-                        if (!(part instanceof CostPartMana)) {
-                            cost.getCostParts().add(part);
-                        }
-                    }
-                }
                 newSA.setBasicSpell(false);
-                newSA.setPayCosts(cost);
-                newSA.setManaCost(ManaCost.NO_COST);
+                newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
                 newSA.setDescription(sa.getDescription() + " (without paying its mana cost)");
                 alternatives.add(newSA);
             }
@@ -1212,48 +1198,130 @@ public final class GameActionUtil {
                 sar.setVariables(sa.getRestrictions());
                 sar.setInstantSpeed(true);
                 newSA.setRestrictions(sar);
-                final Cost cost = new Cost(source, "", false);
-                if (newSA.getPayCosts() != null) {
-                    for (final CostPart part : newSA.getPayCosts().getCostParts()) {
-                        if (!(part instanceof CostPartMana)) {
-                            cost.getCostParts().add(part);
-                        }
-                    }
-                }
                 newSA.setBasicSpell(false);
-                newSA.setPayCosts(cost);
-                newSA.setManaCost(ManaCost.NO_COST);
+                newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
                 newSA.setDescription(sa.getDescription() + " (without paying its mana cost and as though it has flash)");
                 alternatives.add(newSA);
             }
             if (sa.isSpell() && keyword.startsWith("Alternative Cost")) {
                 final SpellAbility newSA = sa.copy();
-                final Cost cost = new Cost(source, keyword.substring(17), false);
-                if (newSA.getPayCosts() != null) {
-                    for (final CostPart part : newSA.getPayCosts().getCostParts()) {
-                        if (!(part instanceof CostPartMana)) {
-                            cost.getCostParts().add(part);
-                        }
-                    }
-                }
                 newSA.setBasicSpell(false);
+                final Cost cost = new Cost(keyword.substring(17), false).add(newSA.getPayCosts().copyWithNoMana());
                 newSA.setPayCosts(cost);
-                newSA.setManaCost(ManaCost.NO_COST);
-                String costString = cost.toSimpleString();
-                if (costString.equals("")) {
-                    costString = "0";
-                }
-                newSA.setDescription(sa.getDescription() + " (by paying " + costString + " instead of its mana cost)");
+                newSA.setDescription(sa.getDescription() + " (by paying " + cost.toSimpleString() + " instead of its mana cost)");
                 alternatives.add(newSA);
             }
         }
         return alternatives;
     }
 
-    public static Cost combineCosts(SpellAbility sa, String additionalCost) {
-        final Cost newCost = new Cost(sa.getSourceCard(), additionalCost, false);
-        Cost oldCost = sa.getPayCosts();
-        return CostUtil.combineCosts(oldCost, newCost);
+    /**
+     * get optional additional costs.
+     * 
+     * @param original
+     *            the original sa
+     * @return an ArrayList<SpellAbility>.
+     */
+    public static List<SpellAbility> getOptionalCosts(final SpellAbility original) {
+        final List<SpellAbility> abilities = new ArrayList<SpellAbility>();
+
+        final Card source = original.getSourceCard();
+        abilities.add(original);
+        if (!original.isSpell()) {
+            return abilities;
+        }
+
+        // Buyback, Kicker
+        for (String keyword : source.getKeyword()) {
+            if (keyword.startsWith("AlternateAdditionalCost")) {
+                final List<SpellAbility> newAbilities = new ArrayList<SpellAbility>();
+                String[] costs = TextUtil.split(keyword, ':');
+                for (SpellAbility sa : abilities) {
+                    final SpellAbility newSA = sa.copy();
+                    newSA.setBasicSpell(false);
+                    
+                    final Cost cost1 = new Cost(costs[1], false);
+                    newSA.setDescription(sa.getDescription() + " (Additional cost " + cost1.toSimpleString() + ")");
+                    newSA.setPayCosts(cost1.add(sa.getPayCosts()));
+                    if (newSA.canPlay()) {
+                        newAbilities.add(newSA);
+                    }
+
+                    //second option
+                    final SpellAbility newSA2 = sa.copy();
+                    newSA2.setBasicSpell(false);
+
+                    final Cost cost2 = new Cost(costs[2], false);
+                    newSA2.setDescription(sa.getDescription() + " (Additional cost " + cost2.toSimpleString() + ")");
+                    newSA2.setPayCosts(cost2.add(sa.getPayCosts()));
+                    if (newSA2.canPlay()) {
+                        newAbilities.add(newAbilities.size(), newSA2);
+                    }
+                }
+                abilities.clear();
+                abilities.addAll(newAbilities);
+            } else if (keyword.startsWith("Buyback")) {
+                for (int i = 0; i < abilities.size(); i++) {
+                    final SpellAbility newSA = abilities.get(i).copy();
+                    newSA.setBasicSpell(false);
+                    newSA.setPayCosts(new Cost(keyword.substring(8), false).add(newSA.getPayCosts()));
+                    newSA.setDescription(newSA.getDescription() + " (with Buyback)");
+                    newSA.addOptionalCost(OptionalCost.Buyback);
+                    if ( newSA.canPlay() )
+                        abilities.add(++i, newSA);
+                }
+            } else if (keyword.startsWith("Kicker")) {
+                for (int i = 0; i < abilities.size(); i++) {
+                    String[] sCosts = TextUtil.split(keyword.substring(7), ':');
+                    int iUnKicked = i;
+                    for(int j = 0; j < sCosts.length; j++) {
+                        final SpellAbility newSA = abilities.get(iUnKicked).copy();
+                        newSA.setBasicSpell(false);
+                        final Cost cost = new Cost(sCosts[j], false);
+                        newSA.setDescription(newSA.getDescription() + " (Kicker " + cost.toSimpleString() + ")");
+                        newSA.setPayCosts(cost.add(newSA.getPayCosts()));
+                        newSA.addOptionalCost(j == 0 ? OptionalCost.Kicker1 : OptionalCost.Kicker2);
+                        if ( newSA.canPlay() )
+                            abilities.add(++i, newSA);
+                    }
+                    if(sCosts.length == 2) { // case for both kickers - it's hardcoded since they never have more that 2 kickers
+                        final SpellAbility newSA = abilities.get(iUnKicked).copy();
+                        newSA.setBasicSpell(false);
+                        final Cost cost1 = new Cost(sCosts[0], false);
+                        final Cost cost2 = new Cost(sCosts[1], false);
+                        newSA.setDescription(newSA.getDescription() + String.format(" (Both kickers: %s and %s)", cost1.toSimpleString(), cost2.toSimpleString()));
+                        newSA.setPayCosts(cost2.add(cost1.add(newSA.getPayCosts())));
+                        newSA.addOptionalCost(OptionalCost.Kicker1);
+                        newSA.addOptionalCost(OptionalCost.Kicker2);
+                        if ( newSA.canPlay() )
+                            abilities.add(++i, newSA);
+                    }
+                }
+            } else if (keyword.startsWith("Conspire")) {
+                for (int i = 0; i < abilities.size(); i++) {
+                    final SpellAbility newSA = abilities.get(i).copy();
+                    newSA.setBasicSpell(false);
+                    final String conspireCost = "tapXType<2/Creature.SharesColorWith/untapped creature you control that shares a color with " + source.getName() + ">";
+                    newSA.setPayCosts(new Cost(conspireCost, false).add(newSA.getPayCosts()));
+                    newSA.setDescription(newSA.getDescription() + " (Conspire)");
+                    newSA.addOptionalCost(OptionalCost.Conspire);
+                    if ( newSA.canPlay() )
+                        abilities.add(++i, newSA);
+                }
+            }
+        }
+
+        // Splice
+        final List<SpellAbility> newAbilities = new ArrayList<SpellAbility>();
+        for (SpellAbility sa : abilities) {
+            if( sa.isSpell() && sa.getSourceCard().isType("Arcane") && sa.getApi() != null ) {
+                newAbilities.addAll(GameActionUtil.getSpliceAbilities(sa));
+            }
+        }
+        abilities.addAll(newAbilities);
+        
+
+        return abilities;
     }
 
     /**
@@ -1266,184 +1334,68 @@ public final class GameActionUtil {
      * @return an ArrayList<SpellAbility>.
      * get abilities with all Splice options
      */
-    public static final ArrayList<SpellAbility> getSpliceAbilities(SpellAbility sa) {
+    private  static final ArrayList<SpellAbility> getSpliceAbilities(SpellAbility sa) {
         ArrayList<SpellAbility> newSAs = new ArrayList<SpellAbility>();
-        ArrayList<SpellAbility> allSAs = new ArrayList<SpellAbility>();
-        allSAs.add(sa);
+        ArrayList<SpellAbility> allSaCombinations = new ArrayList<SpellAbility>();
+        allSaCombinations.add(sa);
         Card source = sa.getSourceCard();
 
-        if (!sa.isSpell() || !source.isType("Arcane") || sa.getApi() == null) {
-            return newSAs;
-        }
-
+    
         for (Card c : sa.getActivatingPlayer().getCardsIn(ZoneType.Hand)) {
             if (c.equals(source)) {
                 continue;
             }
+
+            String spliceKwCost = null;
             for (String keyword : c.getKeyword()) {
-                if (!keyword.startsWith("Splice")) {
-                    continue;
+                if (keyword.startsWith("Splice")) {
+                    spliceKwCost = keyword.substring(19); 
+                    break;
                 }
-                String newSubSAString = c.getCharacteristics().getIntrinsicAbility().get(0);
-                newSubSAString = newSubSAString.replace("SP", "DB");
-                final AbilitySub newSubSA = (AbilitySub) AbilityFactory.getAbility(newSubSAString, c);
-                ArrayList<SpellAbility> addSAs = new ArrayList<SpellAbility>();
-                // Add the subability to all existing variants
-                for (SpellAbility s : allSAs) {
-                    //create a new spell copy
-                    final SpellAbility newSA = s.copy();
-                    newSA.setBasicSpell(false);
-                    newSA.setPayCosts(combineCosts(newSA, keyword.substring(19)));
-                    newSA.setManaCost(ManaCost.NO_COST);
-                    newSA.setDescription(s.getDescription() + " (Splicing " + c + " onto it)");
-                    newSA.addSplicedCards(c);
+            }
 
-                    // copy all subAbilities
-                    SpellAbility child = newSA;
-                    while (child.getSubAbility() != null) {
-                        AbilitySub newChild = child.getSubAbility().getCopy();
-                        child.setSubAbility(newChild);
-                        child.setActivatingPlayer(s.getActivatingPlayer());
-                        child = newChild;
-                    }
+            if( spliceKwCost == null )
+                continue;
 
-                    //add the spliced ability to the end of the chain
-                    child.setSubAbility(newSubSA);
+            Map<String, String> params = AbilityFactory.getMapParams(c.getCharacteristics().getUnparsedAbilities().get(0));
+            AbilityRecordType rc = AbilityRecordType.getRecordType(params);
+            ApiType api = rc.getApiTypeOf(params);
+            AbilitySub subAbility = (AbilitySub) AbilityFactory.getAbility(AbilityRecordType.SubAbility, api, params, null, c);
 
-                    //set correct source and activating player to all the spliced abilities
-                    child = newSubSA;
-                    while (child != null) {
-                        child.setSourceCard(source);
-                        child.setActivatingPlayer(s.getActivatingPlayer());
-                        child = child.getSubAbility();
-                    }
-                    newSAs.add(0, newSA);
-                    addSAs.add(newSA);
+            // Add the subability to all existing variants
+            for (int i = 0; i < allSaCombinations.size(); ++i) {
+                //create a new spell copy
+                final SpellAbility newSA = allSaCombinations.get(i).copy();
+                newSA.setBasicSpell(false);
+                newSA.setPayCosts(new Cost(spliceKwCost, false).add(newSA.getPayCosts()));
+                newSA.setDescription(newSA.getDescription() + " (Splicing " + c + " onto it)");
+                newSA.addSplicedCards(c);
+
+                // copy all subAbilities
+                SpellAbility child = newSA;
+                while (child.getSubAbility() != null) {
+                    AbilitySub newChild = child.getSubAbility().getCopy();
+                    child.setSubAbility(newChild);
+                    child.setActivatingPlayer(newSA.getActivatingPlayer());
+                    child = newChild;
                 }
-                allSAs.addAll(addSAs);
-                break;
+
+                //add the spliced ability to the end of the chain
+                child.setSubAbility(subAbility);
+
+                //set correct source and activating player to all the spliced abilities
+                child = subAbility;
+                while (child != null) {
+                    child.setSourceCard(source);
+                    child.setActivatingPlayer(newSA.getActivatingPlayer());
+                    child = child.getSubAbility();
+                }
+                newSAs.add(newSA);
+                allSaCombinations.add(++i, newSA);
             }
         }
-
+    
         return newSAs;
-    }
-
-    /**
-     * get optional additional costs.
-     * 
-     * @param original
-     *            the original sa
-     * @return an ArrayList<SpellAbility>.
-     */
-    public static ArrayList<SpellAbility> getOptionalAdditionalCosts(final SpellAbility original) {
-        final ArrayList<SpellAbility> abilities = new ArrayList<SpellAbility>();
-        final ArrayList<SpellAbility> newAbilities = new ArrayList<SpellAbility>();
-        final Card source = original.getSourceCard();
-        abilities.add(original);
-        if (!original.isSpell()) {
-            return abilities;
-        }
-
-        // Buyback, Kicker
-        for (String keyword : source.getKeyword()) {
-            if (keyword.startsWith("Buyback")) {
-                for (SpellAbility sa : abilities) {
-                    final SpellAbility newSA = sa.copy();
-                    newSA.setBasicSpell(false);
-                    newSA.setPayCosts(GameActionUtil.combineCosts(newSA, keyword.substring(8)));
-                    newSA.setManaCost(ManaCost.NO_COST);
-                    newSA.setDescription(sa.getDescription() + " (with Buyback)");
-                    ArrayList<String> newoacs = new ArrayList<String>();
-                    newoacs.addAll(sa.getOptionalAdditionalCosts());
-                    newSA.setOptionalAdditionalCosts(newoacs);
-                    newSA.addOptionalAdditionalCosts("Buyback");
-                    if (newSA.canPlay()) {
-                        newAbilities.add(newAbilities.size(), newSA);
-                    }
-                }
-                abilities.addAll(0, newAbilities);
-                newAbilities.clear();
-            } else if (keyword.startsWith("Kicker")) {
-                for (SpellAbility sa : abilities) {
-                    final SpellAbility newSA = sa.copy();
-                    newSA.setBasicSpell(false);
-                    newSA.setPayCosts(GameActionUtil.combineCosts(newSA, keyword.substring(7)));
-                    newSA.setManaCost(ManaCost.NO_COST);
-                    final Cost cost = new Cost(source, keyword.substring(7), false);
-                    newSA.setDescription(sa.getDescription() + " (Kicker " + cost.toSimpleString() + ")");
-                    ArrayList<String> newoacs = new ArrayList<String>();
-                    newoacs.addAll(sa.getOptionalAdditionalCosts());
-                    newSA.setOptionalAdditionalCosts(newoacs);
-                    newSA.addOptionalAdditionalCosts(keyword);
-                    if (newSA.canPlay()) {
-                        newAbilities.add(newAbilities.size(), newSA);
-                    }
-                }
-                abilities.addAll(0, newAbilities);
-                newAbilities.clear();
-            } else if (keyword.startsWith("AlternateAdditionalCost")) {
-                String costString1 = keyword.split(":")[1];
-                String costString2 = keyword.split(":")[2];
-                for (SpellAbility sa : abilities) {
-                    final SpellAbility newSA = sa.copy();
-                    newSA.setBasicSpell(false);
-                    newSA.setPayCosts(GameActionUtil.combineCosts(newSA, costString1));
-                    newSA.setManaCost(ManaCost.NO_COST);
-                    final Cost cost1 = new Cost(source, costString1, false);
-                    newSA.setDescription(sa.getDescription() + " (Additional cost " + cost1.toSimpleString() + ")");
-                    ArrayList<String> newoacs = new ArrayList<String>();
-                    newoacs.addAll(sa.getOptionalAdditionalCosts());
-                    newSA.setOptionalAdditionalCosts(newoacs);
-                    if (newSA.canPlay()) {
-                        newAbilities.add(newAbilities.size(), newSA);
-                    }
-                    //second option
-                    final SpellAbility newSA2 = sa.copy();
-                    newSA2.setBasicSpell(false);
-                    newSA2.setPayCosts(GameActionUtil.combineCosts(newSA2, costString2));
-                    newSA2.setManaCost(ManaCost.NO_COST);
-                    final Cost cost2 = new Cost(source, costString2, false);
-                    newSA2.setDescription(sa.getDescription() + " (Additional cost " + cost2.toSimpleString() + ")");
-                    ArrayList<String> newoacs2 = new ArrayList<String>();
-                    newoacs.addAll(sa.getOptionalAdditionalCosts());
-                    newSA2.setOptionalAdditionalCosts(newoacs2);
-                    if (newSA2.canPlay()) {
-                        newAbilities.add(newAbilities.size(), newSA2);
-                    }
-                }
-                abilities.clear();
-                abilities.addAll(0, newAbilities);
-                newAbilities.clear();
-            } else if (keyword.startsWith("Conspire")) {
-                for (SpellAbility sa : abilities) {
-                    final SpellAbility newSA = sa.copy();
-                    newSA.setBasicSpell(false);
-                    final String conspireCost = "tapXType<2/Creature.SharesColorWith/untapped creature you control"
-                            + " that shares a color with " + source.getName() + ">";
-                    newSA.setPayCosts(GameActionUtil.combineCosts(newSA, conspireCost));
-                    newSA.setManaCost(ManaCost.NO_COST);
-                    newSA.setDescription(sa.getDescription() + " (Conspire)");
-                    ArrayList<String> newoacs = new ArrayList<String>();
-                    newoacs.addAll(sa.getOptionalAdditionalCosts());
-                    newSA.setOptionalAdditionalCosts(newoacs);
-                    newSA.addOptionalAdditionalCosts(keyword);
-                    if (newSA.canPlay()) {
-                        newAbilities.add(newAbilities.size(), newSA);
-                    }
-                }
-                abilities.addAll(0, newAbilities);
-                newAbilities.clear();
-            }
-        }
-
-        // Splice
-        for (SpellAbility sa : abilities) {
-            newAbilities.addAll(GameActionUtil.getSpliceAbilities(sa));
-        }
-        abilities.addAll(newAbilities);
-        newAbilities.clear();
-
-        return abilities;
     }
 
     /**

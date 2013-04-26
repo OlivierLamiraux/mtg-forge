@@ -21,7 +21,6 @@ import forge.game.MatchController;
 import forge.game.MatchStartHelper;
 import forge.game.limited.BoosterDraft;
 import forge.game.limited.CardPoolLimitation;
-import forge.game.player.PlayerType;
 import forge.gui.GuiChoose;
 import forge.gui.SOverlayUtils;
 import forge.gui.deckeditor.CDeckEditorUI;
@@ -41,7 +40,7 @@ public enum CSubmenuDraft implements ICDoc {
 
     private final Command cmdDeckSelect = new Command() {
         @Override
-        public void execute() {
+        public void run() {
             VSubmenuDraft.SINGLETON_INSTANCE.getBtnStart().setEnabled(true);
         }
     };
@@ -56,7 +55,7 @@ public enum CSubmenuDraft implements ICDoc {
         view.getLstDecks().setSelectCommand(cmdDeckSelect);
 
         view.getBtnBuildDeck().setCommand(new Command() { @Override
-                    public void execute() { setupDraft(); } });
+                    public void run() { setupDraft(); } });
 
         view.getBtnStart().addActionListener(new ActionListener() {
             @Override public void actionPerformed(final ActionEvent e) { startGame(GameType.Draft); } });
@@ -136,8 +135,8 @@ public enum CSubmenuDraft implements ICDoc {
 
                 MatchStartHelper starter = new MatchStartHelper();
                 Lobby lobby = Singletons.getControl().getLobby();
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.HUMAN), humanDeck);
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.COMPUTER), aiDeck);
+                starter.addPlayer(lobby.getGuiPlayer(), humanDeck);
+                starter.addPlayer(lobby.getAiPlayer(), aiDeck);
 
                 MatchController mc = Singletons.getModel().getMatch();
                 mc.initMatch(GameType.Draft, starter.getPlayerMap());

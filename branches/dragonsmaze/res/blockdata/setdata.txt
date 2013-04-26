@@ -95,4 +95,3 @@ Code2:GTC|Code3:GTC|Type:Expansion|Name:Gatecrash
 
 Code2:VAN|Code3:VAN|Type:Other|Name:Vanguard
 Code2:ARC|Code3:ARC|Type:Other|Name:Archenemy
-

@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -52,12 +53,14 @@ import forge.card.spellability.Target;
 import forge.card.staticability.StaticAbility;
 import forge.card.trigger.Trigger;
 import forge.card.trigger.TriggerType;
+import forge.card.trigger.ZCTrigger;
 import forge.game.ai.ComputerUtil;
 import forge.game.ai.ComputerUtilCost;
 import forge.game.event.CardDestroyedEvent;
 import forge.game.event.CardRegeneratedEvent;
 import forge.game.event.CardSacrificedEvent;
 import forge.game.player.AIPlayer;
+import forge.game.player.GameLossReason;
 import forge.game.player.HumanPlayer;
 import forge.game.player.Player;
 import forge.game.player.PlayerType;
@@ -150,10 +153,6 @@ public class GameAction {
                 if (c.isFlipCard()) {
                     c.clearStates(CardCharacteristicName.Flipped);
                 }
-            }
-            // reset flip status when card leaves battlefield
-            if (zoneFrom.is(ZoneType.Battlefield)) {
-                c.setFlipStaus(false);
             }
             copied = CardFactory.copyCard(c);
             copied.setUnearthed(c.isUnearthed());
@@ -292,7 +291,7 @@ public class GameAction {
             }
         } else if (zoneFrom.is(ZoneType.Exile) && !zoneTo.is(ZoneType.Battlefield)) {
             // Pull from Eternity used on a suspended card
-            copied.clearAdditionalCostsPaid();
+            copied.clearOptionalCostsPaid();
             if (copied.isFaceDown()) {
                 copied.turnFaceUp();
             }
@@ -316,7 +315,7 @@ public class GameAction {
                     copied.removeHiddenExtrinsicKeyword(s);
                 }
             }
-            copied.clearAdditionalCostsPaid();
+            copied.clearOptionalCostsPaid();
             if (copied.isFaceDown()) {
                 copied.turnFaceUp();
             }
@@ -337,8 +336,11 @@ public class GameAction {
      * @return a {@link forge.Card} object.
      */
     public final Card moveTo(final Zone zoneTo, Card c) {
+       // FThreads.assertExecutedByEdt(false); // This code must never be executed from EDT, 
+                                             // use FThreads.invokeInNewThread to run code in a pooled thread
+
         // if a split card is moved, convert it back to its full form before moving (unless moving to stack)
-        if (c.isSplitCard() && zoneTo != game.getStackZone()) {
+        if (c.isSplitCard() && !zoneTo.is(ZoneType.Stack)) {
             c.setState(CardCharacteristicName.Original);
         }
 
@@ -483,7 +485,7 @@ public class GameAction {
 
     private void handleRecoverAbility(final Card recoverable) {
         final String recoverCost = recoverable.getKeyword().get(recoverable.getKeywordPosition("Recover")).split(":")[1];
-        final Cost cost = new Cost(recoverable, recoverCost, true);
+        final Cost cost = new Cost(recoverCost, true);
 
         final SpellAbility abRecover = new AbilityActivated(recoverable, cost, null) {
             private static final long serialVersionUID = 8858061639236920054L;
@@ -760,7 +762,7 @@ public class GameAction {
         }
 
         final SpellAbility madness = card.getFirstSpellAbility().copy();
-        madness.setPayCosts(new Cost(card, card.getMadnessCost(), false));
+        madness.setPayCosts(new Cost(card.getMadnessCost(), false));
 
         final StringBuilder sb = new StringBuilder();
         sb.append(card.getName()).append(" - Cast via Madness");
@@ -854,6 +856,7 @@ public class GameAction {
     public final void checkStaticAbilities() {
         // remove old effects
         game.getStaticEffects().clearStaticEffects();
+        game.getTriggerHandler().cleanUpTemporaryTriggers();
 
         // search for cards with static abilities
         final List<Card> allCards = game.getCardsInGame();
@@ -891,11 +894,11 @@ public class GameAction {
 
         // card state effects like Glorious Anthem
         for (final String effect : game.getStaticEffects().getStateBasedMap().keySet()) {
-            final Command com = GameActionUtil.getCommands().get(effect);
-            com.execute();
+            final Function<GameState, ?> com = GameActionUtil.getCommands().get(effect);
+            com.apply(game);
         }
 
-        GameActionUtil.grantBasicLandsManaAbilities();
+        GameActionUtil.grantBasicLandsManaAbilities(game);
     }
 
     /**
@@ -1301,7 +1304,7 @@ public class GameAction {
             private static final long serialVersionUID = -4514610171270596654L;
 
             @Override
-            public void execute() {
+            public void run() {
                 if (c.isInPlay() && c.isCreature()) {
                     c.addExtrinsicKeyword("Haste");
                 }
@@ -1314,7 +1317,7 @@ public class GameAction {
             private static final long serialVersionUID = -4514610171270596654L;
 
             @Override
-            public void execute() {
+            public void run() {
                 if (c.getSVar("HasteFromSuspend").equals("True")) {
                     c.setSVar("HasteFromSuspend", "False");
                     c.removeExtrinsicKeyword("Haste");
@@ -1349,7 +1352,7 @@ public class GameAction {
         final Card newCard = this.moveToGraveyard(c);
 
         // Destroy needs to be called with Last Known Information
-        c.destroy();
+        c.executeTrigger(ZCTrigger.DESTROY);
 
         // System.out.println("Card " + c.getName() +
         // " is getting sent to GY, and this turn it got damaged by: ");
@@ -1425,6 +1428,7 @@ public class GameAction {
                             final String effName = kw.split(":")[1];
     
                             final SpellAbility effect = AbilityFactory.getAbility(c.getSVar(effName), c);
+                            effect.setActivatingPlayer(p);
                             if (GuiDialog.confirm(c, "Use " + c +"'s  ability?")) {
                                 // If we ever let the AI memorize cards in the players
                                 // hand, this would be a place to do so.
@@ -1444,7 +1448,7 @@ public class GameAction {
                                 final String effName = kw.split(":")[1];
     
                                 final SpellAbility effect = AbilityFactory.getAbility(c.getSVar(effName), c);
-    
+                                effect.setActivatingPlayer(p);
                                 // Is there a better way for the AI to decide this?
                                 if (effect.doTrigger(false, (AIPlayer)p)) {
                                     GuiDialog.message("Computer reveals " + c.getName() + "(" + c.getUniqueNumber() + ").");

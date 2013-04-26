@@ -30,7 +30,6 @@ import forge.CardPredicates.Presets;
 import forge.CounterType;
 import forge.FThreads;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.control.input.InputSelectCards;
 import forge.control.input.InputSelectCardsFromList;
 import forge.game.GameState;
@@ -63,7 +62,7 @@ public class Untap extends Phase {
      */
     @Override
     public void executeAt() {
-        this.execute(this.getAt());
+        this.execute(this.at);
 
         final Player turn = game.getPhaseHandler().getPlayerTurn();
         Untap.doPhasing(turn);
@@ -88,7 +87,7 @@ public class Untap extends Phase {
             return false;
         }
 
-        for (final Card ca : Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield)) {
+        for (final Card ca : c.getGame().getCardsIn(ZoneType.Battlefield)) {
             if (ca.hasStartOfKeyword("Permanents don't untap during their controllers' untap steps")) {
                 final int keywordPosition = ca
                         .getKeywordPosition("Permanents don't untap during their controllers' untap steps");

@@ -38,7 +38,6 @@ import forge.game.player.AIPlayer;
 public class CostPartMana extends CostPart {
     // "Leftover"
     private final ManaCost cost;
-    private ManaCost adjustedCost;
     private boolean xCantBe0 = false;
     private final String restriction;
 
@@ -79,20 +78,12 @@ public class CostPartMana extends CostPart {
     }
 
     /**
-     * Used to set mana cost after applying static effects that change costs.
-     */
-    public void setAdjustedMana(ManaCost manaCost) {
-        // this is set when static effects of LodeStone Golems or Thalias are applied
-        adjustedCost = manaCost;
-    }
-
-    /**
      * Gets the mana to pay.
      * 
      * @return the mana to pay
      */
     public final ManaCost getManaToPay() {
-        return adjustedCost == null ? cost : adjustedCost;
+        return cost;
     }
     
     @Override
@@ -119,28 +110,32 @@ public class CostPartMana extends CostPart {
     public final boolean payHuman(final SpellAbility ability, final GameState game) {
         final Card source = ability.getSourceCard();
         ManaCostBeingPaid toPay = new ManaCostBeingPaid(getManaToPay(), restriction);
-        
+
         boolean xWasBilled = false;
-        if (this.getAmountOfX() > 0 && !ability.getSVar("X").equals("Count$xPaid")) { // announce X will overwrite whatever was in card script
+        String xInCard = source.getSVar("X");
+        if (this.getAmountOfX() > 0 && !"Count$xPaid".equals(xInCard)) { // announce X will overwrite whatever was in card script
             // this currently only works for things about Targeted object
             int xCost = AbilityUtils.calculateAmount(source, "X", ability) * this.getAmountOfX();
             byte xColor = MagicColor.fromName(ability.hasParam("XColor") ? ability.getParam("XColor") : "1"); 
             toPay.increaseShard(ManaCostShard.valueOf(xColor), xCost);
             xWasBilled = true;
         }
-        int timesMultikicked = ability.getSourceCard().getMultiKickerMagnitude();
+        int timesMultikicked = ability.getSourceCard().getKickerMagnitude();
         if ( timesMultikicked > 0 && ability.isAnnouncing("Multikicker")) {
             ManaCost mkCost = ability.getMultiKickerManaCost();
             for(int i = 0; i < timesMultikicked; i++)
                 toPay.combineManaCost(mkCost);
         }
-    
-    
+
+        toPay.applySpellCostChange(ability);
         if (!toPay.isPaid()) {
-            InputPayment inpPayment = new InputPayManaOfCostPayment(game, toPay, ability);
+            InputPayment inpPayment = new InputPayManaOfCostPayment(toPay, ability);
             FThreads.setInputAndWait(inpPayment);
             if(!inpPayment.isPaid())
                 return false;
+
+            source.setColorsPaid(toPay.getColorsPaid());
+            source.setSunburstValue(toPay.getSunburst());
         }
         if (this.getAmountOfX() > 0) {
             if( !ability.isAnnouncing("X") && !xWasBilled) {

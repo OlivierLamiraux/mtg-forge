@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import forge.Card;
 import forge.CardCharacteristicName;
 import forge.card.ability.AbilityUtils;
+import forge.card.cost.CostPartMana;
 import forge.card.cost.CostPayment;
 import forge.game.GameState;
 import forge.game.zone.Zone;
@@ -93,7 +94,6 @@ public class HumanPlaySpellAbility {
         boolean paymentMade = isFree;
         
         if (!paymentMade) {
-            this.payment.changeCost();
             paymentMade = this.payment.payCost(game);
         } 
     
@@ -157,7 +157,9 @@ public class HumanPlaySpellAbility {
             for(String aVar : announce.split(",")) {
                 String varName = aVar.trim();
 
-                boolean allowZero = !("X".equalsIgnoreCase(varName)) || ability.getPayCosts().getCostMana().canXbe0();
+                boolean isX = "X".equalsIgnoreCase(varName);
+                CostPartMana manaCost = ability.getPayCosts().getCostMana();
+                boolean allowZero = !isX || manaCost == null || manaCost.canXbe0();
 
                 Integer value = ability.getActivatingPlayer().getController().announceRequirements(ability, varName, allowZero);
                 if ( null == value )
@@ -165,7 +167,7 @@ public class HumanPlaySpellAbility {
 
                 ability.setSVar(varName, value.toString());
                 if( "Multikicker".equals(varName) ) {
-                    ability.getSourceCard().setMultiKickerMagnitude(value);
+                    ability.getSourceCard().setKickerMagnitude(value);
                 } else {
                     ability.getSourceCard().setSVar(varName, value.toString());
                 }

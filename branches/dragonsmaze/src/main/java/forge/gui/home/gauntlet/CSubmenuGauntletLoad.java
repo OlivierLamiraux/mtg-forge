@@ -17,7 +17,6 @@ import forge.deck.Deck;
 import forge.game.GameType;
 import forge.game.MatchController;
 import forge.game.MatchStartHelper;
-import forge.game.player.PlayerType;
 import forge.gauntlet.GauntletData;
 import forge.gauntlet.GauntletIO;
 import forge.gui.SOverlayUtils;
@@ -70,9 +69,9 @@ public enum CSubmenuGauntletLoad implements ICDoc {
         view.getBtnStart().addActionListener(actStartGame);
 
         view.getGauntletLister().setCmdDelete(new Command() { @Override
-            public void execute() { enableStartButton(); } });
+            public void run() { enableStartButton(); } });
         view.getGauntletLister().setCmdSelect(new Command() { @Override
-            public void execute() { enableStartButton(); } });
+            public void run() { enableStartButton(); } });
     }
 
     private void updateData() {
@@ -116,9 +115,9 @@ public enum CSubmenuGauntletLoad implements ICDoc {
 
                 MatchStartHelper starter = new MatchStartHelper();
                 Lobby lobby = Singletons.getControl().getLobby();
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.HUMAN), gd.getUserDeck());
-                starter.addPlayer(lobby.findLocalPlayer(PlayerType.COMPUTER), aiDeck);
-
+                starter.addPlayer(lobby.getGuiPlayer(), gd.getUserDeck());
+                starter.addPlayer(lobby.getAiPlayer(), aiDeck);
+                
                 MatchController mc = Singletons.getModel().getMatch();
                 mc.initMatch(GameType.Gauntlet, starter.getPlayerMap());
                 mc.startRound();
@@ -141,7 +140,7 @@ public enum CSubmenuGauntletLoad implements ICDoc {
     public Command getCommandOnSelect() {
         return new Command() {
             @Override
-            public void execute() {
+            public void run() {
                 updateData();
             }
         };

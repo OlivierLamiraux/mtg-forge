@@ -1,12 +1,10 @@
 package forge.card.trigger;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import forge.Card;
-import forge.Singletons;
 import forge.card.ability.ApiType;
 import forge.card.cost.Cost;
 import forge.card.mana.ManaCost;
@@ -16,6 +14,7 @@ import forge.card.spellability.ISpellAbility;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellAbilityRestriction;
 import forge.card.spellability.Target;
+import forge.card.spellability.TargetChoices;
 import forge.game.GameState;
 import forge.game.ai.ComputerUtil;
 import forge.game.player.AIPlayer;
@@ -350,64 +349,20 @@ public class WrappedAbility extends Ability implements ISpellAbility {
     // //////////////////////////////////////
     @Override
     public void resolve() {
-        final GameState game = Singletons.getModel().getGame();
+        final GameState game = sa.getActivatingPlayer().getGame();
+
         if (!(regtrig instanceof TriggerAlways)) {
-            // State triggers
-            // don't do the whole
-            // "Intervening If"
-            // thing.
-            if (!regtrig.requirementsCheck()) {
+            // State triggers don't have "Intervening If"
+            if (!regtrig.requirementsCheck(game)) {
                 return;
             }
         }
+
         TriggerHandler th = game.getTriggerHandler();
         Map<String, String> triggerParams = regtrig.getMapParams();
 
-        if (decider != null) {
-            if (decider.isHuman()) {
-                if (th.isAlwaysAccepted(this.getSourceTrigger())) {
-                    // No need to do anything.
-                } else if (th.isAlwaysDeclined(this.getSourceTrigger())) {
-                    return;
-                } else {
-                    final StringBuilder buildQuestion = new StringBuilder("Use triggered ability of ");
-                    buildQuestion.append(regtrig.getHostCard().getName()).append("(")
-                            .append(regtrig.getHostCard().getUniqueNumber()).append(")?");
-                    buildQuestion.append("\r\n(");
-                    buildQuestion.append(triggerParams.get("TriggerDescription").replace("CARDNAME",
-                            regtrig.getHostCard().getName()));
-                    buildQuestion.append(")\r\n");
-                    if (sa.getTriggeringObjects().containsKey("Attacker")) {
-                        buildQuestion
-                                .append("[Attacker: " + sa.getTriggeringObjects().get("Attacker") + "]");
-                    }
-                    if (!GuiDialog.confirm(regtrig.getHostCard(), buildQuestion.toString())) {
-                        return;
-                    }
-                }
-            } else {
-                if (triggerParams.containsKey("DelayedTrigger")) {
-                    //TODO: The only card with an optional delayed trigger is Shirei, Shizo's Caretaker, 
-                    //      needs to be expanded when a more difficult cards comes up
-                } else {
-                    ArrayList<Object> tgts = null;
-                    // make sure the targets won't change
-                    if (sa.getTarget() != null && sa.getTarget().getTargetChoices() != null) {
-                        tgts = new ArrayList<Object>(sa.getTarget().getTargetChoices().getTargets());
-                    }
-                    // This isn't quite right, but better than canPlayAI
-                    if (!sa.doTrigger(this.isMandatory(), (AIPlayer) decider)) {
-                        return;
-                    }
-                    if (sa.getTarget() != null && sa.getTarget().getTargetChoices() != null) {
-                        for (Object tgt : tgts) {
-                            sa.getTarget().getTargetChoices().clear();
-                            sa.getTarget().getTargetChoices().addTarget(tgt);
-                        }
-                    }
-                }
-            }
-        }
+        if (decider != null && !confirmTrigger(decider, triggerParams)) 
+            return;
 
         if (getActivatingPlayer().isHuman()) {
             ((HumanPlayer)getActivatingPlayer()).playSpellAbilityNoStack(sa, true);
@@ -426,6 +381,46 @@ public class WrappedAbility extends Ability implements ISpellAbility {
             deltrig.setStoredTriggeredObjects(this.getTriggeringObjects());
             th.registerDelayedTrigger(deltrig);
         }
+    }
+    
+    private boolean confirmTrigger(Player decider, Map<String, String> triggerParams) {
+        if (decider.isHuman()) {
+            String triggerDesc = triggerParams.get("TriggerDescription").replace("CARDNAME", regtrig.getHostCard().getName());
+            final StringBuilder buildQuestion = new StringBuilder("Use triggered ability of ");
+            buildQuestion.append(regtrig.getHostCard().toString()).append("?");
+            buildQuestion.append("\r\n(").append(triggerDesc).append(")\r\n");
+            if (sa.getTriggeringObjects().containsKey("Attacker")) {
+                buildQuestion.append("[Attacker: " + sa.getTriggeringObjects().get("Attacker") + "]");
+            }
+            if (!GuiDialog.confirm(regtrig.getHostCard(), buildQuestion.toString())) {
+                return false;
+            }
+        } else {
+            if (triggerParams.containsKey("DelayedTrigger")) {
+                //TODO: The only card with an optional delayed trigger is Shirei, Shizo's Caretaker, 
+                //      needs to be expanded when a more difficult cards comes up
+            } else {
+                // Store/replace target choices more properly to get this SA cleared.
+                Target tgt = sa.getTarget();
+                TargetChoices tc = null;
+                boolean storeChoices = tgt != null && tgt.getTargetChoices() != null;
+
+                if (storeChoices) {
+                    tc = tgt.getTargetChoices();
+                    tgt.resetTargets();
+                }
+                // There is no way this doTrigger here will have the same target as stored above
+                // So it's possible it's making a different decision here than will actually happen
+                if (!sa.doTrigger(this.isMandatory(), (AIPlayer) decider)) {
+                    return false;
+                }
+                if (storeChoices) {
+                    tgt.resetTargets();
+                    tgt.setTargetChoices(tc);
+                }
+            }
+        }
+        return true;
     }
 
 }

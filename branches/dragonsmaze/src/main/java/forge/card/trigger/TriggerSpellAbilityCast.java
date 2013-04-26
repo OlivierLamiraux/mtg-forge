@@ -18,10 +18,11 @@
 package forge.card.trigger;
 
 import forge.Card;
-import forge.Singletons;
 import forge.card.cost.Cost;
+import forge.card.spellability.OptionalCost;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellAbilityStackInstance;
+import forge.game.GameState;
 import forge.game.player.Player;
 
 /**
@@ -55,7 +56,8 @@ public class TriggerSpellAbilityCast extends Trigger {
     public final boolean performTest(final java.util.Map<String, Object> runParams2) {
         final SpellAbility spellAbility = (SpellAbility) runParams2.get("CastSA");
         final Card cast = spellAbility.getSourceCard();
-        final SpellAbilityStackInstance si = Singletons.getModel().getGame().getStack().getInstanceFromSpellAbility(spellAbility);
+        final GameState game = cast.getGame();
+        final SpellAbilityStackInstance si = game.getStack().getInstanceFromSpellAbility(spellAbility);
 
         if (this.getMode() == TriggerType.SpellCast) {
             if (!spellAbility.isSpell()) {
@@ -71,6 +73,12 @@ public class TriggerSpellAbilityCast extends Trigger {
 
         if (this.getMapParams().containsKey("ActivatedOnly")) {
             if (spellAbility.isTrigger()) {
+                return false;
+            }
+        }
+        
+        if (this.getMapParams().containsKey("AltCostSpellAbility")) {
+            if (!spellAbility.isOptionalCostPaid(OptionalCost.AltCost)) {
                 return false;
             }
         }
@@ -151,7 +159,7 @@ public class TriggerSpellAbilityCast extends Trigger {
         }
 
         if (this.getMapParams().containsKey("Conspire")) {
-            if (!spellAbility.isOptionalAdditionalCostPaid("Conspire")) {
+            if (!spellAbility.isOptionalCostPaid(OptionalCost.Conspire)) {
                 return false;
             }
         }

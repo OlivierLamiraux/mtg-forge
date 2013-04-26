@@ -23,9 +23,9 @@ import java.util.Map;
 
 import forge.Card;
 import forge.CardLists;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.cardfactory.CardFactoryUtil;
+import forge.game.GameState;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
@@ -78,11 +78,19 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
                 this.setHellbent(true);
             }
             if (value.equals("Kicked")) {
-                this.setKicked(true);
+                this.kicked = true;
             }
+            if (value.equals("Kicked 1")) {
+                this.kicked1 = true;
+            }
+            if (value.equals("Kicked 2")) {
+                this.kicked2 = true;
+            }            
             if (value.equals("AllTargetsLegal")) {
                 this.setAllTargetsLegal(true);
             }
+            if (value.equals("AltCost"))
+                this.altCostPaid = true;
         }
 
         if (params.containsKey("ConditionZone")) {
@@ -176,28 +184,17 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             System.out.println(sa.getSourceCard().getName()
                     + " Did not have activator set in SpellAbility_Condition.checkConditions()");
         }
+        final GameState game = activator.getGame();
 
-        if (this.isHellbent()) {
-            if (!activator.hasHellbent()) {
-                return false;
-            }
-        }
-        if (this.isThreshold()) {
-            if (!activator.hasThreshold()) {
-                return false;
-            }
-        }
-        if (this.isMetalcraft()) {
-            if (!activator.hasMetalcraft()) {
-                return false;
-            }
-        }
-        if (this.isKicked()) {
-            SpellAbility root = sa.getRootAbility();
-            if (!root.isKicked()) {
-                return false;
-            }
-        }
+        if (this.isHellbent() && !activator.hasHellbent()) return false;
+        if (this.isThreshold() && !activator.hasThreshold()) return false;
+        if (this.isMetalcraft() && !activator.hasMetalcraft()) return false;
+        
+        if (this.kicked && !sa.isKicked()) return false;
+        if (this.kicked1 && !sa.isOptionalCostPaid(OptionalCost.Kicker1)) return false;
+        if (this.kicked2 && !sa.isOptionalCostPaid(OptionalCost.Kicker2)) return false;
+        if( this.altCostPaid && !sa.isOptionalCostPaid(OptionalCost.AltCost)) return false;
+        
         if (this.isAllTargetsLegal()) {
             for (Card c : sa.getTarget().getTargetCards()) {
                 if (!CardFactoryUtil.isTargetStillValid(sa, c)) {
@@ -210,11 +207,11 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             return false;
         }
 
-        if (this.isPlayerTurn() && !Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(activator)) {
+        if (this.isPlayerTurn() && !activator.getGame().getPhaseHandler().isPlayerTurn(activator)) {
             return false;
         }
 
-        if (this.isOpponentTurn() && !Singletons.getModel().getGame().getPhaseHandler().getPlayerTurn().isOpponentOf(activator)) {
+        if (this.isOpponentTurn() && !activator.getGame().getPhaseHandler().getPlayerTurn().isOpponentOf(activator)) {
             return false;
         }
 
@@ -224,7 +221,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
 
         if (this.getPhases().size() > 0) {
             boolean isPhase = false;
-            final PhaseType currPhase = Singletons.getModel().getGame().getPhaseHandler().getPhase();
+            final PhaseType currPhase = game.getPhaseHandler().getPhase();
             for (final PhaseType s : this.getPhases()) {
                 if (s == currPhase) {
                     isPhase = true;
@@ -274,7 +271,7 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
             if (this.getPresentDefined() != null) {
                 list.addAll(AbilityUtils.getDefinedCards(sa.getSourceCard(), this.getPresentDefined(), sa));
             } else {
-                list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+                list = game.getCardsIn(ZoneType.Battlefield);
             }
 
             list = CardLists.getValidCards(list, this.getIsPresent().split(","), sa.getActivatingPlayer(), sa.getSourceCard());

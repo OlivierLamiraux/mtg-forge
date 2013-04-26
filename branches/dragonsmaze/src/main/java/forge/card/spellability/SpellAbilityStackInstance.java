@@ -257,11 +257,42 @@ public class SpellAbilityStackInstance {
         return this.ability.isOptionalTrigger();
     }
 
+    public final SpellAbilityStackInstance getSubInstace() {
+        return this.subInstace;
+    }
+
+    public final TargetChoices getTargetChoices() {
+        return this.tc;
+    }
+
     public void updateTarget(Target target) {
         if (target != null) {
             this.tc = target.getTargetChoices();
             this.ability.setTarget(target);
             this.stackDescription = this.ability.getStackDescription();
         }
+    }
+
+    public boolean compareToSpellAbility(SpellAbility sa) {
+        // Compare my target choices to the SA passed in
+        // TODO? Compare other data points in the SI to the passed SpellAbility for confirmation
+        SpellAbility compare = sa;
+        SpellAbilityStackInstance sub = this;
+
+        if (!compare.equals(sub.ability)){
+            return false;
+        }
+
+        while (compare != null && sub != null) {
+            TargetChoices choices = compare.getTarget() != null ? compare.getTarget().getTargetChoices() : null;
+
+            if (choices != null && !choices.equals(sub.getTargetChoices())) {
+                return false;
+            }
+            compare = compare.getSubAbility();
+            sub = sub.getSubInstace();
+        }
+
+        return true;
     }
 }

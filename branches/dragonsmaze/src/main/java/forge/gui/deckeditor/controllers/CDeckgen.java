@@ -51,19 +51,19 @@ public enum CDeckgen implements ICDoc {
     public void initialize() {
         ((FLabel) VDeckgen.SINGLETON_INSTANCE.getBtnRandCardpool()).setCommand(new Command() {
             @Override
-            public void execute() {
+            public void run() {
                 newRandomConstructed();
             }
         });
 
         ((FLabel) VDeckgen.SINGLETON_INSTANCE.getBtnRandDeck2()).setCommand(new Command() {
-            @Override  public void execute() { newGenerateConstructed(2); } });
+            @Override  public void run() { newGenerateConstructed(2); } });
 
         ((FLabel) VDeckgen.SINGLETON_INSTANCE.getBtnRandDeck3()).setCommand(new Command() {
-            @Override  public void execute() { newGenerateConstructed(3); } });
+            @Override  public void run() { newGenerateConstructed(3); } });
 
         ((FLabel) VDeckgen.SINGLETON_INSTANCE.getBtnRandDeck5()).setCommand(new Command() {
-            @Override  public void execute() { newGenerateConstructed(5); } });
+            @Override  public void run() { newGenerateConstructed(5); } });
     }
 
     /* (non-Javadoc)
@@ -84,12 +84,12 @@ public enum CDeckgen implements ICDoc {
         Iterable<CardPrinted> source = Iterables.filter(CardDb.instance().getUniqueCards(), notBasicLand);
         randomDeck.getMain().addAllFlat(Aggregates.random(source, 15 * 5));
 
-        randomDeck.getMain().add("Plains");
-        randomDeck.getMain().add("Island");
-        randomDeck.getMain().add("Swamp");
-        randomDeck.getMain().add("Mountain");
-        randomDeck.getMain().add("Forest");
-        randomDeck.getMain().add("Terramorphic Expanse");
+        randomDeck.getMain().add("Plains", 1);
+        randomDeck.getMain().add("Island", 1);
+        randomDeck.getMain().add("Swamp", 1);
+        randomDeck.getMain().add("Mountain", 1);
+        randomDeck.getMain().add("Forest", 1);
+        randomDeck.getMain().add("Terramorphic Expanse", 1);
 
         final ACEditorBase<TItem, TModel> ed = (ACEditorBase<TItem, TModel>)
                 CDeckEditorUI.SINGLETON_INSTANCE.getCurrentEditorController();

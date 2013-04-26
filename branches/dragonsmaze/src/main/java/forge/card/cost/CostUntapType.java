@@ -22,7 +22,6 @@ import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates.Presets;
 import forge.FThreads;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.spellability.SpellAbility;
 import forge.control.input.InputSelectCards;
@@ -146,7 +145,7 @@ public class CostUntapType extends CostPartWithList {
             final String sVar = ability.getSVar(amount);
             // Generalize this
             if (sVar.equals("XChoice")) {
-                c = CostUtil.chooseXValue(source, ability, typeList.size());
+                c = Cost.chooseXValue(source, ability, typeList.size());
             } else {
                 c = AbilityUtils.calculateAmount(source, amount, ability);
             }
@@ -186,7 +185,7 @@ public class CostUntapType extends CostPartWithList {
         if (c == null) {
             final String sVar = ability.getSVar(amount);
             if (sVar.equals("XChoice")) {
-                List<Card> typeList = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+                List<Card> typeList = ai.getGame().getCardsIn(ZoneType.Battlefield);
                 typeList = CardLists.getValidCards(typeList, this.getType().split(";"), ai, ability.getSourceCard());
                 if (!canUntapSource) {
                     typeList.remove(source);

@@ -40,6 +40,7 @@ import forge.card.mana.ManaCost;
 import forge.card.replacement.ReplacementHandler;
 import forge.card.spellability.AbilityActivated;
 import forge.card.spellability.AbilitySub;
+import forge.card.spellability.OptionalCost;
 import forge.card.spellability.SpellAbility;
 import forge.card.spellability.SpellPermanent;
 import forge.card.spellability.Target;
@@ -181,7 +182,7 @@ public class CardFactory {
         }
         copySA.setCopied(true);
         //remove all costs
-        copySA.setPayCosts(new Cost(c, "", sa.isAbility()));
+        copySA.setPayCosts(new Cost("", sa.isAbility()));
         if (sa.getTarget() != null) {
             Target target = new Target(sa.getTarget());
             target.setSourceCard(c);
@@ -191,11 +192,10 @@ public class CardFactory {
 
         if (bCopyDetails) {
             c.addXManaCostPaid(original.getXManaCostPaid());
-            c.addMultiKickerMagnitude(original.getMultiKickerMagnitude());
-            if (original.getOptionalAdditionalCostsPaid() != null) {
-                for (String cost : original.getOptionalAdditionalCostsPaid()) {
-                    c.addOptionalAdditionalCostsPaid(cost);
-                }
+            c.setKickerMagnitude(original.getKickerMagnitude());
+
+            for (OptionalCost cost : original.getOptionalCostsPaid()) {
+                c.addOptionalCostPaid(cost);
             }
             c.addReplicateMagnitude(original.getReplicateMagnitude());
             if (sa.isReplicate()) {
@@ -291,7 +291,10 @@ public class CardFactory {
 
             if ( state == CardCharacteristicName.LeftSplit || state == CardCharacteristicName.RightSplit )
             {
-                card.getState(CardCharacteristicName.Original).getSpellAbility().addAll(card.getCharacteristics().getSpellAbility());
+                CardCharacteristics original = card.getState(CardCharacteristicName.Original);
+                original.getSpellAbility().addAll(card.getCharacteristics().getSpellAbility());
+                original.getIntrinsicKeyword().addAll(card.getIntrinsicKeyword()); // Copy 'Fuse' to original side
+                original.getSVars().putAll(card.getCharacteristics().getSVars()); // Unfortunately need to copy these to (Effect looks for sVars on execute)
             }
         }
 
@@ -355,17 +358,9 @@ public class CardFactory {
 
         // 1. The states we may have:
         CardSplitType st = rules.getSplitType();
-        switch ( st ) {
-            case Split:
-                card.addAlternateState(CardCharacteristicName.LeftSplit);
-                card.setState(CardCharacteristicName.LeftSplit);
-                break;
-            
-            case Transform: card.setDoubleFaced(true);break;
-            case Flip: card.setFlipCard(true); break;
-            case None: break;
-
-            default: card.setTransformable(st.getChangedStateName()); break;
+        if ( st ==  CardSplitType.Split) {
+            card.addAlternateState(CardCharacteristicName.LeftSplit);
+            card.setState(CardCharacteristicName.LeftSplit);
         } 
 
         readCardFace(card, rules.getMainPart());
@@ -455,8 +450,6 @@ public class CardFactory {
     public static Card copyStats(final Card sim) {
         final Card c = new Card();
     
-        c.setFlipCard(sim.isFlipCard());
-        c.setDoubleFaced(sim.isDoubleFaced());
         c.setCurSetCode(sim.getCurSetCode());
     
         final CardCharacteristicName origState = sim.getCurState();
@@ -495,7 +488,7 @@ public class CardFactory {
         to.setManaCost(from.getManaCost());
         to.setColor(from.getColor());
         to.setSVars(from.getSVars());
-        to.setIntrinsicAbilities(from.getIntrinsicAbilities());
+        to.setIntrinsicAbilities(from.getUnparsedAbilities());
     
         to.setImageKey(from.getImageKey());
         to.setTriggers(from.getTriggers());
@@ -524,7 +517,7 @@ public class CardFactory {
     
         // get CardCharacteristics for desired state
         CardCharacteristics characteristics = from.getState(stateToCopy);
-        to.getCharacteristics().copy(characteristics);
+        to.getCharacteristics().copyFrom(characteristics);
         // handle triggers and replacement effect through Card class interface
         to.setTriggers(characteristics.getTriggers());
         to.setReplacementEffects(characteristics.getReplacementEffects());

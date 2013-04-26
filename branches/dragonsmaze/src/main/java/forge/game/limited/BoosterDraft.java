@@ -24,18 +24,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Stack;
 import java.util.TreeMap;
 
 import javax.swing.JOptionPane;
 
-import com.google.common.base.Function;
+import org.apache.commons.lang.ArrayUtils;
+
+import com.google.common.base.Supplier;
 
 import forge.Card;
 import forge.Constant.Preferences;
 import forge.Singletons;
 import forge.card.BoosterGenerator;
+import forge.card.BoosterTemplate;
 import forge.card.CardBlock;
 import forge.card.CardEdition;
+import forge.card.IUnOpenedProduct;
+import forge.card.SealedProductTemplate;
 import forge.card.UnOpenedProduct;
 import forge.deck.Deck;
 import forge.gui.GuiChoose;
@@ -47,6 +53,7 @@ import forge.item.ItemPoolView;
 import forge.properties.NewConstants;
 import forge.util.FileUtil;
 import forge.util.HttpUtil;
+import forge.util.storage.IStorageView;
 
 /**
  * 
@@ -66,7 +73,7 @@ public final class BoosterDraft implements IBoosterDraft {
     private final Map<String, Float> draftPicks = new TreeMap<String, Float>();
     private final CardPoolLimitation draftFormat;
 
-    private final ArrayList<UnOpenedProduct> product = new ArrayList<UnOpenedProduct>();
+    private final List<Supplier<List<CardPrinted>>> product = new ArrayList<Supplier<List<CardPrinted>>>();
 
     /**
      * <p>
@@ -82,81 +89,49 @@ public final class BoosterDraft implements IBoosterDraft {
 
         switch (draftType) {
         case Full: // Draft from all cards in Forge
-            final BoosterGenerator bpFull = new BoosterGenerator(CardDb.instance().getUniqueCards());
-            for (int i = 0; i < 3; i++) {
-                this.product.add(new UnOpenedProduct(BoosterGenerator.IDENTITY_PICK, bpFull));
-            }
+            Supplier<List<CardPrinted>> s = new Supplier<List<CardPrinted>>() {
+                @Override public List<CardPrinted> get() { return BoosterGenerator.getBoosterPack(BoosterTemplate.genericBooster); }
+            };
 
+            for (int i = 0; i < 3; i++) this.product.add(s);
             IBoosterDraft.LAND_SET_CODE[0] = CardDb.instance().getCard("Plains").getEdition();
             break;
 
         case Block: case FantasyBlock: // Draft from cards by block or set
 
             List<CardBlock> blocks = new ArrayList<CardBlock>();
+            IStorageView<CardBlock> storage = draftType == CardPoolLimitation.Block 
+                    ? Singletons.getModel().getBlocks() : Singletons.getModel().getFantasyBlocks();
 
-            if (draftType == CardPoolLimitation.Block) {
-                for (CardBlock b : Singletons.getModel().getBlocks()) {
-                    if (b.hasMetaSetType("choose1") || b.hasMetaSetType("random1")) {
-                        System.out.println("Ignoring block " + b.getName() + " because its MetaSet types are not supported in Draft.");
-                    } else {
-                        blocks.add(b);
-                    }
-                }
-
-            }
-            else {
-                for (CardBlock b : Singletons.getModel().getFantasyBlocks()) {
-                    if (b.hasMetaSetType("choose1") || b.hasMetaSetType("random1")) {
-                                System.out.println("Ignoring block " + b.getName() + " because its MetaSet types are not supported in Draft.");
-                    } else {
-                        blocks.add(b);
-                    }
-                }
+            for (CardBlock b : storage) {
+                if( b.getCntBoostersDraft() > 0)
+                    blocks.add(b);
             }
 
             final CardBlock block = GuiChoose.one("Choose Block", blocks);
 
             final CardEdition[] cardSets = block.getSets();
-            final String[] sets = new String[cardSets.length + block.getNumberMetaSets()];
+            final Stack<String> sets = new Stack<String>();
             for (int k = cardSets.length - 1; k >= 0; --k) {
-                sets[k] = cardSets[k].getCode();
+                sets.add(cardSets[k].getCode());
             }
 
-            if (block.getNumberMetaSets() > 0) {
-
-                int j = cardSets.length;
-
-                for (int k = 0; k < block.getNumberMetaSets(); k++) {
-                    sets[j + k] = block.getMetaSet(k).getCode();
-                }
+            for(String setCode : block.getMetaSetNames() ) {
+                if ( block.getMetaSet(setCode).isDraftable() )
+                    sets.push(setCode); // to the beginning
             }
 
             final int nPacks = block.getCntBoostersDraft();
-            final List<String> setCombos = getSetCombos(sets);
 
-            while (setCombos == null) {
-                throw new RuntimeException("Unsupported amount of packs (" + nPacks + ") in a Draft block!");
-            }
-
-            if (sets.length > 1) {
-                final Object p = GuiChoose.one("Choose Set Combination", setCombos);
+            if (sets.size() > 1) {
+                final Object p = GuiChoose.one("Choose Set Combination", getSetCombos(sets));
                 final String[] pp = p.toString().split("/");
                 for (int i = 0; i < nPacks; i++) {
-                    if (pp[i].charAt(0) == '*') {
-                        this.product.add(block.getBooster(pp[i]));
-                    }
-                    else {
-                        this.product.add(new UnOpenedProduct(Singletons.getModel().getBoosters().get(pp[i])));
-                    }
+                    this.product.add(block.getBooster(pp[i]));
                 }
             } else {
-                UnOpenedProduct product1;
-                if (sets[0].charAt(0) == '*') {
-                    product1 = block.getBooster(sets[0]);
-                }
-                else {
-                    product1 = new UnOpenedProduct(Singletons.getModel().getBoosters().get(sets[0]));
-                }
+                IUnOpenedProduct product1 = block.getBooster(sets.get(0));
+
                 for (int i = 0; i < nPacks; i++) {
                     this.product.add(product1);
                 }
@@ -190,22 +165,10 @@ public final class BoosterDraft implements IBoosterDraft {
             throw new RuntimeException("BoosterGenerator : deck not found");
         }
 
-        final BoosterGenerator bpCustom = new BoosterGenerator(dPool);
-        final Function<BoosterGenerator, List<CardPrinted>> fnPick = new Function<BoosterGenerator, List<CardPrinted>>() {
-            @Override
-            public List<CardPrinted> apply(final BoosterGenerator pack) {
-                if (draft.getIgnoreRarity()) {
-                    if (!draft.getSingleton()) {
-                        return pack.getBoosterPack(0, 0, 0, 0, 0, 0, 0, draft.getNumCards(), 0);
-                    }
-                    return pack.getSingletonBoosterPack(draft.getNumCards());
-                }
-                return pack.getBoosterPack(draft.getNumbersByRarity(), 0, 0, 0);
-            }
-        };
+        final SealedProductTemplate tpl = draft.getSealedProductTemplate();
 
         for (int i = 0; i < draft.getNumPacks(); i++) {
-            this.product.add(new UnOpenedProduct(fnPick, bpCustom));
+            this.product.add(new UnOpenedProduct(tpl, dPool));
         }
 
         IBoosterDraft.LAND_SET_CODE[0] = draft.getLandSetCode();
@@ -268,7 +231,7 @@ public final class BoosterDraft implements IBoosterDraft {
 
         final List<List<CardPrinted>> list = new ArrayList<List<CardPrinted>>();
         for (int i = 0; i < 8; i++) {
-            list.add(this.product.get(this.nextBoosterGroup).open());
+            list.add(this.product.get(this.nextBoosterGroup).get());
         }
 
         this.nextBoosterGroup++;
@@ -384,8 +347,9 @@ public final class BoosterDraft implements IBoosterDraft {
         HttpUtil.upload(NewConstants.URL_DRAFT_UPLOAD + "?fmt=" + draftFormat, outDraftData);
     }
 
-    private ArrayList<String> getSetCombos(final String[] sets) {
-        ArrayList<String> setCombos = new ArrayList<String>();
+    private List<String> getSetCombos(final List<String> setz) {
+        String[] sets = setz.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
+        List<String> setCombos = new ArrayList<String>();
         if (sets.length >= 2) {
             setCombos.add(String.format("%s/%s/%s", sets[0], sets[0], sets[0]));
             setCombos.add(String.format("%s/%s/%s", sets[0], sets[0], sets[1]));

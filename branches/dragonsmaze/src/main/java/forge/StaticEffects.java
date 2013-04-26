@@ -29,6 +29,7 @@ import forge.card.TriggerReplacementBase;
 import forge.card.replacement.ReplacementEffect;
 import forge.card.spellability.SpellAbility;
 import forge.card.staticability.StaticAbility;
+import forge.game.GameState;
 import forge.game.GlobalRuleChange;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
@@ -63,8 +64,6 @@ public class StaticEffects {
             this.removeStaticEffect(this.staticEffects.get(i));
         }
         this.staticEffects = new ArrayList<StaticEffect>();
-
-        Singletons.getModel().getGame().getTriggerHandler().cleanUpTemporaryTriggers();
     }
 
     public void setGlobalRuleChange(GlobalRuleChange change) {
@@ -223,8 +222,7 @@ public class StaticEffects {
 
             // remove abilities
             if (params.containsKey("AddAbility") || params.containsKey("GainsAbilitiesOf")) {
-                final SpellAbility[] spellAbility = affectedCard.getSpellAbility();
-                for (final SpellAbility s : spellAbility) {
+                for (final SpellAbility s : affectedCard.getSpellAbilities()) {
                     if (s.getType().equals("Temporary")) {
                         affectedCard.removeSpellAbility(s);
                     }
@@ -375,11 +373,12 @@ public class StaticEffects {
      * <p>
      * rePopulateStateBasedList.
      * </p>
+     * @param game 
      */
-    public final void rePopulateStateBasedList() {
+    public final void rePopulateStateBasedList(GameState game) {
         this.reset();
 
-        final List<Card> cards = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+        final List<Card> cards = game.getCardsIn(ZoneType.Battlefield);
 
         Log.debug("== Start add state effects ==");
         for (Card c : cards) {

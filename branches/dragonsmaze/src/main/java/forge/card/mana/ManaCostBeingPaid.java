@@ -50,8 +50,9 @@ import forge.util.MyRandom;
 public class ManaCostBeingPaid {
     private class ManaCostBeingPaidIterator implements IParserManaCost {
         private Iterator<ManaCostShard> mch;
-        private ManaCostShard nextShard;
+        private ManaCostShard nextShard = null;
         private int remainingShards = 0;
+        private boolean hasSentX = false;
         
         public ManaCostBeingPaidIterator() { 
             mch = unpaidShards.keySet().iterator();
@@ -73,6 +74,14 @@ public class ManaCostBeingPaid {
         @Override
         public boolean hasNext() {
             if ( remainingShards > 0 ) return true;
+            if ( !hasSentX ) {
+                if ( nextShard != ManaCostShard.X && cntX > 0) {
+                    nextShard = ManaCostShard.X;
+                    remainingShards = cntX;
+                    return true;
+                } else 
+                    hasSentX = true;
+            }
             if ( !mch.hasNext() ) return false;
             
             nextShard = mch.next();
@@ -95,8 +104,6 @@ public class ManaCostBeingPaid {
     private final HashMap<ManaCostShard, Integer> unpaidShards = new HashMap<ManaCostShard, Integer>();
     private final HashMap<String, Integer> sunburstMap = new HashMap<String, Integer>();
     private int cntX = 0;
-    private final ArrayList<String> manaNeededToAvoidNegativeEffect = new ArrayList<String>();
-    private final ArrayList<String> manaPaidToAvoidNegativeEffect = new ArrayList<String>();
     private final String sourceRestriction;
     
     // manaCost can be like "0", "3", "G", "GW", "10", "3 GW", "10 GW"
@@ -273,14 +280,6 @@ public class ManaCostBeingPaid {
      * @return a boolean.
      */
     public final boolean isNeeded(String mana) {
-        if (this.manaNeededToAvoidNegativeEffect.size() != 0) {
-            for (final String s : this.manaNeededToAvoidNegativeEffect) {
-                if ((s.equalsIgnoreCase(mana) || s.substring(0, 1).equalsIgnoreCase(mana))
-                        && !this.manaPaidToAvoidNegativeEffect.contains(mana)) {
-                    return true;
-                }
-            }
-        }
         if (mana.length() > 1) {
             mana = MagicColor.toShortString(mana);
         }
@@ -368,9 +367,6 @@ public class ManaCostBeingPaid {
      * @return a boolean.
      */
     public final boolean payMana(String color) {
-        if (this.manaNeededToAvoidNegativeEffect.contains(color) && !this.manaPaidToAvoidNegativeEffect.contains(color)) {
-            this.manaPaidToAvoidNegativeEffect.add(color);
-        }
         color = MagicColor.toShortString(color);
         return this.addMana(color);
     }
@@ -672,36 +668,6 @@ public class ManaCostBeingPaid {
      */
     public final void removeColorlessMana() {
         unpaidShards.remove(ManaCostShard.COLORLESS);
-    }
-
-    /**
-     * Sets the mana needed to avoid negative effect.
-     * 
-     * @param manaCol
-     *            the new mana needed to avoid negative effect
-     */
-    public final void setManaNeededToAvoidNegativeEffect(final String[] manaCol) {
-        for (final String s : manaCol) {
-            this.manaNeededToAvoidNegativeEffect.add(s);
-        }
-    }
-
-    /**
-     * Gets the mana needed to avoid negative effect.
-     * 
-     * @return the mana needed to avoid negative effect
-     */
-    public final ArrayList<String> getManaNeededToAvoidNegativeEffect() {
-        return this.manaNeededToAvoidNegativeEffect;
-    }
-
-    /**
-     * Gets the mana paid so far to avoid negative effect.
-     * 
-     * @return the mana paid to avoid negative effect
-     */
-    public final ArrayList<String> getManaPaidToAvoidNegativeEffect() {
-        return this.manaPaidToAvoidNegativeEffect;
     }
 
     public final void applySpellCostChange(final SpellAbility sa) {

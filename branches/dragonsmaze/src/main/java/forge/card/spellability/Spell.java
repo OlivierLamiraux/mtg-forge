@@ -22,7 +22,6 @@ import java.util.List;
 
 import forge.Card;
 import forge.CardLists;
-import forge.Singletons;
 import forge.card.cardfactory.CardFactoryUtil;
 import forge.card.cost.Cost;
 import forge.card.cost.CostPayment;
@@ -57,36 +56,19 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
      *            a {@link forge.Card} object.
      */
     public Spell(final Card sourceCard) {
-        super(sourceCard);
+        this(sourceCard, new Cost(sourceCard.getManaCost(), false));
+    }
+    public Spell(final Card sourceCard, final Cost abCost) {
+        super(sourceCard, abCost);
 
-        this.setManaCost(sourceCard.getManaCost());
         this.setStackDescription(sourceCard.getSpellText());
         this.getRestrictions().setZone(ZoneType.Hand);
-    }
-
-    /**
-     * <p>
-     * Constructor for Spell.
-     * </p>
-     * 
-     * @param sourceCard
-     *            a {@link forge.Card} object.
-     * @param abCost
-     *            a {@link forge.card.cost.Cost} object.
-     * @param abTgt
-     *            a {@link forge.card.spellability.Target} object.
-     */
-    public Spell(final Card sourceCard, final Cost abCost, final Target abTgt) {
-        this(sourceCard);
-
-        this.setPayCosts(abCost);
-        this.setTarget(abTgt);
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean canPlay() {
-        final GameState game = Singletons.getModel().getGame();
+        final GameState game = getActivatingPlayer().getGame();
         if (game.getStack().isSplitSecondOnStack()) {
             return false;
         }
@@ -109,7 +91,7 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
             return false;
         }
         // for uncastables like lotus bloom, check if manaCost is blank
-        if (isBasicSpell() && getManaCost().isNoCost()) {
+        if (isBasicSpell() && (getPayCosts() == null || getPayCosts().getTotalMana().isNoCost())) {
             return false;
         }
 
@@ -138,9 +120,10 @@ public abstract class Spell extends SpellAbility implements java.io.Serializable
     @Override
     public boolean canPlayAI() {
         final Card card = this.getSourceCard();
+        final GameState game = getActivatingPlayer().getGame();
         if (card.getSVar("NeedsToPlay").length() > 0) {
             final String needsToPlay = card.getSVar("NeedsToPlay");
-            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+            List<Card> list = game.getCardsIn(ZoneType.Battlefield);
 
             list = CardLists.getValidCards(list, needsToPlay.split(","), card.getController(), card);
             if (list.isEmpty()) {

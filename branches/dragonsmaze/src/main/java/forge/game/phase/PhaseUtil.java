@@ -27,8 +27,17 @@ import forge.Card;
 import forge.CardLists;
 import forge.CardPredicates.Presets;
 import forge.Singletons;
+import forge.card.cost.Cost;
+import forge.card.mana.ManaCost;
+import forge.card.spellability.Ability;
+import forge.card.spellability.AbilityStatic;
+import forge.card.staticability.StaticAbility;
 import forge.card.trigger.TriggerType;
+import forge.game.GameActionUtil;
 import forge.game.GameState;
+import forge.game.ai.ComputerUtil;
+import forge.game.ai.ComputerUtilCost;
+import forge.game.player.AIPlayer;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.match.CMatchUI;
@@ -79,11 +88,10 @@ public class PhaseUtil {
 
         CMessage.SINGLETON_INSTANCE.updateGameInfo(Singletons.getModel().getMatch());
 
-        game.getCombat().reset();
+        game.getCombat().reset(turn);
         game.getCombat().setAttackingPlayer(turn);
 
-        // Tokens starting game in play now actually suffer from Sum. Sickness
-        // again
+        // Tokens starting game in play should suffer from Sum. Sickness
         final List<Card> list = turn.getCardsIncludePhasingIn(ZoneType.Battlefield);
         for (final Card c : list) {
             if (turn.getTurn() > 0 || !c.isStartsGameInPlay()) {
@@ -123,12 +131,13 @@ public class PhaseUtil {
      * handleDeclareAttackers.
      * </p>
      */
-    public static void handleDeclareAttackers(Combat combat) {
+    public static void handleDeclareAttackers(final GameState game) {
+        final Combat combat = game.getCombat();
         combat.verifyCreaturesInPlay();
 
         // Handles removing cards like Mogg Flunkies from combat if group attack
         // didn't occur
-        final List<Card> filterList = combat.getAttackerList();
+        final List<Card> filterList = combat.getAttackers();
         for (Card c : filterList) {
             if (c.hasKeyword("CARDNAME can't attack or block alone.") && c.isAttacking()) {
                 if (combat.getAttackers().size() < 2) {
@@ -137,7 +146,7 @@ public class PhaseUtil {
             }
         }
 
-        final List<Card> list = combat.getAttackerList();
+        final List<Card> list = combat.getAttackers();
 
         // TODO move propaganda to happen as the Attacker is Declared
         // Remove illegal Propaganda attacks first only for attacking the Player
@@ -145,46 +154,47 @@ public class PhaseUtil {
         final int size = list.size();
         for (int i = 0; i < size; i++) {
             final Card c = list.get(i);
-            final boolean last = (i == (size - 1));
-            CombatUtil.checkPropagandaEffects(c, last);
+            CombatUtil.checkPropagandaEffects(game, c);
         }
+        PhaseUtil.handleAttackingTriggers(game);
     }
 
     /**
      * <p>
      * handleAttackingTriggers.
      * </p>
+     * @param game 
      */
-    public static void handleAttackingTriggers() {
-        final List<Card> list = Singletons.getModel().getGame().getCombat().getAttackerList();
-        Singletons.getModel().getGame().getStack().freezeStack();
+    public static void handleAttackingTriggers(GameState game) {
+        final List<Card> list = game.getCombat().getAttackers();
+        game.getStack().freezeStack();
         // Then run other Attacker bonuses
         // check for exalted:
         if (list.size() == 1) {
-            final Player attackingPlayer = Singletons.getModel().getGame().getCombat().getAttackingPlayer();
+            final Player attackingPlayer = game.getCombat().getAttackingPlayer();
             int exaltedMagnitude = 0;
             for (Card card : attackingPlayer.getCardsIn(ZoneType.Battlefield)) {
                 exaltedMagnitude += card.getKeywordAmount("Exalted");
             }
 
             if (exaltedMagnitude > 0) {
-                CombatUtil.executeExaltedAbility(list.get(0), exaltedMagnitude);
+                CombatUtil.executeExaltedAbility(game, list.get(0), exaltedMagnitude);
                 // Make sure exalted effects get applied only once per combat
             }
 
         }
 
-        Singletons.getModel().getGame().getGameLog().add("Combat", CombatUtil.getCombatAttackForLog(), 1);
+        game.getGameLog().add("Combat", CombatUtil.getCombatAttackForLog(game), 1);
 
         final HashMap<String, Object> runParams = new HashMap<String, Object>();
         runParams.put("Attackers", list);
-        runParams.put("AttackingPlayer", Singletons.getModel().getGame().getCombat().getAttackingPlayer());
-        Singletons.getModel().getGame().getTriggerHandler().runTrigger(TriggerType.AttackersDeclared, runParams, false);
+        runParams.put("AttackingPlayer", game.getCombat().getAttackingPlayer());
+        game.getTriggerHandler().runTrigger(TriggerType.AttackersDeclared, runParams, false);
 
         for (final Card c : list) {
-            CombatUtil.checkDeclareAttackers(c);
+            CombatUtil.checkDeclareAttackers(game, c);
         }
-        Singletons.getModel().getGame().getStack().unfreezeStack();
+        game.getStack().unfreezeStack();
     }
 
     /**
@@ -195,25 +205,60 @@ public class PhaseUtil {
      * @param game
      */
     public static void handleDeclareBlockers(GameState game) {
-        game.getCombat().verifyCreaturesInPlay();
+        final Combat combat = game.getCombat();
+        combat.verifyCreaturesInPlay();
 
         // Handles removing cards like Mogg Flunkies from combat if group block
         // didn't occur
-        final List<Card> filterList = game.getCombat().getAllBlockers();
+        final List<Card> filterList = combat.getAllBlockers();
+        for (Card blocker : filterList) {
+            final List<Card> attackers = new ArrayList<Card>(combat.getAttackersBlockedBy(blocker));
+            for (Card attacker : attackers) {
+                Cost blockCost = new Cost(ManaCost.ZERO, true);
+                // Sort abilities to apply them in proper order
+                for (Card card : game.getCardsIn(ZoneType.Battlefield)) {
+                    final ArrayList<StaticAbility> staticAbilities = card.getStaticAbilities();
+                    for (final StaticAbility stAb : staticAbilities) {
+                        Cost c1 = stAb.getBlockCost(blocker, attacker);
+                        if ( c1 != null )
+                            blockCost.add(c1);
+                    }
+                }
+                
+                boolean hasPaid = blockCost.getTotalMana().isZero() && blockCost.isOnlyManaCost(); // true if needless to pay
+                if (!hasPaid) { 
+                    final Ability ability = new AbilityStatic(blocker, blockCost, null) { @Override public void resolve() {} };
+                    ability.setActivatingPlayer(blocker.getController());
+
+                    if (blocker.getController().isHuman()) {
+                        hasPaid = GameActionUtil.payCostDuringAbilityResolve(ability, blockCost, null, game);
+                    } else { // computer
+                        if (ComputerUtilCost.canPayCost(ability, blocker.getController())) {
+                            ComputerUtil.playNoStack((AIPlayer)blocker.getController(), ability, game);
+                            hasPaid = true;
+                        }
+                    }
+                }
+
+                if ( !hasPaid ) {
+                    combat.removeBlockAssignment(attacker, blocker);
+                }
+            }
+        }
         for (Card c : filterList) {
             if (c.hasKeyword("CARDNAME can't attack or block alone.") && c.isBlocking()) {
-                if (game.getCombat().getAllBlockers().size() < 2) {
-                    game.getCombat().undoBlockingAssignment(c);
+                if (combat.getAllBlockers().size() < 2) {
+                    combat.undoBlockingAssignment(c);
                 }
             }
         }
 
         game.getStack().freezeStack();
 
-        game.getCombat().setUnblocked();
+        combat.setUnblocked();
 
         List<Card> list = new ArrayList<Card>();
-        list.addAll(game.getCombat().getAllBlockers());
+        list.addAll(combat.getAllBlockers());
 
         list = CardLists.filter(list, new Predicate<Card>() {
             @Override
@@ -222,37 +267,22 @@ public class PhaseUtil {
             }
         });
 
-        final List<Card> attList = game.getCombat().getAttackerList();
+        final List<Card> attList = combat.getAttackers();
 
-        CombatUtil.checkDeclareBlockers(list);
+        CombatUtil.checkDeclareBlockers(game, list);
 
         for (final Card a : attList) {
-            final List<Card> blockList = game.getCombat().getBlockers(a);
+            final List<Card> blockList = combat.getBlockers(a);
             for (final Card b : blockList) {
-                CombatUtil.checkBlockedAttackers(a, b);
+                CombatUtil.checkBlockedAttackers(game, a, b);
             }
         }
 
         game.getStack().unfreezeStack();
 
-        game.getGameLog().add("Combat", CombatUtil.getCombatBlockForLog(), 1);
+        game.getGameLog().add("Combat", CombatUtil.getCombatBlockForLog(game), 1);
     }
 
-    // ***** Combat Utility **********
-    // TODO: the below functions should be removed and the code blocks that use
-    // them should instead use SpellAbilityRestriction
-    /**
-     * <p>
-     * isBeforeAttackersAreDeclared.
-     * </p>
-     * 
-     * @return a boolean.
-     */
-    public static boolean isBeforeAttackersAreDeclared() {
-        final PhaseType phase = Singletons.getModel().getGame().getPhaseHandler().getPhase();
-        return phase == PhaseType.UNTAP || phase == PhaseType.UPKEEP || phase == PhaseType.DRAW
-                || phase == PhaseType.MAIN1 || phase == PhaseType.COMBAT_BEGIN;
-    }
 
     /**
      * Retrieves and visually activates phase label for appropriate phase and

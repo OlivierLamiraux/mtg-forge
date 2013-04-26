@@ -7,10 +7,10 @@ import forge.Card;
 import forge.CardLists;
 import forge.CardUtil;
 import forge.Command;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.ability.SpellAbilityEffect;
 import forge.card.spellability.SpellAbility;
+import forge.game.GameState;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.gui.GuiChoose;
@@ -38,6 +38,7 @@ public class ProtectAllEffect extends SpellAbilityEffect {
     @Override
     public void resolve(SpellAbility sa) {
         final Card host = sa.getSourceCard();
+        final GameState game = sa.getActivatingPlayer().getGame();
 
         final boolean isChoice = sa.getParam("Gains").contains("Choice");
         final ArrayList<String> choices = AbilityUtils.getProtectionList(sa);
@@ -77,7 +78,7 @@ public class ProtectAllEffect extends SpellAbilityEffect {
             valid = sa.getParam("ValidCards");
         }
         if (!valid.equals("")) {
-            List<Card> list = Singletons.getModel().getGame().getCardsIn(ZoneType.Battlefield);
+            List<Card> list = game.getCardsIn(ZoneType.Battlefield);
             list = CardLists.getValidCards(list, valid, sa.getActivatingPlayer(), host);
 
             for (final Card tgtC : list) {
@@ -92,7 +93,7 @@ public class ProtectAllEffect extends SpellAbilityEffect {
                             private static final long serialVersionUID = -6573962672873853565L;
 
                             @Override
-                            public void execute() {
+                            public void run() {
                                 if (tgtC.isInPlay()) {
                                     for (final String gain : gains) {
                                         tgtC.removeExtrinsicKeyword("Protection from " + gain);
@@ -101,9 +102,9 @@ public class ProtectAllEffect extends SpellAbilityEffect {
                             }
                         };
                         if (sa.hasParam("UntilEndOfCombat")) {
-                            Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
+                            game.getEndOfCombat().addUntil(untilEOT);
                         } else {
-                            Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
+                            game.getEndOfTurn().addUntil(untilEOT);
                         }
                     }
                 }
@@ -128,16 +129,16 @@ public class ProtectAllEffect extends SpellAbilityEffect {
                         private static final long serialVersionUID = -6573962672873853565L;
 
                         @Override
-                        public void execute() {
+                        public void run() {
                             for (final String gain : gains) {
                                 player.removeKeyword("Protection from " + gain);
                             }
                         }
                     };
                     if (sa.hasParam("UntilEndOfCombat")) {
-                        Singletons.getModel().getGame().getEndOfCombat().addUntil(untilEOT);
+                        game.getEndOfCombat().addUntil(untilEOT);
                     } else {
-                        Singletons.getModel().getGame().getEndOfTurn().addUntil(untilEOT);
+                        game.getEndOfTurn().addUntil(untilEOT);
                     }
                 }
             }

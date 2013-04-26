@@ -20,15 +20,18 @@ package forge.game.limited;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import javax.swing.JOptionPane;
 
-import com.google.common.base.Function;
+import org.apache.commons.lang.ArrayUtils;
 
 import forge.Singletons;
-import forge.card.BoosterGenerator;
+import forge.card.BoosterTemplate;
 import forge.card.CardBlock;
 import forge.card.CardEdition;
+import forge.card.IUnOpenedProduct;
+import forge.card.UnOpenedMeta;
 import forge.card.UnOpenedProduct;
 import forge.gui.GuiChoose;
 import forge.item.CardDb;
@@ -46,8 +49,7 @@ import forge.util.FileUtil;
  * @since 1.0.15
  */
 public class SealedDeckFormat {
-    private final ArrayList<UnOpenedProduct> product = new ArrayList<UnOpenedProduct>();
-    private List<String> partiality;
+    private final ArrayList<IUnOpenedProduct> product = new ArrayList<IUnOpenedProduct>();
 
     /** The Land set code. */
     private String[] landSetCode = { "" };
@@ -61,13 +63,7 @@ public class SealedDeckFormat {
      *            a {@link java.lang.String} object.
      */
     public SealedDeckFormat(final String sealedType) {
-
-        partiality = new ArrayList<String>();
-
         if (sealedType.equals("Full")) {
-
-            final BoosterGenerator bpFull = new BoosterGenerator(CardDb.instance().getUniqueCards());
-
             // Choose number of boosters
             final Integer[] integers = new Integer[10];
 
@@ -78,7 +74,7 @@ public class SealedDeckFormat {
             Integer nrBoosters = GuiChoose.one("How many booster packs?", integers);
 
             for (int i = 0; i < nrBoosters; i++) {
-                this.product.add(new UnOpenedProduct(BoosterGenerator.IDENTITY_PICK, bpFull));
+                this.product.add(new UnOpenedProduct(BoosterTemplate.genericBooster));
             }
 
             this.getLandSetCode()[0] = CardDb.instance().getCard("Plains").getEdition();
@@ -100,20 +96,16 @@ public class SealedDeckFormat {
             final CardBlock block = GuiChoose.one("Choose Block", blocks);
 
             final CardEdition[] cardSets = block.getSets();
-            final String[] sets = new String[cardSets.length + block.getNumberMetaSets()];
+            final Stack<String> sets = new Stack<String>();
+            
             for (int k = cardSets.length - 1; k >= 0; --k) {
-                sets[k] = cardSets[k].getCode();
+                sets.add(cardSets[k].getCode());
             }
 
             final int nPacks = block.getCntBoostersSealed();
 
-            if (block.getNumberMetaSets() > 0) {
-
-                int j = cardSets.length;
-
-                for (int k = 0; k < block.getNumberMetaSets(); k++) {
-                    sets[j + k] = block.getMetaSet(k).getCode();
-                }
+            for(String ms : block.getMetaSetNames()) {
+                sets.push(ms);
             }
 
             final List<String> setCombos = getSetCombos(sets, nPacks);
@@ -122,7 +114,7 @@ public class SealedDeckFormat {
                 throw new RuntimeException("Unsupported amount of packs (" + nPacks + ") in a Sealed Deck block!");
             }
 
-            if (sets.length > 1) {
+            if (sets.size() > 1) {
                 final Object p = GuiChoose.one("Choose Set Combination", setCombos);
 
                 final String[] pp = p.toString().split("/");
@@ -214,13 +206,8 @@ public class SealedDeckFormat {
                     }
                 }
             } else {
-                UnOpenedProduct product1;
-                if (sets[0].charAt(0) == '*') {
-                    product1 = block.getBooster(sets[0]);
-                }
-                else {
-                    product1 = new UnOpenedProduct(Singletons.getModel().getBoosters().get(sets[0]));
-                }
+                IUnOpenedProduct product1;
+                product1 = block.getBooster(sets.get(0));
 
                 // Choose number of boosters
                 final Integer[] integers = new Integer[10];
@@ -259,7 +246,7 @@ public class SealedDeckFormat {
                 if (element.endsWith(".sealed")) {
                     final List<String> dfData = FileUtil.readFile("res/sealed/" + element);
                     final CustomLimited cs = CustomLimited.parse(dfData, Singletons.getModel().getDecks().getCubes());
-                    if (cs.getNumCards() > 5) { // Do not allow too small cubes to be played as 'stand-alone'!
+                    if (cs.getSealedProductTemplate().getTotal() > 5) { // Do not allow too small cubes to be played as 'stand-alone'!
                         customs.add(cs);
                     }
                 }
@@ -273,20 +260,6 @@ public class SealedDeckFormat {
                 final CustomLimited draft = GuiChoose.one("Choose Custom Sealed Pool",
                         customs);
 
-                final BoosterGenerator bpCustom = new BoosterGenerator(draft.getCardPool());
-                final Function<BoosterGenerator, List<CardPrinted>> fnPick = new Function<BoosterGenerator, List<CardPrinted>>() {
-                    @Override
-                    public List<CardPrinted> apply(final BoosterGenerator pack) {
-                        if (draft.getIgnoreRarity()) {
-                            if (!draft.getSingleton()) {
-                                return pack.getBoosterPack(0, 0, 0, 0, 0, 0, 0, draft.getNumCards(), 0);
-                            } else {
-                                return pack.getSingletonBoosterPack(draft.getNumCards());
-                            }
-                        }
-                        return pack.getBoosterPack(draft.getNumbersByRarity(), 0, 0, 0);
-                    }
-                };
 
                 // Choose number of boosters
                 final Integer[] integers = new Integer[10];
@@ -298,7 +271,7 @@ public class SealedDeckFormat {
                 Integer nrBoosters = GuiChoose.one("How many booster packs?", integers);
 
                 for (int i = 0; i < nrBoosters; i++) {
-                    this.product.add(new UnOpenedProduct(fnPick, bpCustom));
+                    this.product.add(new UnOpenedProduct(draft.getSealedProductTemplate(), draft.getCardPool()));
                 }
 
                 this.getLandSetCode()[0] = draft.getLandSetCode();
@@ -314,7 +287,8 @@ public class SealedDeckFormat {
      * 
      * @return an ArrayList of the set choices.
      */
-    private ArrayList<String> getSetCombos(final String[] sets, final int nPacks) {
+    private ArrayList<String> getSetCombos(final List<String> setz, final int nPacks) {
+        String[] sets = setz.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
         ArrayList<String> setCombos = new ArrayList<String>();
 
         if (nPacks == 3) {
@@ -416,24 +390,24 @@ public class SealedDeckFormat {
             setCombos.add(String.format("%s/%s/%s/%s/%s/%s/%s/%s/%s", sets[0], sets[0], sets[0], sets[0], sets[0], sets[0], sets[0], sets[0], sets[0]));
         }
         else { // Default to 6 packs
-            if (sets.length >= 2) {
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[0], sets[0], sets[0], sets[0], sets[0], sets[0]));
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[1], sets[1], sets[0], sets[0], sets[0], sets[0]));
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[1], sets[1], sets[1], sets[0], sets[0], sets[0]));
+            if (sets.length >= 6) {
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[5], sets[4], sets[3], sets[2], sets[1], sets[0]));
             }
-            if (sets.length >= 3) {
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[2], sets[2], sets[2], sets[0], sets[0], sets[0]));
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[2], sets[2], sets[1], sets[1], sets[0], sets[0]));
+            if (sets.length >= 5) {
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[4], sets[3], sets[2], sets[1], sets[0], sets[0]));
             }
             if (sets.length >= 4) {
                 setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[3], sets[2], sets[1], sets[0], sets[0], sets[0]));
                 setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[3], sets[2], sets[1], sets[1], sets[0], sets[0]));
             }
-            if (sets.length >= 5) {
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[4], sets[3], sets[2], sets[1], sets[0], sets[0]));
+            if (sets.length >= 3) {
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[2], sets[2], sets[2], sets[0], sets[0], sets[0]));
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[2], sets[2], sets[1], sets[1], sets[0], sets[0]));
             }
-            if (sets.length >= 6) {
-                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[5], sets[4], sets[3], sets[2], sets[1], sets[0]));
+            if (sets.length >= 2) {
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[1], sets[1], sets[1], sets[0], sets[0], sets[0]));
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[1], sets[1], sets[0], sets[0], sets[0], sets[0]));
+                setCombos.add(String.format("%s/%s/%s/%s/%s/%s", sets[0], sets[0], sets[0], sets[0], sets[0], sets[0]));
             }
         }
         return setCombos;
@@ -461,17 +435,15 @@ public class SealedDeckFormat {
      */
     public ItemPool<CardPrinted> getCardpool(final boolean isHuman) {
 
-        if (!isHuman) {
-            if (!partiality.isEmpty()) {
-                partiality.clear();
-            }
-        }
+
         final ItemPool<CardPrinted> pool = new ItemPool<CardPrinted>(CardPrinted.class);
 
-        for (int i = 0; i < this.product.size(); i++) {
-            pool.addAllFlat(this.product.get(i).open(isHuman, partiality));
+        for (IUnOpenedProduct prod : product) {
+            if( prod instanceof UnOpenedMeta )
+                pool.addAllFlat(((UnOpenedMeta) prod).open(isHuman));
+            else
+                pool.addAllFlat(prod.get());
         }
-
         return pool;
     }
 

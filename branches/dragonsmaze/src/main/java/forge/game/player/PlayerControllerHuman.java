@@ -60,7 +60,7 @@ public class PlayerControllerHuman extends PlayerController {
         player = p;
         
         defaultInput = new InputPassPriority(player);
-        blockInput = new InputBlock(getPlayer());
+        blockInput = new InputBlock(getPlayer(), game0);
         cleanupInput = new InputCleanup(getPlayer());
         autoPassPriorityInput = new InputAutoPassPriority(getPlayer());
     }
@@ -74,7 +74,7 @@ public class PlayerControllerHuman extends PlayerController {
      * Uses GUI to learn which spell the player (human in our case) would like to play
      */
     public SpellAbility getAbilityToPlay(List<SpellAbility> abilities) {
-        if (abilities.size() == 0) {
+        if (abilities.isEmpty()) {
             return null;
         } else if (abilities.size() == 1) {
             return abilities.get(0);
@@ -188,12 +188,14 @@ public class PlayerControllerHuman extends PlayerController {
      */
     @Override
     public Map<Card, Integer> assignCombatDamage(Card attacker, List<Card> blockers, int damageDealt, GameEntity defender) {
+        // Attacker is a poor name here, since the creature assigning damage
+        // could just as easily be the blocker. 
         Map<Card, Integer> map;
         if (defender != null && assignDamageAsIfNotBlocked(attacker)) {
             map = new HashMap<Card, Integer>();
             map.put(null, damageDealt);
         } else {
-            if (attacker.hasKeyword("Trample") || (blockers.size() > 1)) {
+            if ((attacker.hasKeyword("Trample") && defender != null) || (blockers.size() > 1)) {
                 map = CMatchUI.SINGLETON_INSTANCE.getDamageToAssign(attacker, blockers, damageDealt, defender);
             } else {
                 map = new HashMap<Card, Integer>();
@@ -244,7 +246,7 @@ public class PlayerControllerHuman extends PlayerController {
     @Override
     public List<Card> choosePermanentsToSacrifice(List<Card> validTargets, String validMessage, int amount, SpellAbility sa, boolean destroy, boolean isOptional) {
         int max = Math.min(amount, validTargets.size());
-        if (max == 0)
+        if (max <= 0)
             return new ArrayList<Card>();
 
         InputSelectCards inp = new InputSelectCardsFromList(isOptional ? 0 : amount, max, validTargets);

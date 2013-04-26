@@ -90,6 +90,11 @@ public class ComputerUtilCost {
                     }
                     continue;
                 }
+
+                //don't kill the creature
+                if (type.name().equals("P1P1") && source.getLethalDamage() <= 1) {
+                    return false;
+                }
     
                 Integer amount = part.convertAmount();
                 if (amount == null) {
@@ -307,7 +312,7 @@ public class ComputerUtilCost {
      * @return a boolean.
      */
     public static boolean shouldPayCost(final Player ai, final Card hostCard, final String costString) {
-        final Cost cost = new Cost(hostCard, costString, false);
+        final Cost cost = new Cost(costString, false);
     
         for (final CostPart part : cost.getCostParts()) {
             if (part instanceof CostPayLife) {
@@ -336,6 +341,8 @@ public class ComputerUtilCost {
      * @return a boolean.
      */
     public static boolean canPayCost(final SpellAbility sa, final Player player) {
+        sa.setActivatingPlayer(player); // complaints on NPE had came before this line was added.
+
         // Check for stuff like Nether Void
         int extraManaNeeded = 0;
         if (sa instanceof Spell) {
@@ -383,7 +390,7 @@ public class ComputerUtilCost {
     }
 
     public static boolean willPayUnlessCost(SpellAbility sa, Player payer, SpellAbility ability, boolean alreadyPaid, List<Player> payers) {
-        Card source = sa.getSourceCard();
+        final Card source = sa.getSourceCard();
         boolean payForOwnOnly = "OnlyOwn".equals(sa.getParam("UnlessAI"));
         boolean payOwner = sa.hasParam("UnlessAI") ? sa.getParam("UnlessAI").startsWith("Defined") : false;
         boolean payNever = "Never".equals(sa.getParam("UnlessAI"));
@@ -408,6 +415,11 @@ public class ComputerUtilCost {
                 }
             }
             return false;
+        } else if ("Paralyze".equals(sa.getParam("UnlessAI"))) {
+            final Card c = source.getEnchantingCard();
+            if (c == null || c.isUntapped()) {
+                return false;
+            }
         }
     
         // AI will only pay when it's not already payed and only opponents abilities

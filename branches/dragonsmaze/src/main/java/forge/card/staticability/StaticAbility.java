@@ -24,7 +24,6 @@ import java.util.Map;
 import forge.Card;
 import forge.Constant;
 import forge.GameEntity;
-import forge.Singletons;
 import forge.card.ability.AbilityUtils;
 import forge.card.cost.Cost;
 import forge.card.mana.ManaCostBeingPaid;
@@ -440,37 +439,18 @@ public class StaticAbility {
         return false;
     }
 
-    /**
-     * Apply ability.
-     * 
-     * @param mode
-     *            the mode
-     * @param card
-     *            the card
-     * @param target
-     *            the target
-     * @return true, if successful
-     */
-    public final Cost getCostAbility(final String mode, final Card card, final GameEntity target) {
-
-        // don't apply the ability if it hasn't got the right mode
-        if (!this.params.get("Mode").equals(mode)) {
+    public final Cost getAttackCost(final Card attacker, final GameEntity target) {
+        if (this.isSuppressed() || !params.get("Mode").equals("CantAttackUnless") || !this.checkConditions()) {
             return null;
         }
+        return StaticAbilityCantAttackBlock.getAttackCost(this, attacker, target);
+    }
 
-        if (this.isSuppressed() || !this.checkConditions()) {
+    public final Cost getBlockCost(final Card blocker, final Card attacker) {
+        if (this.isSuppressed() || !params.get("Mode").equals("CantBlockUnless") || !this.checkConditions()) {
             return null;
         }
-
-        if (mode.equals("CantAttackUnless")) {
-            return StaticAbilityCantAttackBlock.applyCantAttackUnlessAbility(this, card, target);
-        }
-
-        if (mode.equals("CantBlockUnless")) {
-            return StaticAbilityCantAttackBlock.applyCantBlockUnlessAbility(this, card);
-        }
-
-        return null;
+        return StaticAbilityCantAttackBlock.getBlockCost(this, blocker, attacker);
     }
 
     /**
@@ -488,7 +468,7 @@ public class StaticAbility {
         if (this.params.containsKey("EffectZone")) {
             if (!this.params.get("EffectZone").equals("All")
                     && !ZoneType.listValueOf(this.params.get("EffectZone"))
-                        .contains(Singletons.getModel().getGame().getZoneOf(this.hostCard).getZoneType())) {
+                        .contains(controller.getGame().getZoneOf(this.hostCard).getZoneType())) {
                 return false;
             }
         } else {
@@ -497,28 +477,21 @@ public class StaticAbility {
             }
         }
 
-        if (params.containsKey("Condition")) {
-            if (params.get("Condition").equals("Threshold")) {
-                if (!controller.hasThreshold()) {
+        String condition = params.get("Condition");
+        if (null != condition) {
+            if (condition.equals("Threshold") && !controller.hasThreshold()) return false;
+            if (condition.equals("Hellbent") && !controller.hasHellbent()) return false;
+            if (condition.equals("Metalcraft") && !controller.hasMetalcraft()) return false;
+
+            if (condition.equals("PlayerTurn")) {
+                if (!controller.getGame().getPhaseHandler().isPlayerTurn(controller)) {
                     return false;
                 }
-            } else if (params.get("Condition").equals("Hellbent")) {
-                if (!controller.hasHellbent()) {
+            } else if (condition.equals("NotPlayerTurn")) {
+                if (controller.getGame().getPhaseHandler().isPlayerTurn(controller)) {
                     return false;
                 }
-            } else if (params.get("Condition").equals("Metalcraft")) {
-                if (!controller.hasMetalcraft()) {
-                    return false;
-                }
-            } else if (params.get("Condition").equals("PlayerTurn")) {
-                if (!Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(controller)) {
-                    return false;
-                }
-            } else if (params.get("Condition").equals("NotPlayerTurn")) {
-                if (Singletons.getModel().getGame().getPhaseHandler().isPlayerTurn(controller)) {
-                    return false;
-                }
-            } else if (params.get("Condition").equals("PermanentOfEachColor")) {
+            } else if (condition.equals("PermanentOfEachColor")) {
                 if ((controller.getColoredCardsInPlay(Constant.Color.BLACK).isEmpty()
                         || controller.getColoredCardsInPlay(Constant.Color.BLUE).isEmpty()
                         || controller.getColoredCardsInPlay(Constant.Color.GREEN).isEmpty()
@@ -526,7 +499,7 @@ public class StaticAbility {
                         || controller.getColoredCardsInPlay(Constant.Color.WHITE).isEmpty())) {
                     return false;
                 }
-            } else if (params.get("Condition").equals("FatefulHour")) {
+            } else if (condition.equals("FatefulHour")) {
                 if (controller.getLife() > 5) {
                     return false;
                 }
@@ -540,7 +513,7 @@ public class StaticAbility {
 
         if (this.params.containsKey("Phases")) {
             List<PhaseType> phases = PhaseType.parseRange(this.params.get("Phases"));
-            if (!phases.contains(Singletons.getModel().getGame().getPhaseHandler().getPhase())) {
+            if (!phases.contains(controller.getGame().getPhaseHandler().getPhase())) {
                 return false;
             }
         }

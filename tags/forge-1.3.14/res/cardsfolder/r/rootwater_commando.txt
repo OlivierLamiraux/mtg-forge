@@ -1,0 +1,9 @@
+Name:Rootwater Commando
+ManaCost:2 U
+Types:Creature Merfolk
+PT:2/2
+K:Islandwalk
+SVar:Picture:http://resources.wizards.com/magic/cards/10e/en/card129733.jpg
+Oracle:Islandwalk (This creature is unblockable as long as defending player controls an Island.)
+SetInfo:NMS Common
+SetInfo:10E Common

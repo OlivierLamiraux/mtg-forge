@@ -1,0 +1,50 @@
+# Name, Draft/Sealed/Lands, All sets and metas
+Alpha, 3/6/LEA, LEA  
+Beta, 3/6/LEB, LEB  
+Unlimited, 3/6/2ED, 2ED  
+Arabian Nights, 5/9/2ED, ARN  
+Antiquities, 5/9/2ED, ATQ  
+Revised, 3/6/3ED, 3ED  
+Legends, 3/6/3ED, LEG  
+The Dark, 5/9/3ED, DRK  
+Fallen Empires, 5/9/3ED, FEM  
+Fourth Edition, 3/6/4ED, 4ED  
+Ice Age, 3/6/ICE, ICE ALL CSP
+Homelands, 5/9/4ED, HML  
+Mirage, 3/6/MIR, MIR VIS WTH
+Fifth Edition, 3/6/5ED, 5ED  
+Portal, 3/6/POR, POR  
+Tempest, 3/6/TMP, TMP STH EXO
+Portal Second Age, 3/6/PO2, PO2  
+Urza, 3/6/USG, USG ULG UDS
+Sixth Edition, 3/6/6ED, 6ED  
+Portal Three Kingdoms, 5/9/PTK, PTK  
+Masques, 3/6/MMQ, MMQ NMS PCY
+Invasion, 3/6/INV, INV PLS APC
+Seventh Edition, 3/6/7ED, 7ED  
+Odyssey, 3/6/ODY, ODY TOR JUD
+Onslaught, 3/6/ONS, ONS LGN SCG
+Eighth Edition, 3/6/8ED, 8ED  
+Mirrodin, 3/6/MRD, MRD DST 5DN
+Kamigawa, 3/6/CHK, CHK BOK SOK
+Ninth Edition, 3/6/9ED, 9ED  
+Ravnica, 3/6/RAV, RAV GPT DIS
+Coldsnap, 3/6/9ED, CSP  
+Time Spiral, 3/6/TSP, TSP PLC FUT
+Tenth Edition, 3/6/10E, 10E  
+Lorwyn, 3/6/LRW, LRW MOR 
+Shadowmoor, 3/6/SHM, SHM EVE 
+Shards of Alara, 3/6/ALA, ALA CFX ARB
+Magic 2010, 3/6/M10, M10  
+Zendikar, 3/6/ZEN, ZEN WWK 
+Rise of the Eldrazi, 3/6/ROE, ROE  
+Magic 2011, 3/6/M11, M11  
+Scars of Mirrodin, 3/6/SOM, SOM MBS NPH
+Magic 2012, 3/6/M12, M12  
+Innistrad, 3/6/ISD, ISD DKA 
+Avacyn Restored, 3/6/AVR, AVR  
+Magic 2013, 3/6/M13, M13  
+Return to Ravnica, 3/6/RTR, RTR  
+Return to Ravnica Guild Sealed, -/6/RTR, RTR RTR RTR Meta-Choose(Cube(RtRGuildAzorius)Azorius Guild;Cube(RtRGuildIzzet)Izzet Guild;Cube(RtRGuildRakdos)Rakdos Guild;Cube(RtRGuildGolgari)Golgari Guild;Cube(RtRGuildSelesnya)Selesnya Guild)GUILD
+Gatecrash, 3/6/RTR, GTC  
+Gatecrash Guild Sealed, -/6/RTR, GTC GTC GTC Meta-Choose(Cube(GtcGuildBoros)Boros Guild;Cube(GtcGuildDimir)Dimir Guild;Cube(GtcGuildGruul)Gruul Guild;Cube(GtcGuildOrzhov)Orzhov Guild;Cube(GtcGuildSimic)Simic Guild)GUILD

@@ -1,0 +1,17 @@
+Name:Juggernaut
+ManaCost:4
+Types:Artifact Creature Juggernaut
+PT:5/3
+K:CARDNAME attacks each turn if able.
+K:CARDNAME can't be blocked by Walls.
+SVar:Picture:http://www.wizards.com/global/images/magic/general/juggernaut.jpg
+Oracle:Juggernaut attacks each turn if able.\nJuggernaut can't be blocked by Walls.
+SetInfo:2ED Uncommon
+SetInfo:DST Uncommon
+SetInfo:10E Uncommon
+SetInfo:M11 Uncommon
+SetInfo:LEB Uncommon
+SetInfo:ARC Uncommon
+SetInfo:LEA Uncommon
+SetInfo:DDF Uncommon
+SetInfo:3ED Uncommon

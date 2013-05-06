@@ -1,0 +1,9 @@
+Name:Tropical Island
+ManaCost:no cost
+Types:Land Forest Island
+SVar:Picture:http://www.wizards.com/global/images/magic/general/tropical_island.jpg
+Oracle:
+SetInfo:2ED Rare
+SetInfo:LEB Rare
+SetInfo:LEA Rare
+SetInfo:3ED Rare

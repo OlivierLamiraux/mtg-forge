@@ -1,0 +1,113 @@
+Forge Beta: 05-06-2013 ver 1.3.15
+
+
+12694 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Bug Fixes -
+This version is primarily a maintenance release. We fixed several important bugs and a number of smaller card related bugs.
+
+Reverted the synchronize changes since it seemed to break all of the trigger payment stuff.
+
+Added DGM into RTR block and made DGM lands no longer appear in the common slot. You should now be able to play a DGM draft/sealed game.
+
+
+- DGM card pictures -
+Most but not all of the LQ non-set DGM card pics are now available for downloading. The DGM set pics might become available in about a couple of weeks or so.
+
+
+- Java 7 -
+The devs are discussing a plan to update the battlefield display code with Java FX 2.2 and this should help to improve a few things. Java FX 2.2 requires Java 7 so it is important for members of our user base to update in the near future as Forge at the time of the update will no longer run under Java 6.
+
+
+- The following 4 cards from Dragon's Maze are not implemented -
+Boros Battleshaper
+Pyrewild Shaman
+Showstopper
+Trait Doctoring
+
+
+- Commander -
+We are taking baby steps toward Commander but there are some hurdles left before we get there. We need to implement the replacement effect that moves the commander back to your command zone; the cost-changing depending on how many times you've cast your commander; generating colorless mana if you try to generate mana outside your commanders color identity and AI for all the above.
+
+
+---------
+New Cards
+---------
+
+Breaking Wave
+Chord of Calling
+Deep Spawn
+Disrupting Shoal
+Dwarven Sea Clan
+Ghitu Fire
+Minamo's Meddling
+Mind Extraction
+Rout
+Saproling Symbiosis
+Stench of Evil
+Twilight's Call
+
+
+------------
+Known Issues
+------------
+
+We have received several reports about a Null Pointer Exception crash report which contains the following info:
+
+java.lang.NullPointerException
+   at forge.gui.match.VMatchUI.populate(VMatchUI.java:###)
+   at forge.control.FControl.changeState(FControl.java:###)
+
+We currently suspect that this is a thread misuse issue. This will cause forge to crash eventually on some systems. Once the SwingWorkers that start different types of matches are refactored this problem should be fixed. The problem with a match starting with a blank screen will also be gone.
+
+A small number of cards including Wall of Corpses, Abu Ja'far and others with a similar ability are not functional. The common issue here is actually that they check the blocker/attacker after being removed from the battlefield. Probably need to use LKI. Regular destroy/destroy all effects work just fine. The problem cards are caring about battlefield specific properties, that no longer apply when the base card is no longer on the battlefield.
+
+On several occasions people have noticed that the Forge deck editor and/or quest mode card shop would not open or display. We have also received reports that some of the tabs/panels in the deck editor are missing. There has also been reports that Forge will crash while creating/populating display components during start up or crash when a match is started. One or both of your layout xml files may be corrupted in some fashion. Try deleting the file(s) named "editor.xml" and/or "match.xml" that are now located in your userDir/preferences/ directory. This should force Forge to then use the default layout xml files instead.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there are two remaining issues that we hope will be addressed in the near future.
+
+1. Leave play triggers don't work correct for clones.
+2. Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+There is currently a known issue with some of the cards that have effects triggering after the card goes to graveyard (e.g. Wall of Corpses, Abu Ja'Far) not working correctly.
+
+Forge is likely to be compatible with Java 7 at this time. Some people have used forge with Java 7 and have not reported any problems that are related to Java 7. If you would like to upgrade to Java 7 and have held off because of Forge then you may upgrade as we do not think that it will cause an incompatibility type of problem. We will continue to try to maintain compatibility with Java 6 for the foreseeable future.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Gos
+Hellfish
+Marc
+Max
+Nordos
+RedDeckWins
+Sloth
+Sol
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

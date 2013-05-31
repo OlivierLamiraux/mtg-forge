@@ -1,0 +1,30 @@
+[duel]
+[metadata]
+Name=Barney Rubble 3
+Title=Barney Rubble
+Difficulty=hard
+Description=WU Sovereigns of Lost Alara deck with walls and auras
+Icon=Barney Rubble.jpg
+Deck Type=constructed
+[main]
+4 Ghostly Prison
+4 Sejiri Refuge
+4 Coastal Tower
+1 Mox Sapphire
+3 Plains|M11
+1 Seashell Cameo
+1 Whispersilk Cloak
+4 Absorb
+1 Mass Calcify
+3 Island|M11
+1 Ancestral Recall
+4 Sovereigns of Lost Alara
+4 Wall of Omens
+1 Mox Pearl
+4 Tundra
+4 Wall of Denial
+4 Wall of Reverence
+2 Eldrazi Conscription
+4 Propaganda
+4 Perimeter Captain
+[sideboard]

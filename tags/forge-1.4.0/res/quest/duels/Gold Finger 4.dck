@@ -1,0 +1,26 @@
+[duel]
+[metadata]
+Name=Gold Finger 4
+Title=Gold Finger
+Difficulty=very hard
+Description=Mono U control deck with various counter spells
+Icon=Gold Finger.jpg
+Deck Type=constructed
+[main]
+24 Island|M11
+1 Mox Sapphire
+4 Psychic Barrier
+4 Mana Drain
+4 Spell Snare
+4 Dismiss
+2 Repulse
+1 Snap
+2 Serra Sphinx
+1 Consecrated Sphinx
+3 Plumeveil
+1 Ancestral Recall
+1 Time Walk
+4 Treachery
+1 Back to Basics
+3 Fact or Fiction
+[sideboard]

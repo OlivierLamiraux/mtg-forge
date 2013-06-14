@@ -1,0 +1,219 @@
+Forge Beta: 06-14-2013 ver 1.4.1
+
+
+12819 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Java 7 -
+The devs are discussing a plan to update the battlefield display code with Java FX 2.2 and this should help to improve a few things. Java FX 2.2 requires Java 7 so please update your Java runtime environment in the nearest future. At some point a new version of Forge will no longer run under Java 6.
+
+
+- New M14 cards -
+We have added a branch to our SVN for the new cards that are currently being scripted. These cards are not yet available in this build of forge. Please be patient and they will soon become available.
+
+
+- Match and Deck Editor Layout problems -
+The match and deck editor windows contain panels that can be moved and/or resized. The changes that you make are saved to files that are named "editor.xml" and "match.xml". These files can be found in your userDir/preferences/ directory.
+
+Sometimes people will decide that they do not like the changes that they made and wish to go back to the original layout. To reset layouts to deafult, go to the Game Settings -> Preferences -> Troubleshooting section. You will find at this location two buttons that will reset the match layout and the deck editor layouts.
+
+Also use the mentioned measure if your match or deckeditor won't start - it would help in 90% of the cases.
+
+
+- The AI Drafting has been improved -
+The AI evaluated the basic lands higher than anything else. Fixed. The AI would pick cards with RemAIDeck but only at a much lowered pick rate. For example the best pick in a 250 card set would become the 75th best pick, the 20th best pick would become the 95th and so on. Divided this factor by 3 (so the first pick would become the 25th pick). Please test whether this has improved the draft experience.
+
+
+---------
+New Cards
+---------
+
+Amulet of Quoz
+Aphetto Dredging
+Archive Trap
+Battlefield Scrounger
+Chain Stasis
+Chancellor of the Annex
+Chisei, Heart of Oceans
+Choking Vines
+Cobra Trap
+Defensive Formation
+Dream Chisel
+Dream Leash
+Exiled Doomsayer
+Fossil Find
+Gemstone Caverns
+Grave Consequences
+Grimoire Thief
+Hankyu
+Hibernation's End
+Indentured Djinn
+Ion Storm
+Jester's Scepter
+Jetting Glasskite
+Jotun Grunt
+Kira, Great Glass Spinner
+Kithkin Armor
+Krark's Thumb
+Leashling
+Liquid Fire
+Martyr of Bones
+Master Warcraft
+Melee
+Minion of Leshrac
+Odric, Master Tactician
+Patron of the Akki
+Patron of the Kitsune
+Patron of the Moon
+Patron of the Nezumi
+Patron of the Orochi
+Penance
+Power Conduit
+Prowling Pangolin
+Psychic Vortex
+Research // Development
+Search for Survivors
+Shimmering Glasskite
+Spinning Darkness
+Summoning Trap
+Tainted Specter
+Teferi's Curse
+Temporary Truce
+Thelon's Chant
+Thought Lash
+Thran Turbine
+Tidal Influence
+Time and Tide
+Tourach's Chant
+Truce
+Uba Mask
+Void Maw
+
+
+----------
+New Planes
+----------
+
+Furnace Layer
+Kharasha Foothills
+Mimano
+Mirrored Depths
+
+
+--------------------
+New M14 branch Cards
+--------------------
+
+Accursed Spirit
+Advocate of the Beast
+Ajani's Chosen
+Archangel of Thune
+Awaken the Ancient
+Battle Sliver
+Blur Sliver
+Bonescythe Sliver
+Charging Grffin
+Corpse Hauler
+Dawnstrike Paladin
+Deathgaze Cockatrice
+Devout Invocation
+Elvish Mystic
+Enlarge
+Fleshpulper Giant
+Glimpse the Future
+Grim Return
+Groundshaker Sliver
+Guardian of the Ages
+Hive Stirrings
+Hunt the Weak
+Into the Wilds
+Jace's Mindseeker
+Kalonian Tusker
+Liliana's Reaver
+Marauding Maulhorn
+Master of Diversion
+Megantic Sliver
+Molten Birth
+Ogre Battledriver
+Predatory Sliver
+Primeval Bounty
+Regathan Firecat
+Ring of Three Wishes
+Rise of the Dark Realms
+Scourge of Valkas
+Sentinel Sliver
+Seraph of the Sword
+Shadowborn Apostle
+Shadowborn Demon
+Sliver Construct
+Soulmender
+Sporemound
+Staff of the Death Magus
+Staff of the Flame Magus
+Staff of the Mind Magus
+Staff of the Wild Magus
+Steelform Sliver
+Stonehorn Chanter
+Striking Sliver
+Thorncaster Sliver
+Undead Minotaur
+Vampire Warlord
+Vastwood Hydra
+Vial of Poison
+Windreader Sphinx
+Woodborn Behemoth
+Young Pyromancer
+
+
+------------
+Known Issues
+------------
+
+A small number of cards including Wall of Corpses, Abu Ja'far and others with a similar ability are not functional. The common issue here is actually that they check the blocker/attacker after being removed from the battlefield. Probably need to use LKI. Regular destroy/destroy all effects work just fine. The problem cards are caring about battlefield specific properties, that no longer apply when the base card is no longer on the battlefield.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+Forge is likely to be compatible with Java 7 at this time. Some people have used forge with Java 7 and have not reported any problems that are related to Java 7. If you would like to upgrade to Java 7 and have held off because of Forge then you may upgrade as we do not think that it will cause an incompatibility type of problem. We will continue to try to maintain compatibility with Java 6 for the foreseeable future.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+Asepetci
+Diogenes
+Gos
+Hellfish
+Marc
+Max
+Nordos
+RedDeckWins
+Sidereal
+Sloth
+Sol
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

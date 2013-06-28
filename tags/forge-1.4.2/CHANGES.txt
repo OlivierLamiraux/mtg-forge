@@ -1,0 +1,223 @@
+Forge Beta: 06-28-2013 ver 1.4.2
+
+
+12886 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Forge now requires Java 7 -
+Please update your Java runtime environment. At this point Forge versions 1.4.2 and above will no longer run under Java 6.
+
+
+- New M14 cards -
+We have added a branch to our SVN for the new cards that are currently being scripted. These cards are not yet available in this build of forge. Please be patient and they will soon become available.
+
+
+- Match and Deck Editor Layout problems -
+The match and deck editor windows contain panels that can be moved and/or resized. The changes that you make are saved to files that are named "editor.xml" and "match.xml". These files can be found in your userDir/preferences/ directory.
+
+Sometimes people will decide that they do not like the changes that they made and wish to go back to the original layout. To reset layouts to deafult, go to the Game Settings -> Preferences -> Troubleshooting section. You will find at this location two buttons that will reset the match layout and the deck editor layouts.
+
+Also use the mentioned measure if your match or deckeditor won't start - it would help in 90% of the cases.
+
+
+- The Mac OS X application -
+At this time Forge now requires Java 7 and will no longer run under Java 6.
+
+Unfortunately, the Mac OS X builder that we were using does not support Java 7. We hope to find and to use a different Mac OS X builder in order to continue releasing a Mac OS bundled application like we have in the past.
+
+Currently, the windows/unix release of Forge includes a launcher file named "forge.command". Double click on the "forge.command" launcher command file and this will in turn launch the Forge jar file via the terminal application while increasing the Java heap space. This should be a temporary inconvenience.
+
+
+---------
+New Cards
+---------
+
+Adventurers' Guildhouse
+Baton of Morale
+Battering Ram
+Beast Walkers
+Benalish Hero
+Benalish Infantry
+Bloodlord of Vaasgoth
+Camel
+Cathedral of Serra
+Cooperation
+Dark Sphere
+Darksteel Garrison
+Dire Wolves
+Djinn Illuminatus
+Errand of Duty
+Formation
+Fortified Area
+Gaea's Touch
+Goblin Flectomancer
+Gorilla Berserkers
+Guile
+Helm of Chatzuk
+Herald of Leshrac
+Icatian Infantry
+Icatian Phalanx
+Icatian Skirmishers
+Joven's Ferrets
+Kithkin Mourncaller
+Kjeldoran Escort
+Kjeldoran Knight
+Kjeldoran Phalanx
+Kjeldoran Skycaptain
+Kjeldoran Skyknight
+Kjeldoran Warrior
+Knights of Thorn
+Master of the Hunt
+Mesa Pegasus
+Mindlock Orb
+Mountain Stronghold
+Nalathni Dragon
+Nature's Blessing
+Noble Elephant
+Pathrazer of Ulamog
+Phyrexian Colossus
+Pikemen
+Pulmonic Sliver
+Quicksilver Sea
+Redirect
+Restore Balance
+Seafarer's Quay
+Shadow of Doubt
+Shelkin Brownie
+Shield Bearer
+Soraya the Falconer
+Spellskite
+Teremko Griffin
+Timber Wolves
+Tolaria
+Unholy Citadel
+Urborg Panther
+Urza's Avenger
+Urza's Engine
+Volunteer Reserves
+Wall of Shards
+Wall of Shields
+War Elephant
+Wild Ricochet
+
+
+--------------------
+New M14 branch Cards
+--------------------
+
+Accursed Spirit
+Advocate of the Beast
+Ajani's Chosen
+Archangel of Thune
+Awaken the Ancient
+Battle Sliver
+Blur Sliver
+Bonescythe Sliver
+Burning Earth
+Charging Grffin
+Corpse Hauler
+Dawnstrike Paladin
+Deathgaze Cockatrice
+Devout Invocation
+Elvish Mystic
+Enlarge
+Fleshpulper Giant
+Garruk, Caller of Beasts
+Glimpse the Future
+Goblin Diplomats
+Grim Return
+Groundshaker Sliver
+Guardian of the Ages
+Hive Stirrings
+Hunt the Weak
+Into the Wilds
+Jace's Mindseeker
+Kalonian Tusker
+Liliana's Reaver
+Marauding Maulhorn
+Master of Diversion
+Megantic Sliver
+Messenger Drake
+Molten Birth
+Ogre Battledriver
+Predatory Sliver
+Primeval Bounty
+Regathan Firecat
+Ring of Three Wishes
+Rise of the Dark Realms
+Rumbling Baloth
+Scourge of Valkas
+Seacoast Drake
+Seismic Stomp
+Sentinel Sliver
+Seraph of the Sword
+Shadowborn Apostle
+Shadowborn Demon
+Sliver Construct
+Soulmender
+Sporemound
+Staff of the Death Magus
+Staff of the Flame Magus
+Staff of the Mind Magus
+Staff of the Wild Magus
+Steelform Sliver
+Stonehorn Chanter
+Striking Sliver
+Thorncaster Sliver
+Undead Minotaur
+Vampire Warlord
+Vastwood Hydra
+Vial of Poison
+Warden of Evos Isle
+Windreader Sphinx
+Woodborn Behemoth
+Young Pyromancer
+
+
+------------
+Known Issues
+------------
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+Asepetci
+Dave
+Gos
+jsv
+Marc
+Max
+Nordos
+Sloth
+Sol
+squee1968
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

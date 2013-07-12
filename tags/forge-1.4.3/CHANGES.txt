@@ -1,0 +1,224 @@
+Forge Beta: 07-12-2013 ver 1.4.3
+
+
+13008 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Forge now requires Java 7 -
+Please update your Java runtime environment. At this point Forge versions 1.4.2 and above will no longer run under Java 6.
+
+
+- Planechase AI -
+This version of Forge includes basic support for AI opponents making use of the planar die in Planechase game mode. The AI will be able to use the "Roll the planar die" ability for most of the planes currently supported by Forge. Please note that this AI is currently in its infant stage, so don't expect it to utilize the planar die in a very smart fashion.
+
+
+- New M14 cards -
+Forge now includes most of the new M14 cards. It may take a few days before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient.
+
+
+- Match and Deck Editor Layout problems -
+The match and deck editor windows contain panels that can be moved and/or resized. The changes that you make are saved to files that are named "editor.xml" and "match.xml". These files can be found in your userDir/preferences/ directory.
+
+Sometimes people will decide that they do not like the changes that they made and wish to go back to the original layout. To reset layouts to deafult, go to the Game Settings -> Preferences -> Troubleshooting section. You will find at this location two buttons that will reset the match layout and the deck editor layouts.
+
+Also use the mentioned measure if your match or deckeditor won't start - it would help in 90% of the cases.
+
+
+- The Mac OS X application -
+At this time Forge now requires Java 7 and will no longer run under Java 6.
+
+Unfortunately, the Mac OS X builder that we were using does not support Java 7. We hope to find and to use a different Mac OS X builder in order to continue releasing a Mac OS bundled application like we have in the past.
+
+Currently, the windows/unix release of Forge includes a launcher file named "forge.command". Double click on the "forge.command" launcher command file and this will in turn launch the Forge jar file via the terminal application while increasing the Java heap space. This should be a temporary inconvenience.
+
+
+- Adding additional opponent decks to your /res/quest/duels/ directory -
+Some people are adding additional opponent decks to their /res/quest/duels/ directory in an attempt to increase the number of opponents they will face while playing a quest.
+
+The decks located in your /res/quest/duels/ directory are text files that have a file extension of ".dck" rather than the file extension ".txt". These deck files can be loaded into a basic text editor. You can view the contents of the deck files this way.
+
+There is a metadata line for the deck's difficulty setting. Normal decks do not contain this metadata line for the deck's difficulty setting. Starting with Forge version 1.4.3 any deck file that does not include the deck's difficulty setting will be automatically assigned a value of "medium".
+
+You can add a line for the deck's difficulty setting using a text editor and then saving the deck file. Currently, Forge will recognize the following settings:
+
+Difficulty=easy
+Difficulty=medium
+Difficulty=hard
+Difficulty=very hard
+
+At the start of a new quest you will only face opponent decks that have an easy difficulty setting. After you have won a number of matches you will then face the opponent decks that have a medium difficulty setting. After you have won an additional number of matches you will then face the opponent decks that have a hard difficulty setting. Opponent decks that have a very hard difficulty setting may occassionally appear as a possible opponent instead of a opponent deck that has a hard difficulty setting.
+
+
+---------
+New Cards
+---------
+
+Academy Raider
+Accursed Spirit
+Advocate of the Beast
+Ajani's Chosen
+Angelic Accord
+Archangel of Thune
+Artificer's Hex
+Awaken the Ancient
+Banisher Priest
+Barrage of Expendables
+Battle Sliver
+Blightcaster
+Blood Bairn
+Blur Sliver
+Bogbrew Witch
+Bonescythe Sliver
+Bubbling Cauldron
+Burning Earth
+Candles' Glow
+Celestial Flare
+Chandra, Pyromaster
+Charging Grffin
+Colossal Whale
+Corpse Hauler
+Cyclops Tyrant
+Dark Prophecy
+Dawnstrike Paladin
+Deathgaze Cockatrice
+Devout Invocation
+Dismiss into Dream
+Dragon Egg
+Elite Arcanist
+Elvish Mystic
+Encroaching Wastes
+Enlarge
+Festering Newt
+Fiendslayer Paladin
+Fleshpulper Giant
+Fractured Powerstone
+Galerider Sliver
+Garruk, Caller of Beasts
+Glimpse the Future
+Gnawing Zombie
+Goblin Diplomats
+Grim Return
+Groundshaker Sliver
+Guardian of the Ages
+Haunted Plate Mail
+Heart of Bogardan
+Hive Stirrings
+Hunt the Weak
+Illusionary Armor
+Imposing Sovereign
+Into the Wilds
+Jace's Mindseeker
+Kalonian Hydra
+Kalonian Tusker
+Lifebane Zombie
+Liliana's Reaver
+Liturgy of Blood
+Manaweft Sliver
+Marauding Maulhorn
+Master of Diversion
+Megantic Sliver
+Messenger Drake
+Mindsparker
+Minotaur Abomination
+Molten Birth
+Oath of the Ancient Wood
+Ogre Battledriver
+Path of Bravery
+Predatory Sliver
+Primeval Bounty
+Puppet Master
+Pyromancer's Gauntlet
+Regathan Firecat
+Ring of Three Wishes
+Rise of the Dark Realms
+Rumbling Baloth
+Sacred Boon
+Savage Summoning
+Scars of the Veteran
+Scourge of Valkas
+Seacoast Drake
+Seismic Stomp
+Sentinel Sliver
+Seraph of the Sword
+Shadowborn Apostle
+Shadowborn Demon
+Sideswipe
+Skyfire Kirin
+Sliver Construct
+Soulmender
+Sporemound
+Staff of the Death Magus
+Staff of the Flame Magus
+Staff of the Mind Magus
+Staff of the Sun Magus
+Staff of the Wild Magus
+Steelform Sliver
+Stonehorn Chanter
+Striking Sliver
+Syphon Sliver
+Temper
+Tenacious Dead
+Test of Faith
+Thorncaster Sliver
+Tidebinder Mage
+Trained Condor
+Undead Minotaur
+Vampire Warlord
+Vastwood Hydra
+Vengeful Archon
+Vial of Poison
+Voracious Wurm
+Warden of Evos Isle
+Windreader Sphinx
+Witchstalker
+Woodborn Behemoth
+Xathrid Necromance
+Young Pyromancer
+Zephyr Charge
+
+
+------------
+Known Issues
+------------
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+Dave
+Gos
+jsv
+Marc
+Max
+Sloth
+Sol
+spr
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

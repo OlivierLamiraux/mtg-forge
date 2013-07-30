@@ -1,0 +1,82 @@
+package forge.card.ability.ai;
+
+import java.util.Random;
+
+import forge.Card;
+import forge.CardLists;
+import forge.card.ability.SpellAbilityAi;
+import forge.card.spellability.AbilitySub;
+import forge.card.spellability.SpellAbility;
+import forge.game.ai.ComputerUtilMana;
+import forge.game.player.Player;
+import forge.game.zone.ZoneType;
+import forge.util.MyRandom;
+
+public class DigUntilAi extends SpellAbilityAi {
+
+    @Override
+    protected boolean canPlayAI(Player ai, SpellAbility sa) {
+        Card source = sa.getSourceCard();
+        double chance = .4; // 40 percent chance with instant speed stuff
+        if (SpellAbilityAi.isSorcerySpeed(sa)) {
+            chance = .667; // 66.7% chance for sorcery speed (since it will
+                           // never activate EOT)
+        }
+        final Random r = MyRandom.getRandom();
+        final boolean randomReturn = r.nextFloat() <= Math.pow(chance, sa.getActivationsThisTurn() + 1);
+
+        Player libraryOwner = ai;
+        Player opp = ai.getOpponent();
+
+        if (sa.usesTargeting()) {
+            sa.resetTargets();
+            if (!opp.canBeTargetedBy(sa)) {
+                return false;
+            } else {
+                sa.getTargets().add(opp);
+            }
+            libraryOwner = opp;
+        } else {
+            if (sa.hasParam("Valid")) {
+                final String valid = sa.getParam("Valid");
+                if (CardLists.getValidCards(ai.getCardsIn(ZoneType.Library), valid.split(","), source.getController(), source).isEmpty()) {
+                    return false;
+                }
+            }
+        }
+
+        final String num = sa.getParam("Amount");
+        if ((num != null) && num.equals("X") && source.getSVar(num).equals("Count$xPaid")) {
+            // Set PayX here to maximum value.
+            if (!(sa instanceof AbilitySub) || source.getSVar("PayX").equals("")) {
+                int numCards = ComputerUtilMana.determineLeftoverMana(sa, ai);
+                if (numCards <= 0) {
+                    return false;
+                }
+                source.setSVar("PayX", Integer.toString(numCards));
+            }
+        }
+
+        // return false if nothing to dig into
+        if (libraryOwner.getCardsIn(ZoneType.Library).isEmpty()) {
+            return false;
+        }
+
+        return randomReturn;
+    }
+
+    @Override
+    protected boolean doTriggerAINoCost(Player ai, SpellAbility sa, boolean mandatory) {
+
+        if (sa.usesTargeting()) {
+            sa.resetTargets();
+            if (sa.isCurse()) {
+                sa.getTargets().add(ai.getOpponent());
+            } else {
+                sa.getTargets().add(ai);
+            }
+        }
+
+        return true;
+    }
+}

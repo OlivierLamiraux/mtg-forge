@@ -1,0 +1,186 @@
+Forge Beta: 07-31-2013 ver 1.4.5
+
+
+13050 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- version 1.4.4 -
+We were not able to release version 1.4.4 and are releasing 1.4.5 instead. Enjoy.
+
+
+- Deck Editor and General UI improvements -
+You can now right-click on a color filter button to show only cards of that color, filtering out all other colors. Similar with card type filter buttons.
+Can double click row for deck to open it (in addition to clicking edit icon)
+The selected tab on each draggable pane will now be remembered between sessions
+Fixed bug where hover effect didn't work the first time hovering over a row that had just been deselected
+Fixed bug where middle and right clicking buttons did the same behavior as left clicking, and fixed bug where clicking multiple buttons quickly (such as filters) while moving the mouse around would result in clicks not registering sometimes.
+Fixed so cards are "selected" on mouse up instead of mouse down, allowing things like drag drop and zoom to work if the card is currently actionable
+Fixed so, after dragging a pane tab to a new location, the pane it was in before selects its most recent remaining tab instead of being blank
+
+
+- Card Zoomer -
+Now you can gaze at your HQ images in all their glory with just a flick of the mousewheel, holding the middle mouse button down, or holding the left and right mouse buttons down at the same time. This feature will also increase the size of low quality pics up to the size used for high quality pics, but the image will not be very clear.
+
+Instructions:
+- Works on any card image in the Deck Editor or Duel screen.
+- Move your mouse over the card you want to zoom and mouse-wheel forward.
+- Mouse-wheel back, mouse click or pressing ESC closes the zoomed image.
+
+Limitations:
+- Only works with the mouse wheel at the moment.
+- Does not show the other side of double-sided cards yet.
+
+WIP:
+- Press and hold the CTRL key while mousing over a card to see zoomed image.
+- Flipping double-sided card.
+
+
+- Preferences updates -
+All reset buttons now appear under Troubleshooting section. Increased visibility of Troubleshooting section by moving to the top of the preferences screen. Added confirmation dialogs to all reset buttons.
+
+Converted Skins list to themed combo and added to new Visual Themes section. Converted AI Profile list to themed combo and moved to top of GamePlay section. New Visual Themes setting to hide or show background image on match screen. Default show.
+
+These new themed combo boxes when used with a theme which uses white colored text will cause readability problems for people using Mac OS X. A new "Themed ComboBox" setting is now available in the preferences section which will enable/disable themed combos should you be having readability problems with the new themed combo used in the preferences page.
+
+
+- Forge now requires Java 7 -
+Please update your Java runtime environment. At this point Forge versions 1.4.2 and above will no longer run under Java 6.
+
+
+- New M14 cards -
+Forge now includes most of the new M14 cards. It may take a few days before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient.
+
+
+- Match and Deck Editor Layout problems -
+The match and deck editor windows contain panels that can be moved and/or resized. The changes that you make are saved to files that are named "editor.xml" and "match.xml". These files can be found in your userDir/preferences/ directory.
+
+Sometimes people will decide that they do not like the changes that they made and wish to go back to the original layout. To reset layouts to deafult, go to the Game Settings -> Preferences -> Troubleshooting section. You will find at this location two buttons that will reset the match layout and the deck editor layouts.
+
+Also use the mentioned measure if your match or deckeditor won't start - it would help in 90% of the cases.
+
+
+- The Mac OS X application -
+At this time Forge now requires Java 7 and will no longer run under Java 6.
+
+Unfortunately, the Mac OS X builder that we were using does not support Java 7. We hope to find and to use a different Mac OS X builder in order to continue releasing a Mac OS bundled application like we have in the past.
+
+Currently, the windows/unix release of Forge includes a launcher file named "forge.command". Double click on the "forge.command" launcher command file and this will in turn launch the Forge jar file via the terminal application while increasing the Java heap space. This should be a temporary inconvenience.
+
+
+---------
+New Cards
+---------
+
+Autumn's Veil
+Circling Vultures
+Cycle of Life
+Frankenstein's Monster
+Gilded Drake
+Hallow
+Kudzu
+Mark of Sakiko
+Mercadias Downfall
+Mindbender Spores
+Mishra's War Machine
+Nefarious Lich
+Nettlevine Blight
+Planar Overlay
+Rocket Launcher
+Rogue Skycaptain
+Sakiko, Mother of Summer
+Sakura-Tribe Springcaller
+Samite Blessing
+Sea Troll
+Shape of the Wiitigo
+Shizuko, Caller of Autumn
+Spatial Binding
+Sporogenesis
+Steam Vines
+Stronghold Gambit
+Suffocation
+Thought Dissector
+Tide of War
+Timesifter
+Twist Allegiance
+
+
+---------------
+New Phenomenons
+---------------
+
+Reality Shaping
+
+
+----------
+New Planes
+----------
+
+Agyrem
+Celestine Reef
+Edge of Malacol
+Eloren Wilds
+Norn's Dominion
+Prahv
+
+
+-----------
+New Schemes
+-----------
+
+Choose Your Champion
+Drench the Soil in Their Blood
+
+
+--------------------
+New Vanguard Avatars
+--------------------
+
+Enigma Sphinx Avatar
+
+
+------------
+Known Issues
+------------
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+Asepetci
+DrDev
+Gos
+Marc
+Max
+Sloth
+Sol
+spr
+squee1968
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

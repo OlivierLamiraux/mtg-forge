@@ -1,4 +1,4 @@
-Name:Purphoros' Emissary
+Name:Purphoros's Emissary
 ManaCost:3 R
 Types:Enchantment Creature Ox
 PT:3/3

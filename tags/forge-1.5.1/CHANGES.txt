@@ -1,0 +1,101 @@
+Forge Beta: 10-01-2013 ver 1.5.1
+
+
+13328 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Forge freezing during a match bug -
+A number of people have reported this bug and we now feel that it may have been fixed in this version. Please play test this version and let us know.
+
+
+- Skinned titlebar for main window -
+Titlebar is now skinned instead of displaying using standard OS window titlebar
+Maximizing window now displays full-screen
+Can use Layout > View > Titlebar (F11) to toggle visibility of titlebar (will also open full-screen if hiding titlebar)
+
+
+- Forge now requires Java 7 -
+Please update your Java runtime environment. At this point Forge versions 1.4.2 and above will no longer run under Java 6. Those who are using Mac OS should install the JDK version rather than the JRE version.
+
+
+- The Mac OS X application -
+At this time Forge now requires Java 7 and will no longer run under Java 6.
+
+Unfortunately, the Mac OS X builder that we were using does not support Java 7. We hope to find and to use a different Mac OS X builder in order to continue releasing a Mac OS bundled application like we have in the past.
+
+Currently, the windows/unix release of Forge includes a launcher file named "forge.command". Double click on the "forge.command" launcher command file and this will in turn launch the Forge jar file via the terminal application while increasing the Java heap space. This should be a temporary inconvenience.
+
+
+---------
+New Cards
+---------
+
+Chaos Moon
+Deep Water
+Infernal Darkness
+Mana Reflection
+Mausoleum Turnkey
+Naked Singularity
+Pale Moon
+Pulse of Llanowar
+Reality Twist
+Ritual of Subdual
+
+
+-----------
+New Schemes
+-----------
+
+Nature Demands an Offering
+
+
+--------------------
+New Vanguard Avatars
+--------------------
+
+Mirri
+
+
+------------
+Known Issues
+------------
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+DrDev
+Dripton
+Gos
+Hellfish
+Max
+Sloth
+spr
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

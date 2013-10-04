@@ -1,0 +1,86 @@
+Forge Beta: 10-04-2013 ver 1.5.2
+
+
+13328 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Introducing the Forge button -
+The old menu bar has been removed.
+The Forge button on the left side of the titlebar will drop down the same menu of options.
+The Alt and Menu keys will also open this menu (even if the titlebar is hidden), with full keyboard navigation of the menus then possible.
+The titlebar, minimize, maximize, and close buttons have all been increased in height to make room for the Forge button.
+Menu items have been increased in height to make them more touch screen friendly. They also now enforce a minimum 100px width.
+F1 has been changed to launch the Forge wiki since it no longer needs to toggle menu bar visibility.
+
+
+- New status bar -
+The Forge version and digital clock have been moved to a new thin status bar to make room for the new Forge button.
+Status messages that used to display on the right side of the old menu bar will now display in place of the version on the left side of the status bar.
+F12 and Forge > Layout > View > Status Bar will allow hiding this status bar.
+While status bar hidden and maximized, digital clock will display in title bar left of minimize button
+Both titlebar and status bar visibility will now be remembered between sessions.
+
+
+- Hidden title bar can be revealed temporarily -
+If the title bar is hidden, moving the mouse to the top of the screen will now drop down the title bar until you mouse away
+The title bar will appear on top of other components in this case rather than pushing anything down
+The title bar will remain visible while accessing the Forge menu
+
+
+- Forge now requires Java 7 -
+Please update your Java runtime environment. At this point Forge versions 1.4.2 and above will no longer run under Java 6. Those who are using Mac OS should install the JDK version rather than the JRE version.
+
+
+- The Mac OS X application -
+At this time Forge now requires Java 7 and will no longer run under Java 6.
+
+Unfortunately, the Mac OS X builder that we were using does not support Java 7. We hope to find and to use a different Mac OS X builder in order to continue releasing a Mac OS bundled application like we have in the past.
+
+Currently, the windows/unix release of Forge includes a launcher file named "forge.command". Double click on the "forge.command" launcher command file and this will in turn launch the Forge jar file via the terminal application while increasing the Java heap space. This should be a temporary inconvenience.
+
+
+------------
+Known Issues
+------------
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+DrDev
+Gos
+Juzamjedi
+Marc
+Max
+RumbleBBU
+Sloth
+Sol
+spr
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

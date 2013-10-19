@@ -1,0 +1,11 @@
+Name:Tempt with Vengeance
+ManaCost:X R
+Types:Sorcery
+A:SP$ Token | Cost$ X R | TokenAmount$ X | References$ X | TokenName$ Elemental | TokenTypes$ Creature,Elemental | TokenOwner$ You | TokenColors$ Red | TokenPower$ 1 | TokenToughness$ 1 | TokenKeywords$ Haste | SubAbility$ DBRepeat | StackDescription$ SpellDescription | SpellDescription$ Tempting offer - Put X 1/1 red Elemental creature tokens with haste onto the battlefield. Each opponent may put X 1/1 red Elemental creature tokens with haste onto the battlefield. For each player who does, put X 1/1 red Elemental creature tokens with haste onto the battlefield.
+SVar:DBRepeat:DB$ Token | TokenAmount$ X | References$ X | TokenName$ Elemental | TokenTypes$ Creature,Elemental | TokenOwner$ Player.Opponent | TokenColors$ Red | TokenPower$ 1 | TokenKeywords$ Haste | TokenToughness$ 1 | Optional$ True | RememberController$ True | SubAbility$ DBToken | StackDescription$ None
+SVar:DBToken:DB$ Token | TokenAmount$ Z | References$ X,Y,Z | TokenName$ Elemental | TokenTypes$ Creature,Elemental | TokenOwner$ You | TokenColors$ Red | TokenPower$ 1 | TokenKeywords$ Haste | TokenToughness$ 1 | SubAbility$ DBCleanup | StackDescription$ None
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:Y:Count$RememberedSize
+SVar:X:Count$xPaid
+SVar:Z:SVar$X/Times.Y
+SVar:Picture:http://www.wizards.com/global/images/magic/general/tempt_with_vengeance.jpg

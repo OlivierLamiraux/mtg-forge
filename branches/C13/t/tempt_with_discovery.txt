@@ -1,0 +1,10 @@
+Name:Tempt with Discovery
+ManaCost:3 G
+Types:Sorcery
+A:SP$ ChangeZone | Cost$ 3 G | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.YouCtrl | ChangeNum$ 1 | Hidden$ True | NoShuffle$ True | SubAbility$ DBRepeat | StackDescription$ SpellDescription | SpellDescription$ Tempting offer - Search your library for a land card and put it onto the battlefield. Each opponent may search his or her library for a land card and put it onto the battlefield. For each opponent who searches a library this way, search your library for a land card and put it onto the battlefield. Then each player who searched a library this way shuffles it.
+SVar:DBRepeat:DB$ RepeatEach | RepeatSubAbility$ DBChangeZone | RepeatPlayers$ Player.Opponent | SubAbility$ DBReturn
+SVar:DBChangeZone:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.RememberedPlayerCtrl | DefinedPlayer$ Player.IsRemembered | Chooser$ Player.IsRemembered | ChangeNum$ 1 | Hidden$ True | RememberChanged$ True
+SVar:DBReturn:DB$ ChangeZone | Origin$ Library | Destination$ Battlefield | ChangeType$ Land.YouCtrl | ChangeNum$ X | References$ X | Hidden$ True | Shuffle$ True | SubAbility$ DBCleanup | StackDescription$ None
+SVar:DBCleanup:DB$ Cleanup | ClearRemembered$ True
+SVar:X:Remembered$Amount
+SVar:Picture:http://www.wizards.com/global/images/magic/general/tempt_with_discovery.jpg

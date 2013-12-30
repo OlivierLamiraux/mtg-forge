@@ -1,8 +1,0 @@
-Name:Gaea's Skyfolk
-ManaCost:U G
-Types:Creature Elf Merfolk
-PT:2/2
-K:Flying
-SVar:Picture:http://resources.wizards.com/magic/cards/ap/en-us/card26757.jpg
-Oracle:Flying
-SetInfo:APC Common

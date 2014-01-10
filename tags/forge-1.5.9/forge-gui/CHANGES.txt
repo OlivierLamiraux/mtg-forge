@@ -1,0 +1,106 @@
+Forge Beta: 01-10-2013 ver 1.5.9
+
+
+13421 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Memory usage optimizations -
+Components are no longer cached in memory for skinning purposes, which used to prevent some components from ever being cleared from memory.
+Card images are now cleared from memory cache when switching screens and between games.
+Card display panels are now disposed during game play when its card leaves a zone.
+
+
+- Deck Editor usability improvements -
+Added File menu with shortcuts for common actions in Deck Editor (such as Ctrl+S to save the current deck).
+Support resetting and hiding filters.
+Add/Remove context menu items now properly update based on the number of cards that can be added or removed from the deck.
+Support adding X copies of card at a time, where X is chosen using dialog.
+You'll now be prevented adding more than 4 copies of non-basic land cards in Constructed decks by default, with that number being configurable.
+Full catalog now available for sideboarding in Deck Editor.
+Title field and buttons now available on Current Deck pane when on other sections, with the current section name displaying above the table.
+
+
+- More skinned dialogs -
+Most remaining dialogs are now skinned, including all message, confirmation, input, and list choice dialogs.
+Reveal-style list dialogs now focus OK button by default and support Escape and Close button without showing a Cancel button.
+Increased transparency of backdrop behind dialogs and make it appear over navigation bar instead of disabling navigation bar.
+
+
+- Constructed mode -
+Recently a change was made to the constructed mode and this change now allows you to have up to 8 players rather than just two. The game formats that are located in the variants mode also allow up to eight players. The current user interface for this feature is fairly basic and is not very attractive. The settings tab allows you to set the number of opponents. The player tabs includes the same options that you used to see in the constructed mode.
+
+Marc recently sketched out a couple of attractive mockups that look far more attractive than what we are now using. We just need someone with java skills and swing experience to modify the existing code.
+
+http://www.slightlymagic.net/forum/viewtopic.php?f=52&t=12609#p138913
+
+
+- Commander 2013 cards -
+Forge now includes many of the new Commander 2013 cards. It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+
+---------
+New Cards
+---------
+
+Bludgeon Brawl
+Debt of Loyalty
+Matopi Golem
+Nullstone Gargoyle
+Rootwater Matriarch
+Skeleton Scavengers
+Soldevi Sentry
+Static Orb
+Storage Matrix
+
+
+--------------------
+New BNG branch Cards
+--------------------
+
+Kiora, the Crashing Wave
+
+
+------------
+Known Issues
+------------
+
+There is a known issue with the timing of Leaves the Battlefield triggers and multiple permanents Leaving the Battlefield. As an example, when Blood Artist died at the same time as a lot of other creatures due to a Wrath of God, the Blood Artist should trigger for every creature but does not do so.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+DrDev
+Gos
+Max
+Sloth
+Sol
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

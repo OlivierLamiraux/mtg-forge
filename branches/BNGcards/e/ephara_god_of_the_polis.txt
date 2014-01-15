@@ -8,4 +8,5 @@ SVar:X:Count$DevotionDual.U.W
 T:Mode$ Phase | Phase$ Upkeep | ValidPlayer$ Player | CheckSVar$ Y | Execute$ TrigDraw | TriggerZones$ Battlefield | TriggerDescription$ At the beginning of each upkeep, if you had another creature enter the battlefield under your control last turn, draw a card.
 SVar:TrigDraw:AB$ Draw | Cost$ 0 | NumCards$ 1
 SVar:Y:Count$LastTurnEntered_Battlefield_Creature.YouCtrl+Other
+SVar:BuffedBy:Permanent.White,Permanent.Blue
 SVar:Picture:http://www.wizards.com/global/images/magic/general/ephara_god_of_the_polis.jpg

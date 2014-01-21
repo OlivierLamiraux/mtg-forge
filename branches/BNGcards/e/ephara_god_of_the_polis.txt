@@ -1,5 +1,5 @@
 Name:Ephara, God of the Polis
-ManaCost:2 U W
+ManaCost:2 W U
 Types:Legendary Enchantment Creature God
 PT:6/5
 K:Indestructible

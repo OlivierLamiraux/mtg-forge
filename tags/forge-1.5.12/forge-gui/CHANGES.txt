@@ -1,0 +1,93 @@
+Forge Beta: 02-07-2014 ver 1.5.12
+
+
+13579 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Image View (i.e. Card View / Pile View) for View Deck dialog, Deck Editors, Quest Spell Shop, and Draft Screen -
+The "List View" combo box that had no other options has been replaced with two buttons, one for "List View" and one for the new "Image View"
+In Image View, each card in the pool or deck has its card image displayed, with multiple copies of the same card each having its own image displayed.
+Card images support the same hover, selection, right-click and double-click behavior as rows in list view
+Card images can be arranged in groups and/or piles based on different configurable criteria, with groups being collapsible if you click on their header.
+You can use Ctrl+MouseWheel to zoom in to maximum card width of 300px or out to a minimum card width of 50px.
+
+
+- Loading decks with unsupported cards was causing Forge to crash -
+Forge will no longer crash when there are decks with unsupported cards. These cards will appear in decks and games player starts as a dummy without cost, types, abilities, but with explanation in card's text. The unsupported cards will be listed in the console window as Forge is loading. Unfortunately, it is currently impossible to pinpoint which decks exactly include these unsupported cards in order to list them. However, depending on your operating system, you should be able to either use your operating system utilities or third party software to make a search inside deck files for the offending card name, locate the problematic decks and either update or remove them.
+
+
+- Deck Conformance fix -
+Toggling off Deck Conformance in Preferences now properly allows adding more than 4 cards to deck in editor
+
+
+- Commander 2013 cards -
+Forge now includes many of the new Commander 2013 cards. It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+
+- New Born of the Gods cards -
+Forge now includes many of the new Born of the Gods cards. It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+
+---------
+New Cards
+---------
+
+Aerie Worshippers
+Felhide Spiritbinder
+Forlorn Pseudamma
+Gild
+God-Favored General
+Hunter's Prowess
+Lightning Volley
+Pheres-Band Raiders
+Satyr Firedancer
+Satyr Nyx-Smith
+Teferi's Imp
+
+
+------------
+Known Issues
+------------
+
+There is a known issue with the timing of Leaves the Battlefield triggers and multiple permanents Leaving the Battlefield. As an example, when Blood Artist died at the same time as a lot of other creatures due to a Wrath of God, the Blood Artist should trigger for every creature but does not do so.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+DrDev
+Gos
+Marc
+Max
+RumbleBBU
+Sloth
+Sol
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

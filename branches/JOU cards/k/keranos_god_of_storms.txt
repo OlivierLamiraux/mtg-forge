@@ -5,7 +5,7 @@ PT:6/5
 K:Indestructible
 S:Mode$ Continuous | Affected$ Card.Self | RemoveType$ Creature | RemoveCreatureTypes$ True | CheckSVar$ X | SVarCompare$ LT7 | References$ X | Description$ As long as your devotion to blue and red is less than seven, CARDNAME isn't a creature.
 SVar:X:Count$DevotionDual.U.R
-K:Reveal the first card you draw each turn
+K:Reveal the first card you draw on each of your turns
 T:Mode$ Drawn | ValidCard$ Card.Land+YouCtrl | TriggerZones$ Battlefield | Number$ 1 | Execute$ TrigDraw | TriggerDescription$ Whenever you reveal a land card this way, draw a card.
 SVar:TrigDraw:AB$ Draw | Cost$ 0 | NumCards$ 1
 T:Mode$ Drawn | ValidCard$ Card.nonLand+YouCtrl | TriggerZones$ Battlefield | Number$ 1 | Execute$ TrigDmg | TriggerDescription$ Whenever you reveal a nonland card this way, Keranos deals 3 damage to target creature or player.

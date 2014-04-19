@@ -1,0 +1,825 @@
+package forge;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
+
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL10;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.BitmapFont.TextBounds;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.BitmapFont.HAlignment;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
+import com.badlogic.gdx.utils.Clipboard;
+
+import forge.assets.FSkin;
+import forge.assets.FSkinColor;
+import forge.assets.FSkinFont;
+import forge.assets.FImage;
+import forge.error.BugReporter;
+import forge.model.FModel;
+import forge.screens.FScreen;
+import forge.screens.SplashScreen;
+import forge.screens.home.HomeScreen;
+import forge.toolbox.FContainer;
+import forge.toolbox.FDisplayObject;
+import forge.toolbox.FGestureAdapter;
+import forge.toolbox.FOverlay;
+
+public class Forge implements ApplicationListener {
+    private static Forge game;
+    private static Clipboard clipboard;
+    private static int screenWidth;
+    private static int screenHeight;
+    private static SpriteBatch batch;
+    private static ShapeRenderer shapeRenderer;
+    private static FScreen currentScreen;
+    private static SplashScreen splashScreen;
+    private static final Stack<FScreen> screens = new Stack<FScreen>();
+
+    public Forge(Clipboard clipboard0) {
+        if (game != null) {
+            throw new RuntimeException("Cannot initialize Forge more than once");
+        }
+        game = this;
+        clipboard = clipboard0;
+        GuiBase.setInterface(new GuiMobile());
+    }
+
+    @Override
+    public void create() {
+        batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
+
+        splashScreen = new SplashScreen();
+
+        //load model on background thread (using progress bar to report progress)
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                FModel.initialize(splashScreen.getProgressBar());
+
+                splashScreen.getProgressBar().setDescription("Opening main window...");
+
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        afterDbLoaded();
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void afterDbLoaded() {
+        Gdx.graphics.setContinuousRendering(false); //save power consumption by disabling continuous rendering once assets loaded
+
+        FSkin.loadFull(splashScreen);
+
+        Gdx.input.setInputProcessor(new MainInputProcessor());
+        openScreen(new HomeScreen());
+        splashScreen = null;
+    }
+
+    public static Clipboard getClipboard() {
+        return clipboard;
+    }
+
+    public static void showMenu() {
+        if (currentScreen == null) { return; }
+        currentScreen.showMenu();
+    }
+
+    public static void back() {
+        if (screens.size() < 2) { return; } //don't allow going back from initial screen
+        if (!currentScreen.onClose(true)) {
+            return;
+        }
+        screens.pop();
+        setCurrentScreen(screens.lastElement());
+    }
+
+    public static void openScreen(FScreen screen0) {
+        if (currentScreen == screen0) { return; }
+        if (currentScreen != null && !currentScreen.onSwitchAway()) {
+            return;
+        }
+        screens.push(screen0);
+        setCurrentScreen(screen0);
+    }
+
+    public static FScreen getCurrentScreen() {
+        return currentScreen;
+    }
+
+    private static void setCurrentScreen(FScreen screen0) {
+        try {
+            Animation.endAll(); //end all active animations before switching screens
+    
+            currentScreen = screen0;
+            currentScreen.setSize(screenWidth, screenHeight);
+            currentScreen.onActivate();
+        }
+        catch (Exception ex) {
+            batch.end();
+            BugReporter.reportException(ex);
+        }
+    }
+
+    @Override
+    public void render() {
+        try {
+            Animation.advanceAll();
+    
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Clear the screen.
+    
+            FContainer screen = currentScreen;
+            if (screen == null) {
+                screen = splashScreen;
+                if (screen == null) { 
+                    return;
+                }
+            }
+    
+            batch.begin();
+            Graphics g = new Graphics();
+            screen.draw(g);
+            for (FOverlay overlay : FOverlay.getOverlays()) {
+                overlay.setSize(screenWidth, screenHeight); //update overlay sizes as they're rendered
+                overlay.draw(g);
+            }
+            batch.end();
+        }
+        catch (Exception ex) {
+            batch.end();
+            BugReporter.reportException(ex);
+        }
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        try {
+            screenWidth = width;
+            screenHeight = height;
+            if (currentScreen != null) {
+                currentScreen.setSize(width, height);
+            }
+            else if (splashScreen != null) {
+                splashScreen.setSize(width, height);
+            }
+        }
+        catch (Exception ex) {
+            batch.end();
+            BugReporter.reportException(ex);
+        }
+    }
+
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void dispose () {
+        if (currentScreen != null) {
+            FOverlay overlay = FOverlay.getTopOverlay();
+            while (overlay != null) {
+                overlay.hide();
+                overlay = FOverlay.getTopOverlay();
+            }
+            currentScreen.onClose(false);
+            currentScreen = null;
+        }
+        screens.clear();
+        batch.dispose();
+        shapeRenderer.dispose();
+    }
+
+    private static class MainInputProcessor extends FGestureAdapter {
+        private static final ArrayList<FDisplayObject> potentialListeners = new ArrayList<FDisplayObject>();
+
+        @Override
+        public boolean touchDown(int x, int y, int pointer, int button) {
+            potentialListeners.clear();
+            if (currentScreen != null) { //base potential listeners on object containing touch down point
+                FOverlay overlay = FOverlay.getTopOverlay();
+                if (overlay != null) { //let top overlay handle gestures if any is open
+                    overlay.buildTouchListeners(x, y, potentialListeners);
+                }
+                else {
+                    currentScreen.buildTouchListeners(x, y, potentialListeners);
+                }
+            }
+            return super.touchDown(x, y, pointer, button);
+        }
+
+        @Override
+        public boolean press(float x, float y) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.press(listener.screenToLocalX(x), listener.screenToLocalY(y))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean release(float x, float y) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.release(listener.screenToLocalX(x), listener.screenToLocalY(y))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean longPress(float x, float y) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.longPress(listener.screenToLocalX(x), listener.screenToLocalY(y))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean tap(float x, float y, int count) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.tap(listener.screenToLocalX(x), listener.screenToLocalY(y), count)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean fling(float velocityX, float velocityY) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.fling(velocityX, velocityY)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean pan(float x, float y, float deltaX, float deltaY) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.pan(listener.screenToLocalX(x), listener.screenToLocalY(y), deltaX, deltaY)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean panStop(float x, float y) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.panStop(listener.screenToLocalX(x), listener.screenToLocalY(y))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean zoom(float initialDistance, float distance) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.zoom(initialDistance, distance)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+
+        @Override
+        public boolean pinch(Vector2 initialPointer1, Vector2 initialPointer2, Vector2 pointer1, Vector2 pointer2) {
+            try {
+                for (FDisplayObject listener : potentialListeners) {
+                    if (listener.pinch(initialPointer1, initialPointer2, pointer1, pointer2)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch (Exception ex) {
+                BugReporter.reportException(ex);
+                return true;
+            }
+        }
+    }
+
+    public static abstract class Animation {
+        private static final List<Animation> activeAnimations = new ArrayList<Animation>();
+
+        public void start() {
+            if (activeAnimations.contains(this)) { return; } //prevent starting the same animation multiple times
+
+            activeAnimations.add(this);
+            if (activeAnimations.size() == 1) { //if first animation being started, ensure continuous rendering turned on
+                Gdx.graphics.setContinuousRendering(true);
+            }
+        }
+
+        private static void advanceAll() {
+            if (activeAnimations.isEmpty()) { return; }
+
+            float dt = Gdx.graphics.getDeltaTime();
+            for (int i = 0; i < activeAnimations.size(); i++) {
+                if (!activeAnimations.get(i).advance(dt)) {
+                    activeAnimations.remove(i);
+                    i--;
+                }
+            }
+
+            if (activeAnimations.isEmpty()) { //when all animations have ended, turn continuous rendering back off
+                Gdx.graphics.setContinuousRendering(false);
+            }
+        }
+
+        private static void endAll() {
+            if (activeAnimations.isEmpty()) { return; }
+
+            activeAnimations.clear();
+            Gdx.graphics.setContinuousRendering(false);
+        }
+
+        //return true if animation should continue, false to stop the animation
+        protected abstract boolean advance(float dt);
+    }
+
+    public static class Graphics {
+        private Rectangle bounds;
+        private int failedClipCount;
+        private float alphaComposite = 1;
+
+        private Graphics() {
+            bounds = new Rectangle(0, 0, screenWidth, screenHeight);
+        }
+
+        public void startClip() {
+            startClip(0, 0, bounds.width, bounds.height);
+        }
+        public void startClip(float x, float y, float w, float h) {
+            batch.flush(); //must flush batch to prevent other things not rendering
+            if (!ScissorStack.pushScissors(new Rectangle(adjustX(x), adjustY(y, h), w, h))) {
+                failedClipCount++; //tracked failed clips to prevent calling popScissors on endClip
+            }
+        }
+        public void endClip() {
+            if (failedClipCount == 0) {
+                batch.flush(); //must flush batch to ensure stuffed rendered during clip respects that clip
+                ScissorStack.popScissors();
+            }
+            else {
+                failedClipCount--;
+            }
+        }
+
+        public void draw(FDisplayObject displayObj) {
+            if (displayObj.getWidth() <= 0 || displayObj.getHeight() <= 0) {
+                return;
+            }
+
+            final Rectangle parentBounds = bounds;
+            bounds = new Rectangle(parentBounds.x + displayObj.getLeft(), parentBounds.y + displayObj.getTop(), displayObj.getWidth(), displayObj.getHeight());
+            displayObj.setScreenPosition(bounds.x, bounds.y);
+
+            if (bounds.overlaps(parentBounds)) { //avoid drawing object if it's not within visible region
+                displayObj.draw(this);
+            }
+
+            bounds = parentBounds;
+        }
+
+        public void drawLine(float thickness, FSkinColor skinColor, float x1, float y1, float x2, float y2) {
+            drawLine(thickness, skinColor.getColor(), x1, y1, x2, y2);
+        }
+        public void drawLine(float thickness, Color color, float x1, float y1, float x2, float y2) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(thickness);
+            }
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            boolean needSmoothing = (x1 != x2 && y1 != y2);
+            if (color.a < 1 || needSmoothing) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+            if (needSmoothing) {
+                Gdx.gl.glEnable(GL10.GL_LINE_SMOOTH);
+            }
+
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(color);
+            shapeRenderer.line(adjustX(x1), adjustY(y1, 0), adjustX(x2), adjustY(y2, 0));
+            shapeRenderer.end();
+
+            if (needSmoothing) {
+                Gdx.gl.glDisable(GL10.GL_LINE_SMOOTH);
+            }
+            if (color.a < 1 || needSmoothing) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(1);
+            }
+
+            batch.begin();
+        }
+
+        public void drawRoundRect(float thickness, FSkinColor skinColor, float x, float y, float w, float h, float cornerRadius) {
+            drawRoundRect(thickness, skinColor.getColor(), x, y, w, h, cornerRadius);
+        }
+        public void drawRoundRect(float thickness, Color color, float x, float y, float w, float h, float cornerRadius) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(thickness);
+            }
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            if (color.a < 1 || cornerRadius > 0) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+            if (cornerRadius > 0) {
+                Gdx.gl.glEnable(GL10.GL_LINE_SMOOTH);
+            }
+
+            //adjust width/height so rectangle covers equivalent filled area
+            w = Math.round(w - 1);
+            h = Math.round(h - 1);
+
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(color);
+
+            x = adjustX(x);
+            float y2 = adjustY(y, h);
+            float x2 = x + w;
+            y = y2 + h;
+            //TODO: draw arcs at corners
+            shapeRenderer.line(x, y, x, y2);
+            shapeRenderer.line(x, y2, x2 + 1, y2); //+1 prevents corner not being filled
+            shapeRenderer.line(x2, y2, x2, y);
+            shapeRenderer.line(x2 + 1, y, x, y); //+1 prevents corner not being filled
+
+            shapeRenderer.end();
+
+            if (cornerRadius > 0) {
+                Gdx.gl.glDisable(GL10.GL_LINE_SMOOTH);
+            }
+            if (color.a < 1 || cornerRadius > 0) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(1);
+            }
+
+            batch.begin();
+        }
+
+        public void drawRect(float thickness, FSkinColor skinColor, float x, float y, float w, float h) {
+            drawRect(thickness, skinColor.getColor(), x, y, w, h);
+        }
+        public void drawRect(float thickness, Color color, float x, float y, float w, float h) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(thickness);
+            }
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glEnable(GL10.GL_LINE_SMOOTH); //must be smooth to ensure edges aren't missed
+
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(color);
+            shapeRenderer.rect(adjustX(x), adjustY(y, h), w, h);
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL10.GL_LINE_SMOOTH);
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(1);
+            }
+
+            batch.begin();
+        }
+
+        public void fillRect(FSkinColor skinColor, float x, float y, float w, float h) {
+            fillRect(skinColor.getColor(), x, y, w, h);
+        }
+        public void fillRect(Color color, float x, float y, float w, float h) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            if (color.a < 1) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+
+            shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.setColor(color);
+            shapeRenderer.rect(adjustX(x), adjustY(y, h), w, h);
+            shapeRenderer.end();
+
+            if (color.a < 1) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+
+            batch.begin();
+        }
+
+        public void drawCircle(float thickness, FSkinColor skinColor, float x, float y, float radius) {
+            drawCircle(thickness, skinColor.getColor(), x, y, radius);
+        }
+        public void drawCircle(float thickness, Color color, float x, float y, float radius) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(thickness);
+            }
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glEnable(GL10.GL_LINE_SMOOTH);
+
+            shapeRenderer.begin(ShapeType.Line);
+            shapeRenderer.setColor(color);
+            shapeRenderer.circle(adjustX(x), adjustY(y, 0), radius);
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL10.GL_LINE_SMOOTH);
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+            if (thickness > 1) {
+                Gdx.gl.glLineWidth(1);
+            }
+
+            batch.begin();
+        }
+
+        public void fillCircle(FSkinColor skinColor, float x, float y, float radius) {
+            fillCircle(skinColor.getColor(), x, y, radius);
+        }
+        public void fillCircle(Color color, float x, float y, float radius) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            if (color.a < 1) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+
+            shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.setColor(color);
+            shapeRenderer.circle(adjustX(x), adjustY(y, 0), radius); //TODO: Make smoother
+            shapeRenderer.end();
+
+            if (color.a < 1) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+
+            batch.begin();
+        }
+
+        public void fillTriangle(FSkinColor skinColor, float x1, float y1, float x2, float y2, float x3, float y3) {
+            fillTriangle(skinColor.getColor(), x1, y1, x2, y2, x3, y3);
+        }
+        public void fillTriangle(Color color, float x1, float y1, float x2, float y2, float x3, float y3) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            if (color.a < 1) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+
+            shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.setColor(color);
+            shapeRenderer.triangle(adjustX(x1), adjustY(y1, 0), adjustX(x2), adjustY(y2, 0), adjustX(x3), adjustY(y3, 0));
+            shapeRenderer.end();
+
+            if (color.a < 1) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+
+            batch.begin();
+        }
+
+        public void fillGradientRect(FSkinColor skinColor1, FSkinColor skinColor2, boolean vertical, float x, float y, float w, float h) {
+            fillGradientRect(skinColor1.getColor(), skinColor2.getColor(), vertical, x, y, w, h);
+        }
+        public void fillGradientRect(FSkinColor skinColor1, Color color2, boolean vertical, float x, float y, float w, float h) {
+            fillGradientRect(skinColor1.getColor(), color2, vertical, x, y, w, h);
+        }
+        public void fillGradientRect(Color color1, FSkinColor skinColor2, boolean vertical, float x, float y, float w, float h) {
+            fillGradientRect(color1, skinColor2.getColor(), vertical, x, y, w, h);
+        }
+        public void fillGradientRect(Color color1, Color color2, boolean vertical, float x, float y, float w, float h) {
+            batch.end(); //must pause batch while rendering shapes
+
+            if (alphaComposite < 1) {
+                color1 = FSkinColor.alphaColor(color1, color1.a * alphaComposite);
+                color2 = FSkinColor.alphaColor(color2, color2.a * alphaComposite);
+            }
+            boolean needBlending = (color1.a < 1 || color2.a < 1);
+            if (needBlending) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+
+            Color topLeftColor = color1;
+            Color topRightColor = vertical ? color1 : color2;
+            Color bottomLeftColor = vertical ? color2 : color1;
+            Color bottomRightColor = color2;
+
+            shapeRenderer.begin(ShapeType.Filled);
+            shapeRenderer.rect(adjustX(x), adjustY(y, h), w, h, bottomLeftColor, bottomRightColor, topRightColor, topLeftColor);
+            shapeRenderer.end();
+
+            if (needBlending) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+
+            batch.begin();
+        }
+
+        public void setAlphaComposite(float alphaComposite0) {
+            alphaComposite = alphaComposite0;
+            batch.setColor(new Color(1, 1, 1, alphaComposite));
+        }
+        public void resetAlphaComposite() {
+            alphaComposite = 1;
+            batch.setColor(Color.WHITE);
+        }
+
+        public void drawImage(FImage image, float x, float y, float w, float h) {
+            image.draw(this, x, y, w, h);
+        }
+        public void drawImage(Texture image, float x, float y, float w, float h) {
+            batch.draw(image, adjustX(x), adjustY(y, h), w, h);
+        }
+        public void drawImage(TextureRegion image, float x, float y, float w, float h) {
+            batch.draw(image, adjustX(x), adjustY(y, h), w, h);
+        }
+
+        public void drawRepeatingImage(Texture image, float x, float y, float w, float h) {
+            startClip(x, y, w, h);
+
+            int tilesW = (int)(w / image.getWidth()) + 1;
+            int tilesH = (int)(h / image.getHeight()) + 1;  
+            batch.draw(image, adjustX(x), adjustY(y, h),
+                    image.getWidth() * tilesW, 
+                    image.getHeight() * tilesH, 
+                    0, tilesH, tilesW, 0);
+
+            endClip();
+        }
+
+        public void drawRotatedImage(Texture image, float x, float y, float w, float h, float originX, float originY, float rotation) {
+            batch.draw(image, adjustX(x), adjustY(y, h), originX - x, h - (originY - y), w, h, 1, 1, rotation, 0, 0, image.getWidth(), image.getHeight(), false, false);
+        }
+
+        public void drawText(String text, FSkinFont skinFont, FSkinColor skinColor, float x, float y, float w, float h, boolean wrap, HAlignment horzAlignment, boolean centerVertically) {
+            drawText(text, skinFont, skinColor.getColor(), x, y, w, h, wrap, horzAlignment, centerVertically);
+        }
+        public void drawText(String text, FSkinFont skinFont, Color color, float x, float y, float w, float h, boolean wrap, HAlignment horzAlignment, boolean centerVertically) {
+            if (alphaComposite < 1) {
+                color = FSkinColor.alphaColor(color, color.a * alphaComposite);
+            }
+            if (color.a < 1) { //enable blending so alpha colored shapes work properly
+                Gdx.gl.glEnable(GL20.GL_BLEND);
+            }
+
+            TextBounds bounds;
+            int fontSize = skinFont.getSize();
+            BitmapFont font = skinFont.getFont();
+            if (wrap) {
+                bounds = font.getWrappedBounds(text, w);
+            }
+            else {
+                bounds = font.getMultiLineBounds(text);
+            }
+            
+            boolean needClip = false;
+
+            while (bounds.width > w || bounds.height > h) {
+                if (fontSize > FSkinFont.MIN_FONT_SIZE) { //shrink font to fit if possible
+                    font = FSkinFont.get(--fontSize).getFont();
+                    if (wrap) {
+                        bounds = font.getWrappedBounds(text, w);
+                    }
+                    else {
+                        bounds = font.getMultiLineBounds(text);
+                    }
+                }
+                else {
+                    needClip = true;
+                    break;
+                }
+            }
+
+            if (needClip) { //prevent text flowing outside region if couldn't shrink it to fit
+                startClip(x, y, w, h);
+            }
+
+            float textHeight = bounds.height;
+            if (h > textHeight && centerVertically) {
+                y += (h - textHeight) / 2;
+            }
+            font.setColor(color);
+
+            if (wrap) {
+                font.drawWrapped(batch, text, adjustX(x), adjustY(y, 0), w, horzAlignment);
+            }
+            else {
+                font.drawMultiLine(batch, text, adjustX(x), adjustY(y, 0), w, horzAlignment);
+            }
+
+            if (needClip) {
+                endClip();
+            }
+
+            if (color.a < 1) {
+                Gdx.gl.glDisable(GL20.GL_BLEND);
+            }
+        }
+
+        private float adjustX(float x) {
+            return x + bounds.x;
+        }
+
+        private float adjustY(float y, float height) {
+            return screenHeight - y - bounds.y - height; //flip y-axis
+        }
+    }
+}

@@ -1,5 +1,5 @@
 Name:Keranos, God of Storms
-ManaCost:2 U R
+ManaCost:3 U R
 Types:Legendary Enchantment Creature God
 PT:6/5
 K:Indestructible

@@ -7,6 +7,3 @@ SVar:X:Count$TypeInAllYards.Creature
 SVar:NeedsToPlayVar:X GE4
 A:AB$ Pump | Cost$ 2 B SubCounter<1/P1P1> | ValidTgts$ Creature | TgtPrompt$ Select target creature | NumAtt$ -1 | NumDef$ -1 | IsCurse$ True | SpellDescription$ Target creature gets -1/-1 until end of turn.
 SVar:Picture:http://www.wizards.com/global/images/magic/general/drakestown_forgotten.jpg
-
-
-

@@ -1,0 +1,147 @@
+Forge Beta: 08-29-2014 ver 1.5.25
+
+
+14049 cards in total.
+
+
+-------------
+Release Notes
+-------------
+
+- Auto-targeting support -
+When playing spells and abilities with the text "target opponent", if you only have one opponent, you will no longer be asked to choose the opponent to target.
+
+
+- New Commander 2014 and KTK cards -
+We have added a branch to our SVN for the new cards that are currently being scripted. These cards are not yet available in this build of forge. Please be patient and they will soon become available.
+
+
+- Improved auto-yield support - 
+Pressing "End Turn" now properly skips your attack phase and doesn't get cancelled automatically if a spell or ability is put on the stack. You will still be given a chance to declare blockers if your opponent attacks, but after that the rest of your opponent's turn will now be skipped properly.
+To alleviate pressing this accidentally, as long as you're auto-yielding this way, you'll be able to press Escape or the Cancel button to cancel the auto-yield and be given the chance to act again. Phases with stops and spells/abilities resolving will be given a slight delay to allow you to see what's going on and give you the chance to regain control by cancelling the yield.
+Added support for auto-yielding abilities on the stack so you don't have to press OK each time
+
+
+- Improved Gauntlet Support - 
+Add column to Load Gauntlet screen to display your deck for the gauntlet.
+Fix so your deck is saved with a gauntlet when starting a quick gauntlet.
+Instead of crashing, prompt user to select a deck if attempting to load a gauntlet that doesn't have one saved.
+Make it so Last Activity column isn't cut off and is formatted properly.
+Make it so double-clicking a gauntlet on the Load Gauntlet screen will launch it.
+Support renaming gauntlets.
+Support sorting gauntlets (and quests) case insensitive.
+
+
+- Fixed loading overlay to show logo properly and have some transparency -
+
+
+- Vastly Improved Boolean Expressions -
+Boolean expressions no longer require the use of quotation marks around your search terms, making it a far more useful
+feature. Boolean expressions been rewritten from the ground up to be faster and better at parsing your search terms.
+With the new parsing also comes NOT operators (!). Place these before things to negate them. For example:
+
+!r
+
+will find all cards that don't have red in their mana costs (when searching by cost). These can be a bit finicky at
+times since there's no order of operations yet. This will possibly be implemented in a future update. For now, be sure
+to put all possibly ambiguous NOT operators within parenthesis:
+
+!(r || g) instead of !r && !g
+
+Unfortunately I did not have time to implement an order of operations for this release, but rest assured it's on its
+way... eventually.
+
+
+- Quest Draft Preferences -
+You can now set how long you want quest draft tournaments to be available and how often you want them to be generated.
+Existing draft tournaments will not be affected.
+
+
+---------
+New Cards
+---------
+
+Wishmonger
+
+
+-------------------------------
+New Commander 2014 branch Cards
+-------------------------------
+
+Ghoulcaller Gisa
+Stitcher Geralf
+Teferi, Temporal Archmage
+
+
+--------------------
+New KTK branch Cards
+--------------------
+
+Jeskai Elder
+Thousand Winds
+Zurgo Helmsmasher
+
+
+------------
+Known Issues
+------------
+
+- Continued Work on Conspiracy -
+Conspiracy is one of the strangest sets that have been released in some time. Currently, we have a few of the "Draft matters" cards scripted, although you'll find that they won't quite be available to you (unless you add them manually into a draft deck). Hopefully we'll get the appropriate functionality in so we can start including them in boosters and allowing you to add Conspiracy type cards straight to your deck the way you do every other variant card. We'll make sure to point out when all of these kinks have worked themselves out.
+
+- The Mac OS application version -
+We can now package Forge as a Mac OS application. You can double click the Forge.app icon to launch the forge application on your Apple computer running Mac OS. This application will automatically increase the java heap space memory for you as it launches. This version does not require the forge.command file and it does not need to start the Terminal application as part of the start up process.
+
+The Mac OS X app version apparently requires the Mavericks OS and is not compatible with earlier OS X versions. People with earlier OS X versions should use the Windows and Linux version and launch forge on their Mac by double clicking on the included "forge.command" file.
+
+- Magic 2015 cards -
+It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+- Conspiracy cards -
+Forge now includes many of the new Conspiracy cards. It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+- Commander 2013 cards -
+It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+- Born of the Gods cards -
+It may take a few days/weeks before these new card pictures become available for downloading via the "Download LQ Card Pictures" button. The LQ set pictures tend to take a few more weeks/months to process before they become available for downloading via the "Download LQ Set Pictures" button. Please be patient. The Forge devs are not involved in maintaining the servers that house these pictures.
+
+There is a known issue with the timing of Leaves the Battlefield triggers and multiple permanents Leaving the Battlefield. As an example, when Blood Artist died at the same time as a lot of other creatures due to a Wrath of God, the Blood Artist should trigger for every creature but does not do so.
+
+Several people have noticed that the cards displayed on the battlefield will fail to be displayed when the number of cards on the battlefield increases. Maximizing the human panel can help to re-display the cards.
+
+Some time was spent turning the static ETB triggers into the proper ETB replacement effects they should be, mainly to interact correctly with each other. This work is not yet finished. As a result there is currently some inconsistencies with "Enters the battlefield with counters" (Not incredibly noticeable).
+
+A recent contribution to the code base should fix some of the bugs that people noticed with cloning type abilities. At this time there is one remaining issue that we hope will be addressed in the near future:
+Copies of cards that setup Zone Change triggers via addComesIntoPlayCommand and addLeavesPlayCommand will not function correctly.
+
+The Forge archive includes a readme.txt file and we ask that you spend a few minutes reading this file as it contains some information that may prove useful. We do tend to update this file at times and you should quickly read this file and look for new information for each and every new release. Thank you.
+
+The archive format used for the Forge distribution is ".tar.bz2". There are utilities for Windows, Mac OS and the various *nix's that can be used to extract/decompress these ".tar.bz2" archives. We recommend that you extract/decompress the Forge archive into a new and unused folder.
+
+Some people use the Windows application 7zip. This utility can be found at http://www.7-zip.org/download.html. Mac users can double click on the archive and the application Archive Utility will launch and extract the archive. Mac users do not need to download a separate utility.
+
+
+----------------------------
+Contributors to This Release
+----------------------------
+
+Agetian
+DrDev
+elcnesh
+excessum
+Gos
+KrazyTheFox
+rikimbo
+Sloth
+Sol
+Swordshine
+Chris H
+
+
+(Quest icons used created by Teekatas, from his Legendora set http://raindropmemory.deviantart.com)
+(Thanks to the MAGE team for permission to use their targeting arrows.)
+(Thanks to http://www.freesound.org/browse/ for providing some sound files.)
+
+
+end

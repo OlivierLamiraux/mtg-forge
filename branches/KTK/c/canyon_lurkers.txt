@@ -1,4 +1,4 @@
-Name:Canyon Lukers
+Name:Canyon Lurkers
 ManaCost:4 R
 Types:Creature Human Rogue
 PT:5/2

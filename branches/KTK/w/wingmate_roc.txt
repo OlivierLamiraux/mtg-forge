@@ -9,4 +9,5 @@ SVar:TrigToken:AB$ Token | Cost$ 0 | TokenImage$ W 3 4 Bird KTK | TokenName$ Bir
 T:Mode$ Attacks | ValidCard$ Card.Self | Execute$ TrigGainLife | TriggerDescription$ Whenever Wingmate Roc attacks, you gain 1 life for each attacking creature.
 SVar:TrigGainLife:AB$ GainLife | Cost$ 0 | Defined$ You | LifeAmount$ X | References$ X
 SVar:X:Count$Valid Creature.attacking
+SVar:HasAttackEffect:TRUE
 SVar:Picture:http://www.wizards.com/global/images/magic/general/wingmate_roc.jpg

@@ -2,6 +2,7 @@ Name:Freyalise, Llanowar's Fury
 ManaCost:3 G G
 Types:Planeswalker Freyalise
 Loyalty:3
+Text:CARDNAME can be your commander.
 A:AB$ Token | Cost$ AddCounter<2/LOYALTY> | Planeswalker$ True | TokenAmount$ 1 | TokenName$ Elf Druid | TokenTypes$ Creature,Elf,Druid | TokenOwner$ You | TokenColors$ Green | TokenPower$ 1 | TokenToughness$ 1 | TokenAbilities$ DBMana | SpellDescription$ Put a 1/1 green Elf Druid creature token onto the battlefield with "{T}: add {G} to your mana pool."
 SVar:DBMana:AB$ Mana | Cost$ T | Produced$ G | SpellDescription$ Add {G} to your mana pool.
 A:AB$ Destroy | Cost$ SubCounter<2/LOYALTY> | Planeswalker$ True | ValidTgts$ Artifact,Enchantment | TgtPrompt$ Select target artifact or enchantment | SpellDescription$ Destroy target artifact or enchantment.

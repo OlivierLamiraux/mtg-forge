@@ -1,0 +1,8 @@
+Name:Flame Fusillade
+ManaCost:3 R
+Types:Sorcery
+A:SP$ AnimateAll | Cost$ 3 R | ValidCards$ Permanent.YouCtrl | Abilities$ FFAbs | SpellDescription$ Until end of turn, permanents you control gain "{T}: This permanent deals 1 damage to target creature or player."
+SVar:FFAbs:AB$ DealDamage | Cost$ T | ValidTgts$ Creature,Player | TgtPrompt$ Select target creature or player | NumDmg$ 1 | SpellDescription$ This permanent deals 1 damage to target creature or player.
+SVar:RemAIDeck:True
+SVar:Picture:http://www.wizards.com/global/images/magic/general/flame_fusillade.jpg
+Oracle:Until end of turn, permanents you control gain "{T}: This permanent deals 1 damage to target creature or player." 

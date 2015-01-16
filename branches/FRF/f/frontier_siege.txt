@@ -8,5 +8,5 @@ SVar:KhansTrigger:Mode$ Phase | Phase$ Main1,Main2 | TriggerZones$ Battlefield |
 SVar:ManaGain:AB$ Mana | Cost$ 0 | Produced$ G G
 SVar:Dragons:DB$ Animate | Defined$ Self | Triggers$ DragonsTrigger | Permanent$ True | SpellDescription$ Dragons
 SVar:DragonsTrigger:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Creature.YouCtrl+withFlying | TriggerZones$ Battlefield | OptionalDecider$ You | Execute$ AirFight | TriggerDescription$ Whenever a creature you control leaves the battlefield, CARDNAME deals 1 damage to target creature or player.
-SVar:AirFight:AB$ DB$ Fight | Defined$ TriggeredTarget | ValidTgts$ Creature.OppCtrl | TgtPrompt$ Choose target creature an opponent controls
+SVar:AirFight:AB$ DB$ Fight | Defined$ TriggeredTarget | ValidTgts$ Creature.YouDontCtrl | TgtPrompt$ Choose target creature you don't control
 SVar:Picture:http://www.wizards.com/global/images/magic/general/frontier_siege.jpg

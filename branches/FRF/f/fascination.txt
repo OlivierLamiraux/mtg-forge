@@ -7,4 +7,3 @@ SVar:DBMill:DB$ Mill | Defined$ Each | NumCards$ X | References$ X | StackDescri
 SVar:X:Count$xPaid
 SVar:RemAIDeck:True
 SVar:Picture:http://www.wizards.com/global/images/magic/general/fascination.jpg
-Oracle:Choose one -\n• Each player draws X cards.\n• Each player puts the top X cards of his or her library into his or her graveyard. 

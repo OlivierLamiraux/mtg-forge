@@ -8,4 +8,3 @@ SVar:TrigBounce:AB$ ChangeZone | Cost$ 0 | ValidTgts$ Creature | TgtPrompt$ Sele
 SVar:Y:Count$CardPower
 SVar:X:Targeted$Valid Creature.powerLEY
 SVar:Picture:http://www.wizards.com/global/images/magic/general/sage_eye_avengers.jpg
-Oracle:Prowess\nWhenever Sage-Eye Avengers attacks, you may return target creature to its owner's hand if its power is less than Sage-Eye Avengers's power.

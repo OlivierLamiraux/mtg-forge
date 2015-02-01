@@ -8,7 +8,6 @@ import forge.game.Game;
 import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
 import forge.game.cost.Cost;
@@ -68,7 +67,7 @@ public class DamageDealAi extends DamageAiBase {
         } else if ("WildHunt".equals(logic)) {
             // This dummy ability will just deal 0 damage, but holds the logic for the AI for Master of Wild Hunt
             List<Card> wolves = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), "Creature.Wolf+untapped+YouCtrl+Other", ai, source);
-            dmg = Aggregates.sum(wolves, CardPredicates.Accessors.fnGetNetPower);
+            dmg = Aggregates.sum(wolves, CardPredicates.Accessors.fnGetNetAttack);
         }
 
         if (dmg <= 0) {
@@ -278,7 +277,7 @@ public class DamageDealAi extends DamageAiBase {
         }
         if ("Polukranos".equals(sa.getParam("AILogic"))) {
             int dmgTaken = 0;
-            CardCollection humCreatures = ai.getOpponent().getCreaturesInPlay();
+            List<Card> humCreatures = ai.getOpponent().getCreaturesInPlay();
             Card lastTgt = null;
             humCreatures = CardLists.getTargetableCards(humCreatures, sa);
             ComputerUtilCard.sortByEvaluateCreature(humCreatures);
@@ -288,14 +287,14 @@ public class DamageDealAi extends DamageAiBase {
                 }
                 final int assignedDamage = ComputerUtilCombat.getEnoughDamageToKill(humanCreature, dmg, source, false, noPrevention);
                 if (assignedDamage <= dmg 
-                        && humanCreature.getShieldCount() == 0 && !ComputerUtil.canRegenerate(humanCreature.getController(), humanCreature)) {
+                        && humanCreature.getShield().isEmpty() && !ComputerUtil.canRegenerate(humanCreature.getController(), humanCreature)) {
                     tcs.add(humanCreature);
                     tgt.addDividedAllocation(humanCreature, assignedDamage);
                     lastTgt = humanCreature;
                     dmg -= assignedDamage;
                 }
                 if (!source.hasProtectionFrom(humanCreature)) {
-                    dmgTaken += humanCreature.getNetPower();
+                    dmgTaken += humanCreature.getNetAttack();
                 }
                 if (dmg == 0) {
                     return true;

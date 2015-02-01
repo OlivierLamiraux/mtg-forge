@@ -17,7 +17,7 @@
  */
 package forge.game.ability;
 
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.game.card.Card;
 import forge.game.cost.Cost;
 import forge.game.spellability.*;
@@ -92,6 +92,8 @@ public final class AbilityFactory {
      * @return a {@link forge.game.spellability.SpellAbility} object.
      */
     public static final SpellAbility getAbility(final String abString, final Card hostCard) {
+        
+
         Map<String, String> mapParams;
         try {
             mapParams = AbilityFactory.getMapParams(abString);
@@ -102,10 +104,9 @@ public final class AbilityFactory {
 
         // parse universal parameters
         AbilityRecordType type = AbilityRecordType.getRecordType(mapParams);
-        if (null == type) {
-            String source = hostCard.getName().isEmpty() ? abString : hostCard.getName();
-            throw new RuntimeException("AbilityFactory : getAbility -- no API in " + source);
-        }
+        if( null == type )
+            throw new RuntimeException("AbilityFactory : getAbility -- no API in " + hostCard.getName());
+        
         return getAbility(type, type.getApiTypeOf(mapParams), mapParams, parseAbilityCost(hostCard, mapParams, type), hostCard);
     }
 
@@ -135,7 +136,7 @@ public final class AbilityFactory {
         else if (api == ApiType.PermanentCreature || api == ApiType.PermanentNoncreature) {
             // If API is a permanent type, and creating AF Spell
             // Clear out the auto created SpellPemanent spell
-            if (type == AbilityRecordType.Spell && !mapParams.containsKey("SubAbility")) {
+            if (type == AbilityRecordType.Spell) {
                 hostCard.clearFirstSpell();
             }
         }
@@ -356,7 +357,7 @@ public final class AbilityFactory {
         if(!card.isSplitCard()) 
             throw new IllegalStateException("Fuse ability may be built only on split cards");
         
-        final String strLeftAbility = card.getState(CardStateName.LeftSplit).getFirstUnparsedAbility();
+        final String strLeftAbility = card.getState(CardCharacteristicName.LeftSplit).getUnparsedAbilities().get(0);
         Map<String, String> leftMap = getMapParams(strLeftAbility);
         AbilityRecordType leftType = AbilityRecordType.getRecordType(leftMap);
         ApiType leftApi = leftType.getApiTypeOf(leftMap);
@@ -364,7 +365,7 @@ public final class AbilityFactory {
         leftMap.put("SpellDescription", "Fuse (you may cast both halves of this card from your hand).");
         leftMap.put("ActivationZone", "Hand");
     
-        final String strRightAbility = card.getState(CardStateName.RightSplit).getFirstUnparsedAbility();
+        final String strRightAbility = card.getState(CardCharacteristicName.RightSplit).getUnparsedAbilities().get(0);
         Map<String, String> rightMap = getMapParams(strRightAbility);
         AbilityRecordType rightType = AbilityRecordType.getRecordType(leftMap);
         ApiType rightApi = leftType.getApiTypeOf(rightMap);

@@ -1,7 +1,6 @@
 package forge.game.trigger;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.spellability.SpellAbility;
 
 import java.util.Map;
@@ -27,32 +26,37 @@ public class TriggerPlaneswalkedFrom extends Trigger {
     public TriggerPlaneswalkedFrom(final Map<String, String> params, final Card host, final boolean intrinsic) {
         super(params, host, intrinsic);
     }
-
+    
     /* (non-Javadoc)
      * @see forge.card.trigger.Trigger#performTest(java.util.Map)
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public boolean performTest(final Map<String, Object> runParams2) {
+    public boolean performTest(Map<String, Object> runParams2) {
         if (this.mapParams.containsKey("ValidCard")) {
-            final CardCollection moved = (CardCollection) runParams2.get("Cards");
-            for(Card c : moved) {
-                if (c.isValid(this.mapParams.get("ValidCard").split(","), this
-                        .getHostCard().getController(), this.getHostCard())) {
+            for(Card moved : (Iterable<Card>)runParams2.get("Card"))
+            {
+                if (moved.isValid(this.mapParams.get("ValidCard").split(","), this.getHostCard().getController(),
+                        this.getHostCard())) {
                     return true;
                 }
             }
             return false;
         }
-
+        
         return true;
     }
+
 
     /* (non-Javadoc)
      * @see forge.card.trigger.Trigger#setTriggeringObjects(forge.card.spellability.SpellAbility)
      */
     @Override
-    public void setTriggeringObjects(final SpellAbility sa) {
-        sa.setTriggeringObject("Cards", this.getRunParams().get("Cards"));
+    public void setTriggeringObjects(SpellAbility sa) {
+        sa.setTriggeringObject("Cards", this.getRunParams().get("Card"));
+        // The 'Card' triggered object above is actually an array list of the current planes being left,
+        // so the actual source has to be determined differently than usual
+        sa.setTriggeringObject("Source", this.hostCard);
     }
 
 }

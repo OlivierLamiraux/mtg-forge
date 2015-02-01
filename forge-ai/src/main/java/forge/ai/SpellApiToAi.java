@@ -49,6 +49,7 @@ public enum SpellApiToAi {
 
         apiToClass.put(ApiType.DealDamage, DamageDealAi.class);
         apiToClass.put(ApiType.Debuff, DebuffAi.class);
+        apiToClass.put(ApiType.DebuffAll, DebuffAllAi.class);
         apiToClass.put(ApiType.DeclareCombatants, CannotPlayAi.class);
         apiToClass.put(ApiType.DelayedTrigger, DelayedTriggerAi.class);
         apiToClass.put(ApiType.Destroy, DestroyAi.class);
@@ -78,7 +79,6 @@ public enum SpellApiToAi {
         apiToClass.put(ApiType.LosesGame, GameLossAi.class);
         apiToClass.put(ApiType.Mana, ManaEffectAi.class);
         apiToClass.put(ApiType.ManaReflected, CannotPlayAi.class);
-        apiToClass.put(ApiType.Manifest, ManifestAi.class);
         apiToClass.put(ApiType.Mill, MillAi.class);
         apiToClass.put(ApiType.MoveCounter, CountersMoveAi.class);
         apiToClass.put(ApiType.MultiplePiles, CannotPlayAi.class);

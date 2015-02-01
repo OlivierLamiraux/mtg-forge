@@ -1,6 +1,12 @@
 package forge;
 
+import forge.gui.GuiProgressBarWindow;
+import forge.toolbox.FSkin;
+
+import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import javax.swing.*;
 
 /**
  * Created by IntelliJ IDEA. User: dhudson
@@ -13,7 +19,7 @@ public class GuiProgressBarWindowTest {
      */
     @Test(groups = { "UnitTest", "fast" })
     public void guiProgressBarWindowTest1() {
-        /*try {
+        try {
             FSkin.Colors.updateAll();
             final GuiProgressBarWindow dialog = new GuiProgressBarWindow();
             dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -22,6 +28,6 @@ public class GuiProgressBarWindowTest {
             dialog.dispose();
         } catch (final Exception e) {
             e.printStackTrace();
-        }*/
+        }
     }
 }

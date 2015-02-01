@@ -17,6 +17,7 @@ public class EndTurnEffect extends SpellAbilityEffect {
      */
     @Override
     public void resolve(SpellAbility sa) {
+
         Game game = sa.getActivatingPlayer().getGame();
         // Steps taken from gatherer's rulings on Time Stop.
         // 1) All spells and abilities on the stack are exiled. This includes

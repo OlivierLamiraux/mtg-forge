@@ -17,8 +17,12 @@
  */
 package forge.quest;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import forge.FThreads;
-import forge.GuiBase;
 import forge.LobbyPlayer;
 import forge.assets.FSkinProp;
 import forge.card.CardDb.SetPreference;
@@ -31,6 +35,7 @@ import forge.game.Match;
 import forge.game.card.Card;
 import forge.game.player.RegisteredPlayer;
 import forge.interfaces.IButton;
+import forge.interfaces.IGuiBase;
 import forge.item.IPaperCard;
 import forge.item.PaperToken;
 import forge.match.MatchUtil;
@@ -45,10 +50,6 @@ import forge.quest.data.QuestAssets;
 import forge.quest.data.QuestPreferences.QPref;
 import forge.util.gui.SGuiChoose;
 import forge.util.gui.SOptionPane;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * <p>
@@ -65,10 +66,12 @@ public class QuestUtil {
      * getComputerStartingCards.
      * </p>
      * 
-     * @return a {@link java.util.List} object.
+     * @param qd
+     *            a {@link forge.quest.data.QuestData} object.
+     * @return a {@link forge.CardList} object.
      */
     public static List<Card> getComputerStartingCards() {
-        return new ArrayList<>();
+        return new ArrayList<Card>();
     }
 
     /**
@@ -77,12 +80,14 @@ public class QuestUtil {
      * </p>
      * Returns new card instances of extra AI cards in play at start of event.
      * 
+     * @param qd
+     *            a {@link forge.quest.data.QuestData} object.
      * @param qe
      *            a {@link forge.quest.QuestEvent} object.
-     * @return a {@link java.util.List} object.
+     * @return a {@link forge.CardList} object.
      */
     public static List<IPaperCard> getComputerStartingCards(final QuestEvent qe) {
-        final List<IPaperCard> list = new ArrayList<>();
+        final List<IPaperCard> list = new ArrayList<IPaperCard>();
 
         for (final String s : qe.getAiExtraCards()) {
             list.add(QuestUtil.readExtraCard(s));
@@ -96,12 +101,14 @@ public class QuestUtil {
      * getHumanStartingCards.
      * </p>
      * Returns list of current plant/pet configuration only.
-     * @param qc
-     *            a {@link forge.quest.QuestController} object.
-     * @return a {@link java.util.List} object.
+     * @param human 
+     * 
+     * @param qd
+     *            a {@link forge.quest.data.QuestData} object.
+     * @return a {@link forge.CardList} object.
      */
     public static List<IPaperCard> getHumanStartingCards(final QuestController qc) {
-        final List<IPaperCard> list = new ArrayList<>();
+        final List<IPaperCard> list = new ArrayList<IPaperCard>();
 
         for (int iSlot = 0; iSlot < QuestController.MAX_PET_SLOTS; iSlot++) {
             String petName = qc.getSelectedPet(iSlot);
@@ -124,11 +131,11 @@ public class QuestUtil {
      * Returns new card instances of extra human cards, including current
      * plant/pet configuration, and cards in play at start of quest.
      * 
-     * @param qc
-     *            a {@link forge.quest.QuestController} object.
+     * @param qd
+     *            a {@link forge.quest.data.QuestData} object.
      * @param qe
      *            a {@link forge.quest.QuestEvent} object.
-     * @return a {@link java.util.List} object.
+     * @return a {@link forge.CardList} object.
      */
     public static List<IPaperCard> getHumanStartingCards(final QuestController qc, final QuestEvent qe) {
         final List<IPaperCard> list = QuestUtil.getHumanStartingCards(qc);
@@ -152,14 +159,15 @@ public class QuestUtil {
     public static PaperToken createToken(final String s) {
         final String[] properties = s.split(";", 6);
 
-        List<String> script = new ArrayList<>();
+        List<String> script = new ArrayList<String>();
         script.add("Name:" + properties[4]);
         script.add("Colors:" + properties[1]);
         script.add("PT:"+ properties[2] + "/" + properties[3]);
         script.add("Types:" + properties[5].replace(';', ' '));
         script.add("Oracle:"); // tokens don't have texts yet
         String fileName = PaperToken.makeTokenFileName(properties[1], properties[2], properties[3], properties[4]);
-        return new PaperToken(CardRules.fromScript(script), CardEdition.UNKNOWN, fileName);
+        final PaperToken c = new PaperToken(CardRules.fromScript(script), CardEdition.UNKNOWN, fileName);
+        return c;
     }
 
     /**
@@ -170,6 +178,8 @@ public class QuestUtil {
      * 
      * @param name
      *            the name
+     * @param owner
+     *            the owner
      * @return the card
      */
     public static IPaperCard readExtraCard(final String name) {
@@ -183,11 +193,11 @@ public class QuestUtil {
         return FModel.getMagicDb().getCommonCards().getCardFromEdition(name, SetPreference.Latest);
     }
     
-    public static void travelWorld() {
-        if (!checkActiveQuest("Travel between worlds.")) {
+    public static void travelWorld(final IGuiBase gui) {
+        if (!checkActiveQuest(gui, "Travel between worlds.")) {
             return;
         }
-        List<QuestWorld> worlds = new ArrayList<>();
+        List<QuestWorld> worlds = new ArrayList<QuestWorld>();
         final QuestController qCtrl = FModel.getQuest();
 
         for (QuestWorld qw : FModel.getWorlds()) {
@@ -197,12 +207,12 @@ public class QuestUtil {
         }
 
         if (worlds.size() < 1) {
-            SOptionPane.showErrorDialog("There are currently no worlds you can travel to\nin this version of Forge.", "No Worlds");
+            SOptionPane.showErrorDialog(gui, "There are currently no worlds you can travel to\nin this version of Forge.", "No Worlds");
             return;
         }
 
         final String setPrompt = "Where do you wish to travel?";
-        final QuestWorld newWorld = SGuiChoose.oneOrNone(setPrompt, worlds);
+        final QuestWorld newWorld = SGuiChoose.oneOrNone(gui, setPrompt, worlds);
 
         if (worlds.indexOf(newWorld) < 0) {
             return;
@@ -213,7 +223,7 @@ public class QuestUtil {
             if (nextChallengeInWins() < 1 && qCtrl.getAchievements().getCurrentChallenges().size() > 0) {
                 needRemove = true;
 
-                if (!SOptionPane.showConfirmDialog(
+                if (!SOptionPane.showConfirmDialog(gui,
                         "You have uncompleted challenges in your current world. If you travel now, they will be LOST!"
                         + "\nAre you sure you wish to travel anyway?\n"
                         + "(Click \"No\" to go back  and complete your current challenges first.)",
@@ -352,7 +362,7 @@ public class QuestUtil {
      * - Current deck info<br>
      * - "Challenge In" info<br>
      * 
-     * @param view0 {@link forge.quest.IVQuestStats}
+     * @param view0 {@link forge.screens.home.quest.IVQuestStats}
      */
     public static void updateQuestView(final IVQuestStats view0) {
         final QuestController qCtrl = FModel.getQuest();
@@ -458,11 +468,11 @@ public class QuestUtil {
         return draftEvent;
     }
 
-    public static boolean checkActiveQuest(final String location) {
+    public static boolean checkActiveQuest(final IGuiBase gui, final String location) {
         QuestController qc = FModel.getQuest();
         if (qc == null || qc.getAssets() == null) {
             String msg = "Please create a Quest before attempting to " + location;
-            SOptionPane.showErrorDialog(msg, "No Quest");
+            SOptionPane.showErrorDialog(gui, msg, "No Quest");
             System.out.println(msg);
             return false;
         }
@@ -470,24 +480,24 @@ public class QuestUtil {
     }
     
     /** */
-    public static void showSpellShop() {
-        if (!checkActiveQuest("Visit the Spell Shop.")) {
+    public static void showSpellShop(final IGuiBase gui) {
+        if (!checkActiveQuest(gui, "Visit the Spell Shop.")) {
             return;
         }
-        GuiBase.getInterface().showSpellShop();
+        gui.showSpellShop();
     }
 
     /** */
-    public static void showBazaar() {
-        if (!checkActiveQuest("Visit the Bazaar.")) {
+    public static void showBazaar(final IGuiBase gui) {
+        if (!checkActiveQuest(gui, "Visit the Bazaar.")) {
             return;
         }
-        GuiBase.getInterface().showBazaar();
+        gui.showBazaar();
     }
 
     /** */
-    public static void chooseAndUnlockEdition() {
-        if (!checkActiveQuest("Unlock Editions.")) {
+    public static void chooseAndUnlockEdition(final IGuiBase gui) {
+        if (!checkActiveQuest(gui, "Unlock Editions.")) {
             return;
         }
         final QuestController qData = FModel.getQuest();
@@ -498,19 +508,19 @@ public class QuestUtil {
 
         CardEdition unlocked = toUnlock.left;
         qData.getAssets().subtractCredits(toUnlock.right);
-        SOptionPane.showMessageDialog("You have successfully unlocked " + unlocked.getName() + "!",
+        SOptionPane.showMessageDialog(gui, "You have successfully unlocked " + unlocked.getName() + "!",
                 unlocked.getName() + " unlocked!", null);
 
-        QuestUtilUnlockSets.doUnlock(qData, unlocked);
+        QuestUtilUnlockSets.doUnlock(gui, qData, unlocked);
     }
 
-    public static void startGame() {
-        if (canStartGame()) {
-            finishStartingGame();
+    public static void startGame(final IGuiBase gui) {
+        if (canStartGame(gui)) {
+            finishStartingGame(gui);
         }
     }
 
-    public static void finishStartingGame() {
+    public static void finishStartingGame(final IGuiBase gui) {
         final QuestController qData = FModel.getQuest();
 
         FThreads.invokeInBackgroundThread(new Runnable() {
@@ -555,11 +565,11 @@ public class QuestUtil {
             aiStart.setCardsOnBattlefield(QuestUtil.getComputerStartingCards(event));
         }
 
-        List<RegisteredPlayer> starter = new ArrayList<>();
+        List<RegisteredPlayer> starter = new ArrayList<RegisteredPlayer>();
         starter.add(humanStart.setPlayer(GamePlayerUtil.getQuestPlayer()));
 
         LobbyPlayer aiPlayer = GamePlayerUtil.createAiPlayer(event.getOpponent() == null ? event.getTitle() : event.getOpponent());
-        GuiBase.getInterface().setPlayerAvatar(aiPlayer, event);
+        gui.setPlayerAvatar(aiPlayer, event);
         starter.add(aiStart.setPlayer(aiPlayer));
 
         boolean useRandomFoil = FModel.getPreferences().getPrefBoolean(FPref.UI_RANDOM_FOIL);
@@ -569,7 +579,7 @@ public class QuestUtil {
         boolean useAnte = FModel.getPreferences().getPrefBoolean(FPref.UI_ANTE);
         boolean matchAnteRarity = FModel.getPreferences().getPrefBoolean(FPref.UI_ANTE_MATCH_RARITY);
         if(forceAnte != null)
-            useAnte = forceAnte;
+            useAnte = forceAnte.booleanValue();
         GameRules rules = new GameRules(GameType.Quest);
         rules.setPlayForAnte(useAnte);
         rules.setMatchAnteRarity(matchAnteRarity);
@@ -577,7 +587,7 @@ public class QuestUtil {
         rules.setManaBurn(FModel.getPreferences().getPrefBoolean(FPref.UI_MANABURN));
         rules.canCloneUseTargetsImage = FModel.getPreferences().getPrefBoolean(FPref.UI_CLONE_MODE_SOURCE);
         final Match mc = new Match(rules, starter);
-        FThreads.invokeInEdtNowOrLater(new Runnable(){
+        FThreads.invokeInEdtNowOrLater(gui, new Runnable(){
             @Override
             public void run() {
                 MatchUtil.startGame(mc);
@@ -600,17 +610,17 @@ public class QuestUtil {
 
     /**
      * Checks to see if a game can be started and displays relevant dialogues.
-     * @return True if a game can be started.
+     * @return
      */
-    public static boolean canStartGame() {
-        if (!checkActiveQuest("Start a duel.") || null == event) {
+    public static boolean canStartGame(final IGuiBase gui) {
+        if (!checkActiveQuest(gui, "Start a duel.") || null == event) {
             return false;
         }
 
         Deck deck = getDeckForNewGame();
         if (deck == null) {
             String msg = "Please select a Quest Deck.";
-            SOptionPane.showErrorDialog(msg, "No Deck");
+            SOptionPane.showErrorDialog(gui, msg, "No Deck");
             System.out.println(msg);
             return false;
         }
@@ -618,7 +628,7 @@ public class QuestUtil {
         if (FModel.getPreferences().getPrefBoolean(FPref.ENFORCE_DECK_LEGALITY)) {
             String errorMessage = GameType.Quest.getDeckFormat().getDeckConformanceProblem(deck);
             if (null != errorMessage) {
-                SOptionPane.showErrorDialog("Your deck " + errorMessage +  " Please edit or choose a different deck.", "Invalid Deck");
+                SOptionPane.showErrorDialog(gui, "Your deck " + errorMessage +  " Please edit or choose a different deck.", "Invalid Deck");
                 return false;
             }
         }
@@ -629,17 +639,17 @@ public class QuestUtil {
     /** Duplicate in DeckEditorQuestMenu and
      * probably elsewhere...can streamline at some point
      * (probably shouldn't be here).
-     *
+     * 
      * @param in &emsp; {@link java.lang.String}
      * @return {@link java.lang.String}
      */
     public static String cleanString(final String in) {
-        final StringBuilder out = new StringBuilder();
+        final StringBuffer out = new StringBuffer();
         final char[] c = in.toCharArray();
 
-        for (char aC : c) {
-            if (Character.isLetterOrDigit(aC) || (aC == '-') || (aC == '_') || (aC == ' ')) {
-                out.append(aC);
+        for (int i = 0; (i < c.length) && (i < 20); i++) {
+            if (Character.isLetterOrDigit(c[i]) || (c[i] == '-') || (c[i] == '_') || (c[i] == ' ')) {
+                out.append(c[i]);
             }
         }
 

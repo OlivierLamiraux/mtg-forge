@@ -16,12 +16,12 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     }
 
     public void awaitLatchRelease() {
-        FThreads.assertExecutedByEdt(false);
+        FThreads.assertExecutedByEdt(getGui(), false);
         try{
             cdlDone.await();
         }
         catch (InterruptedException e) {
-            BugReporter.reportException(e);
+            BugReporter.reportException(e, getGui());
         }
     }
 
@@ -30,7 +30,7 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
     }
 
     public void showAndWait() {
-        getController().getInputQueue().setInput(this);
+        getGameView().getInputQueue().setInput(this);
         awaitLatchRelease();
     }
     
@@ -38,7 +38,7 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
         onStop();
 
         // ensure input won't accept any user actions.
-        FThreads.invokeInEdtNowOrLater(new Runnable() {
+        FThreads.invokeInEdtNowOrLater(getGui(), new Runnable() {
             @Override
             public void run() {
                 setFinished();
@@ -46,9 +46,7 @@ public abstract class InputSyncronizedBase extends InputBase implements InputSyn
         });
 
         // thread irrelevant
-        if (getController().getInputQueue().getInput() != null) {
-            getController().getInputQueue().removeInput(InputSyncronizedBase.this);
-        }
+        getGameView().getInputQueue().removeInput(InputSyncronizedBase.this);
         cdlDone.countDown();
     }
 

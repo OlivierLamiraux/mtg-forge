@@ -12,6 +12,9 @@ import java.util.Iterator;
 import java.util.List;
 
 public class DestroyEffect extends SpellAbilityEffect {
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#getStackDescription(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     protected String getStackDescription(SpellAbility sa) {
         final boolean noRegen = sa.hasParam("NoRegen");
@@ -27,7 +30,12 @@ public class DestroyEffect extends SpellAbilityEffect {
 
         final Iterator<Card> it = tgtCards.iterator();
         while (it.hasNext()) {
-            sb.append(it.next());
+            final Card tgtC = it.next();
+            if (tgtC.isFaceDown()) {
+                sb.append("Morph ").append("(").append(tgtC.getUniqueNumber()).append(")");
+            } else {
+                sb.append(tgtC);
+            }
 
             if (it.hasNext()) {
                 sb.append(", ");
@@ -89,9 +97,9 @@ public class DestroyEffect extends SpellAbilityEffect {
                 boolean destroyed = false;
                 final Card lki = CardUtil.getLKICopy(tgtC);
                 if (remAttached) {
-                	card.addRemembered(tgtC.getEnchantedBy(false));
-                	card.addRemembered(tgtC.getEquippedBy(false));
-                	card.addRemembered(tgtC.getFortifiedBy(false));
+                	card.getRemembered().addAll(tgtC.getEnchantedBy());
+                	card.getRemembered().addAll(tgtC.getEquippedBy());
+                	card.getRemembered().addAll(tgtC.getFortifiedBy());
                 }
                 if (sac) {
                     destroyed = game.getAction().sacrifice(tgtC, sa) != null;

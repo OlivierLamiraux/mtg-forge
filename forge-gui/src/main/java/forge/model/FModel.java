@@ -20,7 +20,6 @@ package forge.model;
 import forge.CardStorageReader;
 import forge.CardStorageReader.ProgressObserver;
 import forge.FThreads;
-import forge.ImageKeys;
 import forge.StaticData;
 import forge.achievement.AchievementCollection;
 import forge.achievement.ConstructedAchievements;
@@ -35,11 +34,10 @@ import forge.game.GameFormat;
 import forge.game.GameType;
 import forge.game.card.CardUtil;
 import forge.gauntlet.GauntletData;
+import forge.interfaces.IGuiBase;
 import forge.interfaces.IProgressBar;
 import forge.itemmanager.ItemManagerConfig;
 import forge.limited.GauntletMini;
-import forge.planarconquest.ConquestController;
-import forge.planarconquest.ConquestPreferences;
 import forge.player.GamePlayerUtil;
 import forge.properties.ForgeConstants;
 import forge.properties.ForgePreferences;
@@ -72,7 +70,6 @@ public class FModel {
     private static StaticData magicDb;
 
     private static QuestPreferences questPreferences;
-    private static ConquestPreferences conquestPreferences;
     private static ForgePreferences preferences;
 
     private static Map<GameType, AchievementCollection> achievements;
@@ -82,7 +79,6 @@ public class FModel {
     private static GauntletMini gauntlet;
 
     private static QuestController quest;
-    private static ConquestController conquest;
     private static CardCollections decks;
 
     private static IStorage<CardBlock> blocks;
@@ -90,13 +86,7 @@ public class FModel {
     private static IStorage<QuestWorld> worlds;
     private static GameFormat.Collection formats;
 
-    public static void initialize(final IProgressBar progressBar) {
-        ImageKeys.initializeDirs(
-                ForgeConstants.CACHE_CARD_PICS_DIR, ForgeConstants.CACHE_CARD_PICS_SUBDIR,
-                ForgeConstants.CACHE_TOKEN_PICS_DIR, ForgeConstants.CACHE_ICON_PICS_DIR,
-                ForgeConstants.CACHE_BOOSTER_PICS_DIR, ForgeConstants.CACHE_FATPACK_PICS_DIR,
-                ForgeConstants.CACHE_BOOSTERBOX_PICS_DIR, ForgeConstants.CACHE_PRECON_PICS_DIR,
-                ForgeConstants.CACHE_TOURNAMENTPACK_PICS_DIR);
+    public static void initialize(final IGuiBase gui, final IProgressBar progressBar) {
 
 		// Instantiate preferences: quest and regular
 		//Preferences are initialized first so that the splash screen can be translated.
@@ -115,7 +105,7 @@ public class FModel {
                 ProgressObserver.emptyObserver : new ProgressObserver() {
             @Override
             public void setOperationName(final String name, final boolean usePercents) {
-                FThreads.invokeInEdtLater(new Runnable() {
+                FThreads.invokeInEdtLater(gui, new Runnable() {
                     @Override
                     public void run() {
                         progressBar.setDescription(name);
@@ -126,7 +116,7 @@ public class FModel {
 
             @Override
             public void report(final int current, final int total) {
-                FThreads.invokeInEdtLater(new Runnable() {
+                FThreads.invokeInEdtLater(gui, new Runnable() {
                     @Override
                     public void run() {
                         progressBar.setMaximum(total);
@@ -157,14 +147,13 @@ public class FModel {
         formats = new GameFormat.Collection(new GameFormat.Reader(new File(ForgeConstants.BLOCK_DATA_DIR + "formats.txt")));
         blocks = new StorageBase<CardBlock>("Block definitions", new CardBlock.Reader(ForgeConstants.BLOCK_DATA_DIR + "blocks.txt", magicDb.getEditions()));
         questPreferences = new QuestPreferences();
-        conquestPreferences = new ConquestPreferences();
         fantasyBlocks = new StorageBase<CardBlock>("Custom blocks", new CardBlock.Reader(ForgeConstants.BLOCK_DATA_DIR + "fantasyblocks.txt", magicDb.getEditions()));
         worlds = new StorageBase<QuestWorld>("Quest worlds", new QuestWorld.Reader(ForgeConstants.QUEST_WORLD_DIR + "worlds.txt"));
 
         loadDynamicGamedata();
 
         if (progressBar != null) {
-            FThreads.invokeInEdtLater(new Runnable() {
+            FThreads.invokeInEdtLater(gui, new Runnable() {
                 @Override
                 public void run() {
                     progressBar.setDescription(Localizer.getInstance().getMessage("splash.loading.decks"));
@@ -172,9 +161,8 @@ public class FModel {
             });
         }
 
-        decks = new CardCollections();
-        quest = new QuestController();
-        conquest = new ConquestController();
+        decks = new CardCollections(gui);
+        quest = new QuestController(gui);
 
         CardPreferences.load();
         DeckPreferences.load();
@@ -193,11 +181,7 @@ public class FModel {
     public static QuestController getQuest() {
         return quest;
     }
-
-    public static ConquestController getConquest() {
-        return conquest;
-    }
-
+    
     private static boolean keywordsLoaded = false;
     
     /**
@@ -302,14 +286,10 @@ public class FModel {
 
     public static IStorage<CardBlock> getBlocks() {
         return blocks;
-    }
+    }    
 
     public static QuestPreferences getQuestPreferences() {
         return questPreferences;
-    }
-
-    public static ConquestPreferences getConquestPreferences() {
-        return conquestPreferences;
     }
 
     public static GauntletData getGauntletData() {

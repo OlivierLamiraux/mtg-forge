@@ -23,12 +23,11 @@ public class CleanUpEffect extends SpellAbilityEffect {
         }
         if (sa.hasParam("ForgetDefined")) {
             for (final Card card : AbilityUtils.getDefinedCards(source, sa.getParam("ForgetDefined"), sa)) {
-                source.removeRemembered(card);
+                source.getRemembered().remove(card);
             }
         }
         if (sa.hasParam("ClearImprinted")) {
-            source.clearImprintedCards();
-            game.getCardState(source).clearImprintedCards();
+            source.clearImprinted();
         }
         if (sa.hasParam("ClearChosenX")) {
             source.setSVar("ChosenX", "");
@@ -40,10 +39,8 @@ public class CleanUpEffect extends SpellAbilityEffect {
             source.clearFlipResult();
         }
         if (sa.hasParam("ClearChosenCard")) {
-            source.setChosenCards(null);
-        }
-        if (sa.hasParam("ClearChosenType")) {
-            source.setChosenType("");
+            source.getChosenCard().clear();
         }
     }
+
 }

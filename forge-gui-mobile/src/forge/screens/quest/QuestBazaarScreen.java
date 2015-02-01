@@ -12,6 +12,7 @@ import forge.GuiBase;
 import forge.assets.FImage;
 import forge.assets.FSkinFont;
 import forge.assets.FSkinImage;
+import forge.assets.FSkinProp;
 import forge.model.FModel;
 import forge.quest.QuestController;
 import forge.quest.QuestUtil;
@@ -158,7 +159,8 @@ public class QuestBazaarScreen extends TabPageScreen<QuestBazaarScreen> {
 
             lblName.setText(item.getPurchaseName());
             lblDesc.setText(item.getPurchaseDescription(assets));
-            lblIcon.setIcon((FImage)item.getIcon(assets));
+            final FSkinProp f = FSkinProp.valueOf(FSkinProp.class, item.getIcon(assets));
+            lblIcon.setIcon((FImage) GuiBase.getInterface().getSkinIcon(f));
             lblCost.setText(String.valueOf(buyingPrice));
 
             lblDesc.setFont(FSkinFont.get(12));

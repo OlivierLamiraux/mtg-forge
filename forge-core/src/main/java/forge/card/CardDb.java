@@ -25,7 +25,6 @@ import com.google.common.collect.Multimaps;
 
 import forge.card.CardEdition.CardInSet;
 import forge.card.CardEdition.Type;
-import forge.deck.generation.IDeckGenPool;
 import forge.item.PaperCard;
 import forge.util.*;
 
@@ -35,7 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.*;
 import java.util.Map.Entry;
 
-public final class CardDb implements ICardDatabase, IDeckGenPool {
+public final class CardDb implements ICardDatabase {
     public final static String foilSuffix = "+";
     public final static char NameSetSeparator = '|';
     
@@ -73,7 +72,7 @@ public final class CardDb implements ICardDatabase, IDeckGenPool {
         public int artIndex;
         public boolean isFoil;
         
-        private CardRequest(String name, String edition, int artIndex, boolean isFoil) {
+        public CardRequest(String name, String edition, int artIndex, boolean isFoil) {
             cardName = name;
             this.edition = edition;
             this.artIndex = artIndex;
@@ -111,13 +110,10 @@ public final class CardDb implements ICardDatabase, IDeckGenPool {
             return new CardRequest(cardName, setName, artIndex, isFoil);
         }
     }
-
-    public CardDb(Map<String, CardRules> rules, CardEdition.Collection editions0) {
+    
+    public CardDb(Map<String, CardRules> rules, CardEdition.Collection editions0, boolean logMissingPerEdition, boolean logMissingSummary) {
         this.rulesByName = rules;
         this.editions = editions0;
-    }
-
-    public void initialize(boolean logMissingPerEdition, boolean logMissingSummary) {
         Set<String> allMissingCards = new LinkedHashSet<String>();
         List<String> missingCards = new ArrayList<String>();
         for (CardEdition e : editions.getOrderedEditions()) {
@@ -180,22 +176,9 @@ public final class CardDb implements ICardDatabase, IDeckGenPool {
         uniqueCardsByName.clear();
         allCards.clear();
         for (Entry<String, Collection<PaperCard>> kv : allCardsByName.asMap().entrySet()) {
-            uniqueCardsByName.put(kv.getKey(), getFirstWithImage(kv.getValue()));
+            uniqueCardsByName.put(kv.getKey(), Iterables.getFirst(kv.getValue(), null));
             allCards.addAll(kv.getValue());
         }
-    }
-
-    private static PaperCard getFirstWithImage(final Collection<PaperCard> cards) {
-        //NOTE: this is written this way to avoid checking final card in list
-        final Iterator<PaperCard> iterator = cards.iterator();
-        PaperCard pc = iterator.next();
-        while (iterator.hasNext()) {
-            if (pc.hasImage()) {
-                return pc;
-            }
-            pc = iterator.next();
-        }
-        return pc;
     }
 
     public boolean setPreferredArt(String cardName, String preferredArt) {
@@ -253,7 +236,7 @@ public final class CardDb implements ICardDatabase, IDeckGenPool {
         if (request.artIndex <= 0) { // this stands for 'random art'
             Collection<PaperCard> candidates;
             if (reqEdition == null) {
-                candidates = new ArrayList<PaperCard>(cards);
+                candidates = cards;
             }
             else {
                 candidates = new ArrayList<PaperCard>();
@@ -267,12 +250,6 @@ public final class CardDb implements ICardDatabase, IDeckGenPool {
                 return null;
             }
             result = Aggregates.random(candidates);
-
-            //if card image doesn't exist for chosen candidate, try another one if possible
-            while (candidates.size() > 1 && !result.hasImage()) {
-                candidates.remove(result);
-                result = Aggregates.random(candidates);
-            }
         }
         else {
             for (PaperCard pc : cards) {

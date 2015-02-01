@@ -2,6 +2,7 @@ package forge.deck;
 
 import forge.FThreads;
 import forge.Forge;
+import forge.GuiBase;
 import forge.deck.Deck;
 import forge.deck.FDeckEditor.EditorType;
 import forge.deck.io.DeckPreferences;
@@ -41,8 +42,6 @@ public class FDeckChooser extends FScreen {
     private DeckType selectedDeckType;
     private boolean needRefreshOnActivate;
     private Callback<Deck> callback;
-    private NetDeckCategory netDeckCategory;
-    private boolean refreshingDeckType;
 
     private final DeckManager lstDecks;
     private final FButton btnNewDeck = new FButton("New Deck");
@@ -58,7 +57,7 @@ public class FDeckChooser extends FScreen {
     //Show screen to select a deck
     private static FDeckChooser deckChooserForPrompt;
     public static void promptForDeck(String title, GameType gameType, boolean forAi, final Callback<Deck> callback) {
-        FThreads.assertExecutedByEdt(true);
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         if (deckChooserForPrompt == null) {
             deckChooserForPrompt = new FDeckChooser(gameType, forAi, null);
         }
@@ -263,12 +262,6 @@ public class FDeckChooser extends FScreen {
                 cmbDeckTypes.addItem(DeckType.COLOR_DECK);
                 cmbDeckTypes.addItem(DeckType.THEME_DECK);
                 cmbDeckTypes.addItem(DeckType.RANDOM_DECK);
-                cmbDeckTypes.addItem(DeckType.NET_DECK);
-                break;
-            case Commander:
-                cmbDeckTypes.addItem(DeckType.CUSTOM_DECK);
-                cmbDeckTypes.addItem(DeckType.RANDOM_DECK);
-                cmbDeckTypes.addItem(DeckType.NET_DECK);
                 break;
             default:
                 cmbDeckTypes.addItem(DeckType.CUSTOM_DECK);
@@ -279,32 +272,7 @@ public class FDeckChooser extends FScreen {
             restoreSavedState();
             cmbDeckTypes.setChangedHandler(new FEventHandler() {
                 @Override
-                public void handleEvent(final FEvent e) {
-                    if (cmbDeckTypes.getSelectedItem() == DeckType.NET_DECK && !refreshingDeckType) {
-                        FThreads.invokeInBackgroundThread(new Runnable() { //needed for loading net decks
-                            @Override
-                            public void run() {
-                                final NetDeckCategory category = NetDeckCategory.selectAndLoad(lstDecks.getGameType());
-
-                                FThreads.invokeInEdtLater(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if (category == null) {
-                                            cmbDeckTypes.setSelectedItem(selectedDeckType); //restore old selection if user cancels
-                                            if (selectedDeckType == DeckType.NET_DECK && netDeckCategory != null) {
-                                                cmbDeckTypes.setText(netDeckCategory.getDeckType());
-                                            }
-                                            return;
-                                        }
-
-                                        netDeckCategory = category;
-                                        refreshDecksList(DeckType.NET_DECK, true, e);
-                                    }
-                                });
-                            }
-                        });
-                        return;
-                    }
+                public void handleEvent(FEvent e) {
                     refreshDecksList(cmbDeckTypes.getSelectedItem(), false, e);
                 }
             });
@@ -407,7 +375,7 @@ public class FDeckChooser extends FScreen {
                 "White", "Blue", "Black", "Red", "Green" };
         ArrayList<DeckProxy> decks = new ArrayList<DeckProxy>();
         for (int i = 0; i < colors.length; i++) {
-            decks.add(new ColorDeckGenerator(colors[i], i, lstDecks, isAi));
+            decks.add(new ColorDeckGenerator(GuiBase.getInterface(), colors[i], i, lstDecks, isAi));
         }
 
         lstDecks.setPool(decks);
@@ -526,32 +494,6 @@ public class FDeckChooser extends FScreen {
         });
     }
 
-    private void updateNetDecks() {
-        if (netDeckCategory != null) {
-            cmbDeckTypes.setText(netDeckCategory.getDeckType());
-        }
-        lstDecks.setSelectionSupport(1, 1);
-
-        lstDecks.setPool(DeckProxy.getNetDecks(netDeckCategory));
-        lstDecks.setup(ItemManagerConfig.NET_DECKS);
-
-        btnNewDeck.setText("New Deck");
-        btnNewDeck.setWidth(btnEditDeck.getWidth());
-        btnEditDeck.setVisible(true);
-
-        btnViewDeck.setVisible(true);
-        btnRandom.setText("Random Deck");
-        btnRandom.setWidth(btnNewDeck.getWidth());
-        btnRandom.setLeft(getWidth() - PADDING - btnRandom.getWidth());
-        btnRandom.setCommand(new FEventHandler() {
-            @Override
-            public void handleEvent(FEvent e) {
-                DeckgenUtil.randomSelect(lstDecks);
-                accept();
-            }
-        });
-    }
-
     public Deck getDeck() {
         DeckProxy proxy = lstDecks.getSelectedItem();
         if (proxy == null) { return null; }
@@ -589,9 +531,7 @@ public class FDeckChooser extends FScreen {
         selectedDeckType = deckType;
 
         if (e == null) {
-            refreshingDeckType = true;
             cmbDeckTypes.setSelectedItem(deckType);
-            refreshingDeckType = false;
         }
         if (deckType == null) { return; }
 
@@ -613,9 +553,6 @@ public class FDeckChooser extends FScreen {
             break;
         case RANDOM_DECK:
             updateRandom();
-            break;
-        case NET_DECK:
-            updateNetDecks();
             break;
         }
 
@@ -641,15 +578,8 @@ public class FDeckChooser extends FScreen {
     }
 
     private String getState() {
-        StringBuilder state = new StringBuilder();
-        if (cmbDeckTypes.getSelectedItem() == null || cmbDeckTypes.getSelectedItem() == DeckType.NET_DECK) {
-            //handle special case of net decks
-            if (netDeckCategory == null) { return ""; }
-            state.append(NetDeckCategory.PREFIX + netDeckCategory.getName());
-        }
-        else {
-            state.append(cmbDeckTypes.getSelectedItem().name());
-        }
+        String deckType = cmbDeckTypes.getSelectedItem().name();
+        StringBuilder state = new StringBuilder(deckType);
         state.append(";");
         joinSelectedDecks(state, SELECTED_DECK_DELIMITER);
         return state.toString();
@@ -671,20 +601,25 @@ public class FDeckChooser extends FScreen {
         }
     }
 
+    /** Returns a clean name from the state that can be used for labels. */
+    public final String getStateForLabel() {
+        String deckType = cmbDeckTypes.getSelectedItem().toString();
+        StringBuilder state = new StringBuilder(deckType);
+        state.append(": ");
+        joinSelectedDecks(state, ", ");
+        return state.toString();
+    }
+
     private void restoreSavedState() {
-        DeckType oldDeckType = selectedDeckType;
         if (stateSetting == null) {
             //if can't restore saved state, just refresh deck list
-            refreshDecksList(oldDeckType, true, null);
+            refreshDecksList(selectedDeckType, true, null);
             return;
         }
 
         String savedState = prefs.getPref(stateSetting);
         refreshDecksList(getDeckTypeFromSavedState(savedState), true, null);
-        if (!lstDecks.setSelectedStrings(getSelectedDecksFromSavedState(savedState))) {
-            //if can't select old decks, just refresh deck list
-            refreshDecksList(oldDeckType, true, null);
-        }
+        lstDecks.setSelectedStrings(getSelectedDecksFromSavedState(savedState));
     }
 
     private DeckType getDeckTypeFromSavedState(String savedState) {
@@ -693,12 +628,7 @@ public class FDeckChooser extends FScreen {
                 return selectedDeckType;
             }
             else {
-                String deckType = savedState.split(";")[0];
-                if (deckType.startsWith(NetDeckCategory.PREFIX)) {
-                    netDeckCategory = NetDeckCategory.selectAndLoad(lstDecks.getGameType(), deckType.substring(NetDeckCategory.PREFIX.length()));
-                    return DeckType.NET_DECK;
-                }
-                return DeckType.valueOf(deckType);
+                return DeckType.valueOf(savedState.split(";")[0]);
             }
         }
         catch (IllegalArgumentException ex) {

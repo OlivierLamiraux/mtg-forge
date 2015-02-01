@@ -7,7 +7,6 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
-import forge.util.FCollection;
 import forge.util.Lang;
 
 import org.apache.commons.lang3.StringUtils;
@@ -44,7 +43,7 @@ public class ActivateAbilityEffect extends SpellAbilityEffect {
                 for (Card c : list) {
                     List<SpellAbility> possibleAb = Lists.newArrayList(c.getAllPossibleAbilities(p, true));
                     if (isManaAb) {
-                        possibleAb.retainAll((FCollection<SpellAbility>)c.getManaAbilities());
+                        possibleAb.retainAll(c.getManaAbility());
                     }
                     if (possibleAb.isEmpty()) {
                         continue;

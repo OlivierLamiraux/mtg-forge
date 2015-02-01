@@ -131,10 +131,6 @@ public abstract class FDisplayObject {
         return false;
     }
 
-    public boolean flick(float x, float y) {
-        return false;
-    }
-
     public boolean fling(float velocityX, float velocityY) {
         return false;
     }

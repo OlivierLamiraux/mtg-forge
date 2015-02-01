@@ -218,12 +218,12 @@ public final class ItemListView<T extends InventoryItem> extends ItemView<T> {
                     else {
                         setSelectedIndex(index);
                     }
-                    if (renderer.tap(index, value, x, y, count)) {
+                    if (renderer.tap(value, x, y, count)) {
                         prevTapIndex = index;
                         return true; //don't activate if renderer handles tap
                     }
                     if (count == 1) {
-                        itemManager.showMenu(false);
+                        itemManager.showMenu();
                     }
                     else if (count == 2 && index == prevTapIndex) {
                         itemManager.activateSelectedItems();
@@ -234,7 +234,7 @@ public final class ItemListView<T extends InventoryItem> extends ItemView<T> {
 
                 @Override
                 public boolean showMenu(Integer index, Entry<T, Integer> value, FDisplayObject owner, float x, float y) {
-                    return renderer.longPress(index, value, x, y);
+                    return renderer.longPress(value, x, y);
                 }
 
                 @Override

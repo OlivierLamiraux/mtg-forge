@@ -1,18 +1,16 @@
 package forge.ai.ability;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import forge.ai.ComputerUtilCard;
 import forge.ai.ComputerUtilCost;
 import forge.ai.SpellAbilityAi;
-import forge.card.CardType;
 import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactory;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
@@ -26,11 +24,9 @@ import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityContinuous;
-import forge.game.staticability.StaticAbilityLayer;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerHandler;
 import forge.game.zone.ZoneType;
-import forge.util.FCollectionView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +67,7 @@ public class AnimateAi extends SpellAbilityAi {
                 String num = topStack.getParam("Amount");
                 num = (num == null) ? "1" : num;
                 final int nToSac = AbilityUtils.calculateAmount(topStack.getHostCard(), num, topStack);
-                CardCollection list =
+                List<Card> list =
                         CardLists.getValidCards(aiPlayer.getCardsIn(ZoneType.Battlefield), valid.split(","), aiPlayer.getOpponent(), topStack.getHostCard());
                 list = CardLists.filter(list, CardPredicates.canBeSacrificedBy(topStack));
                 ComputerUtilCard.sortByEvaluateCreature(list);
@@ -125,7 +121,7 @@ public class AnimateAi extends SpellAbilityAi {
         // don't use instant speed animate abilities outside humans
         // Combat_Declare_Attackers_InstantAbility step
         if (ph.getPlayerTurn().isOpponentOf(aiPlayer) &&
-                (!ph.is(PhaseType.COMBAT_DECLARE_ATTACKERS, opponent) || game.getCombat() != null && game.getCombat().getAttackersOf(aiPlayer).isEmpty())) {
+                (!ph.is(PhaseType.COMBAT_DECLARE_ATTACKERS, opponent) || (game.getCombat() != null && game.getCombat().getAttackersOf(aiPlayer).isEmpty()))) {
             return false;
         }
 
@@ -148,39 +144,36 @@ public class AnimateAi extends SpellAbilityAi {
                 } if ("Never".equals(sa.getParam("AILogic"))) {
                     return false;
                 }
-            } else {
-            	boolean givesHaste = sa.hasParam("Keywords") && sa.getParam("Keywords").contains("Haste");
-            	for (final Card c : defined) {
-	                bFlag |= !c.isCreature() && !c.isTapped()
-	                        && (c.getTurnInZone() != ph.getTurn() || givesHaste || ph.getPlayerTurn().isOpponentOf(aiPlayer))
-	                        && !c.isEquipping();
-	                
-	                // for creatures that could be improved (like Figure of Destiny)
-	                if (!bFlag && c.isCreature() && (sa.hasParam("Permanent") || (!c.isTapped() && !c.isSick()))) {
-	                    int power = -5;
-	                    if (sa.hasParam("Power")) {
-	                        power = AbilityUtils.calculateAmount(source, sa.getParam("Power"), sa);
-	                    }
-	                    int toughness = -5;
-	                    if (sa.hasParam("Toughness")) {
-	                        toughness = AbilityUtils.calculateAmount(source, sa.getParam("Toughness"), sa);
-	                    }
-	                    if ((power + toughness) > (c.getCurrentPower() + c.getCurrentToughness())) {
-	                        bFlag = true;
-	                    }
-	                }
+            } else for (final Card c : defined) {
+                bFlag |= !c.isCreature() && !c.isTapped()
+                        && !(c.getTurnInZone() == game.getPhaseHandler().getTurn())
+                        && !c.isEquipping();
 
-	                if (!SpellAbilityAi.isSorcerySpeed(sa)) {
-	                    Card animatedCopy = CardFactory.getCard(c.getPaperCard(), aiPlayer, c.getGame());
-	                    AnimateAi.becomeAnimated(animatedCopy, c.hasSickness(), sa);
-	                    if (ph.isPlayerTurn(aiPlayer) && !ComputerUtilCard.doesSpecifiedCreatureAttackAI(aiPlayer, animatedCopy)) {
-	                        return false;
-	                    }
-	                    if (ph.getPlayerTurn().isOpponentOf(aiPlayer) && !ComputerUtilCard.doesSpecifiedCreatureBlock(aiPlayer, animatedCopy)) {
-	                        return false;
-	                    }
-	                }
-            	}
+                // for creatures that could be improved (like Figure of Destiny)
+                if (!bFlag && c.isCreature() && (sa.hasParam("Permanent") || (!c.isTapped() && !c.isSick()))) {
+                    int power = -5;
+                    if (sa.hasParam("Power")) {
+                        power = AbilityUtils.calculateAmount(source, sa.getParam("Power"), sa);
+                    }
+                    int toughness = -5;
+                    if (sa.hasParam("Toughness")) {
+                        toughness = AbilityUtils.calculateAmount(source, sa.getParam("Toughness"), sa);
+                    }
+                    if ((power + toughness) > (c.getCurrentPower() + c.getCurrentToughness())) {
+                        bFlag = true;
+                    }
+                }
+
+                if (!SpellAbilityAi.isSorcerySpeed(sa)) {
+                    Card animatedCopy = CardFactory.getCard(c.getPaperCard(), aiPlayer);
+                    AnimateAi.becomeAnimated(animatedCopy, c.hasSickness(), sa);
+                    if (ph.isPlayerTurn(aiPlayer) && !ComputerUtilCard.doesSpecifiedCreatureAttackAI(aiPlayer, animatedCopy)) {
+                        return false;
+                    }
+                    if (ph.getPlayerTurn().isOpponentOf(aiPlayer) && !ComputerUtilCard.doesSpecifiedCreatureBlock(aiPlayer, animatedCopy)) {
+                        return false;
+                    }
+                }
             }
 
             if (!bFlag) { // All of the defined stuff is animated, not very
@@ -197,6 +190,8 @@ public class AnimateAi extends SpellAbilityAi {
         return true;
     }
 
+    // end animateCanPlayAI()
+
     @Override
     public boolean chkAIDrawback(SpellAbility sa, Player aiPlayer) {
         if (sa.usesTargeting()) {
@@ -209,8 +204,22 @@ public class AnimateAi extends SpellAbilityAi {
         return true;
     }
 
+    /**
+     * <p>
+     * animateTriggerAI.
+     * </p>
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @param mandatory
+     *            a boolean.
+     * @param af
+     *            a {@link forge.game.ability.AbilityFactory} object.
+     * 
+     * @return a boolean.
+     */
     @Override
     protected boolean doTriggerAINoCost(Player aiPlayer, SpellAbility sa, boolean mandatory) {
+
         if (sa.usesTargeting() && !animateTgtAI(sa) && !mandatory) {
             return false;
         }
@@ -224,17 +233,27 @@ public class AnimateAi extends SpellAbilityAi {
         if (sa.hasParam("AITgts")) {
         	final TargetRestrictions tgt = sa.getTargetRestrictions();
             final Card animateSource = sa.getHostCard();
-            CardCollectionView list = aiPlayer.getGame().getCardsIn(tgt.getZone());
+            List<Card> list = aiPlayer.getGame().getCardsIn(tgt.getZone());
             list = CardLists.getValidCards(list, tgt.getValidTgts(), sa.getActivatingPlayer(), animateSource);
-            CardCollection prefList = CardLists.getValidCards(list, sa.getParam("AITgts"), sa.getActivatingPlayer(), animateSource);
-            if (!prefList.isEmpty()){
-	        	CardLists.shuffle(prefList);
-	        	sa.getTargets().add(prefList.getFirst());
-            }
+        	List<Card> prefList = CardLists.getValidCards(list, sa.getParam("AITgts"), sa.getActivatingPlayer(), animateSource);
+        	CardLists.shuffle(prefList);
+        	sa.getTargets().add(prefList.get(0));
         }
+
         return true;
     }
 
+    /**
+     * <p>
+     * animateTgtAI.
+     * </p>
+     * 
+     * @param af
+     *            a {@link forge.game.ability.AbilityFactory} object.
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @return a boolean.
+     */
     private boolean animateTgtAI(final SpellAbility sa) {
         // This is reasonable for now. Kamahl, Fist of Krosa and a sorcery or
         // two are the only things
@@ -262,18 +281,18 @@ public class AnimateAi extends SpellAbilityAi {
             toughness = AbilityUtils.calculateAmount(source, sa.getParam("Toughness"), sa);
         }
 
-        final CardType types = new CardType();
+        final ArrayList<String> types = new ArrayList<String>();
         if (sa.hasParam("Types")) {
             types.addAll(Arrays.asList(sa.getParam("Types").split(",")));
         }
 
-        final CardType removeTypes = new CardType();
+        final ArrayList<String> removeTypes = new ArrayList<String>();
         if (sa.hasParam("RemoveTypes")) {
             removeTypes.addAll(Arrays.asList(sa.getParam("RemoveTypes").split(",")));
         }
 
         // allow ChosenType - overrides anything else specified
-        if (types.hasSubtype("ChosenType")) {
+        if (types.contains("ChosenType")) {
             types.clear();
             types.add(source.getChosenType());
         }
@@ -306,9 +325,9 @@ public class AnimateAi extends SpellAbilityAi {
         if (sa.hasParam("Colors")) {
             final String colors = sa.getParam("Colors");
             if (colors.equals("ChosenColor")) {
-                tmpDesc = CardUtil.getShortColorsString(source.getChosenColors());
-            }
-            else {
+
+                tmpDesc = CardUtil.getShortColorsString(source.getChosenColor());
+            } else {
                 tmpDesc = CardUtil.getShortColorsString(new ArrayList<String>(Arrays.asList(colors.split(","))));
             }
         }
@@ -396,7 +415,7 @@ public class AnimateAi extends SpellAbilityAi {
             card.addHiddenExtrinsicKeyword(k);
         }
 
-        card.addColor(finalDesc, !sa.hasParam("OverwriteColors"), timestamp);
+        card.addColor(finalDesc, !sa.hasParam("OverwriteColors"), true);
         
         //back to duplicating AnimateEffect.resolve
         //TODO will all these abilities/triggers/replacements/etc. lead to memory leaks or unintended effects?
@@ -450,7 +469,7 @@ public class AnimateAi extends SpellAbilityAi {
         // suppress triggers from the animated card
         final ArrayList<Trigger> removedTriggers = new ArrayList<Trigger>();
         if (sa.hasParam("OverwriteTriggers") || removeAll) {
-            final FCollectionView<Trigger> triggersToRemove = card.getTriggers();
+            final List<Trigger> triggersToRemove = card.getTriggers();
             for (final Trigger trigger : triggersToRemove) {
                 trigger.setSuppressed(true);
                 removedTriggers.add(trigger);
@@ -462,11 +481,9 @@ public class AnimateAi extends SpellAbilityAi {
         if (stAbs.size() > 0) {
             for (final String s : stAbs) {
                 final String actualAbility = source.getSVar(s);
-                final StaticAbility stAb = card.addStaticAbility(actualAbility);
+                StaticAbility stAb = card.addStaticAbility(actualAbility);
                 if ("Continuous".equals(stAb.getMapParams().get("Mode"))) {
-                    for (final StaticAbilityLayer layer : stAb.getLayers()) {
-                        StaticAbilityContinuous.applyContinuousAbility(stAb, new CardCollection(card), layer);
-                    }
+                    StaticAbilityContinuous.applyContinuousAbility(stAb, Lists.newArrayList(card));
                 } 
             }
         }
@@ -488,7 +505,7 @@ public class AnimateAi extends SpellAbilityAi {
         // suppress static abilities from the animated card
         final ArrayList<StaticAbility> removedStatics = new ArrayList<StaticAbility>();
         if (sa.hasParam("OverwriteStatics") || removeAll) {
-            final FCollectionView<StaticAbility> staticsToRemove = card.getStaticAbilities();
+            final ArrayList<StaticAbility> staticsToRemove = card.getStaticAbilities();
             for (final StaticAbility stAb : staticsToRemove) {
                 stAb.setTemporarilySuppressed(true);
                 removedStatics.add(stAb);

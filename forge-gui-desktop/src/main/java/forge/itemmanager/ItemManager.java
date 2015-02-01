@@ -996,10 +996,6 @@ public abstract class ItemManager<T extends InventoryItem> extends JPanel implem
         this.updateView(true, this.getSelectedItems());
     }
 
-    protected Iterable<Entry<T, Integer>> getUnique(Iterable<Entry<T, Integer>> items) {
-        return Aggregates.uniqueByLast(items, this.pool.FN_GET_NAME);
-    }
-
     /**
      * 
      * updateView.
@@ -1015,7 +1011,7 @@ public abstract class ItemManager<T extends InventoryItem> extends JPanel implem
 
         if (useFilter && this.wantUnique) {
             Predicate<Entry<T, Integer>> filterForPool = Predicates.compose(this.filterPredicate, this.pool.FN_GET_KEY);
-            Iterable<Entry<T, Integer>> items = getUnique(Iterables.filter(this.pool, filterForPool));
+            Iterable<Entry<T, Integer>> items = Aggregates.uniqueByLast(Iterables.filter(this.pool, filterForPool), this.pool.FN_GET_NAME);
             this.model.addItems(items);
         }
         else if (useFilter) {
@@ -1023,7 +1019,7 @@ public abstract class ItemManager<T extends InventoryItem> extends JPanel implem
             this.model.addItems(Iterables.filter(this.pool, pred));
         }
         else if (this.wantUnique) {
-            Iterable<Entry<T, Integer>> items = getUnique(this.pool);
+            Iterable<Entry<T, Integer>> items = Aggregates.uniqueByLast(this.pool, this.pool.FN_GET_NAME);
             this.model.addItems(items);
         }
         else if (!useFilter && forceFilter) {

@@ -4,16 +4,13 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import forge.StaticData;
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.card.CardRulesPredicates;
 import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.cost.Cost;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
@@ -22,7 +19,6 @@ import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
 import forge.util.Aggregates;
 import forge.util.Lang;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -67,19 +63,20 @@ public class PlayEffect extends SpellAbilityEffect {
         }
 
         final Player controller = activator;
-        CardCollection tgtCards;
+        List<Card> tgtCards = new ArrayList<Card>();
 
         if (sa.hasParam("Valid")) {
             ZoneType zone = ZoneType.Hand;
             if (sa.hasParam("ValidZone")) {
                 zone = ZoneType.smartValueOf(sa.getParam("ValidZone"));
             }
-            tgtCards = (CardCollection)AbilityUtils.filterListByType(game.getCardsIn(zone), sa.getParam("Valid"), sa);
+            tgtCards = game.getCardsIn(zone);
+            tgtCards = AbilityUtils.filterListByType(tgtCards, sa.getParam("Valid"), sa);
         }
         else if (sa.hasParam("Encoded")) {
-            final CardCollectionView encodedCards = source.getEncodedCards();
+            final ArrayList<Card> encodedCards = source.getEncoded();
             final int encodedIndex = Integer.parseInt(sa.getParam("Encoded")) - 1;
-            tgtCards = new CardCollection(encodedCards.get(encodedIndex));
+            tgtCards.add(encodedCards.get(encodedIndex));
             useEncoded = true;
         }
         else if (sa.hasParam("AnySupportedCard")) {
@@ -95,7 +92,7 @@ public class PlayEffect extends SpellAbilityEffect {
             }
             if (sa.hasParam("RandomCopied")) {
                 List<PaperCard> copysource = new ArrayList<PaperCard>(cards);
-                CardCollection choice = new CardCollection();
+                List<Card> choice = new ArrayList<Card>();
                 final String num = sa.hasParam("RandomNum") ? sa.getParam("RandomNum") : "1";
                 int ncopied = AbilityUtils.calculateAmount(source, num, sa);
                 while(ncopied > 0) {
@@ -112,14 +109,11 @@ public class PlayEffect extends SpellAbilityEffect {
                 }
                 if (sa.hasParam("ChoiceNum")) {
                     final int choicenum = AbilityUtils.calculateAmount(source, sa.getParam("ChoiceNum"), sa);
-                    tgtCards = (CardCollection)activator.getController().chooseCardsForEffect(choice, sa, source + " - Choose up to " + Lang.nounWithNumeral(choicenum, "card"), 0, choicenum, true);
-                }
-                else {
+                    tgtCards = activator.getController().chooseCardsForEffect(choice, sa, source + " - Choose up to " + Lang.nounWithNumeral(choicenum, "card"), 0, choicenum, true);
+                } else {
                     tgtCards = choice;
                 }
-            }
-            else {
-                return;
+
             }
         }
         else {
@@ -141,19 +135,16 @@ public class PlayEffect extends SpellAbilityEffect {
             }
 
             if (tgtCard.isFaceDown()) {
-                tgtCard.setState(CardStateName.Original, false);
+                tgtCard.setState(CardCharacteristicName.Original);
                 wasFaceDown = true;
             }
             
             if (optional && !controller.getController().confirmAction(sa, null, "Do you want to play " + tgtCard + "?")) {
                 // i--;  // This causes an infinite loop (ArsenalNut)
                 if (wasFaceDown) {
-                    tgtCard.setState(CardStateName.FaceDown, false);
+                    tgtCard.setState(CardCharacteristicName.FaceDown);
                 }
                 continue;
-            }
-            if (wasFaceDown) {
-                tgtCard.updateStateForView();
             }
             if (sa.hasParam("ForgetRemembered")) {
                 source.clearRemembered();

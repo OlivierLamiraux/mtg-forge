@@ -53,9 +53,20 @@ import java.util.List;
  * @version $Id$
  */
 public class ManaPool implements Iterable<Mana> {
-    private final Player owner;
+
     private final Multimap<Byte, Mana> floatingMana = ArrayListMultimap.create();
 
+    /** Constant <code>map</code>. */
+    private final Player owner;
+
+    /**
+     * <p>
+     * Constructor for ManaPool.
+     * </p>
+     * 
+     * @param player
+     *            a {@link forge.game.player.Player} object.
+     */
     public ManaPool(final Player player) {
         owner = player;
         restoreColorReplacements();
@@ -68,13 +79,20 @@ public class ManaPool implements Iterable<Mana> {
 
     public void addMana(final Mana mana) {
         floatingMana.put(mana.getColor(), mana);
-        owner.updateManaForView();
         owner.getGame().fireEvent(new GameEventManaPool(owner, EventValueChangeType.Added, mana));
     }
 
+    /**
+     * <p>
+     * addManaToFloating.
+     * </p>
+     * 
+     * @param manaList
+     *           a {@link java.util.ArrayList} object.
+     */
     public final void add(final Iterable<Mana> manaList) {
         for (final Mana m : manaList) {
-            addMana(m);
+            this.addMana(m);
         }
     }
 
@@ -103,9 +121,17 @@ public class ManaPool implements Iterable<Mana> {
         if (totalMana() == safeMana) {
             return false; //won't lose floating mana if all mana is of colors that aren't going to be emptied
         }
+
         return true;
     }
 
+    /**
+     * <p>
+     * clearPool.
+     * 
+     * @return - the amount of mana removed this way
+     * </p>
+     */
     public final List<Mana> clearPool(boolean isEndOfPhase) {
         // isEndOfPhase parameter: true = end of phase, false = mana drain effect
         List<Mana> cleared = new ArrayList<Mana>();
@@ -131,62 +157,75 @@ public class ManaPool implements Iterable<Mana> {
         }
 
         for (Byte b : keys) {
-            Collection<Mana> cm = floatingMana.get(b);
             if (isEndOfPhase && !owner.getGame().getPhaseHandler().is(PhaseType.CLEANUP)) {
                 final List<Mana> pMana = new ArrayList<Mana>();
-                for (final Mana mana : cm) {
+                for (final Mana mana : floatingMana.get(b)) {
                     if (mana.getManaAbility()!= null && mana.getManaAbility().isPersistentMana()) {
                         pMana.add(mana);
                     }
                 }
-                cm.removeAll(pMana);
+                floatingMana.get(b).removeAll(pMana);
                 if (convertToColorless) {
                     convertManaColor(b, MagicColor.COLORLESS);
-                    cm.addAll(pMana);
-                }
-                else {
-                    cleared.addAll(cm);
-                    cm.clear();
+                    floatingMana.get(b).addAll(pMana);
+                } else {
+                    cleared.addAll(floatingMana.get(b));
+                    floatingMana.get(b).clear();
                     floatingMana.putAll(b, pMana);
                 }
             }
             else {
                 if (convertToColorless) {
                     convertManaColor(b, MagicColor.COLORLESS);
-                }
-                else {
-                    cleared.addAll(cm);
-                    cm.clear();
+                } else {
+                    cleared.addAll(floatingMana.get(b));
+                    floatingMana.get(b).clear();
                 }
             }
         }
 
-        owner.updateManaForView();
         owner.getGame().fireEvent(new GameEventManaPool(owner, EventValueChangeType.Cleared, null));
         return cleared;
     }
 
     private void convertManaColor(final byte originalColor, final byte toColor) {
         List<Mana> convert = new ArrayList<Mana>();
-        Collection<Mana> cm = floatingMana.get(originalColor);
-        for (Mana m : cm) {
+        for (Mana m : floatingMana.get(originalColor)) {
             convert.add(new Mana(toColor, m.getSourceCard(), m.getManaAbility()));
         }
-        cm.clear();
+        floatingMana.get(originalColor).clear();
         floatingMana.putAll(toColor, convert);
-        owner.updateManaForView();
     }
 
+    /**
+     * <p>
+     * removeManaFrom.
+     * </p>
+     *
+     * @param mana
+     *            a {@link forge.game.mana.Mana} object.
+     */
     private void removeMana(final Mana mana) {
         Collection<Mana> cm = floatingMana.get(mana.getColor());
         if (cm.remove(mana)) {
-            owner.updateManaForView();
             owner.getGame().fireEvent(new GameEventManaPool(owner, EventValueChangeType.Removed, mana));
         }
     }
-
+    
+    /**
+     * <p>
+     * subtractManaFromAbility.
+     * </p>
+     * 
+     * @param saPaidFor
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @param manaCost
+     *            a {@link forge.game.mana.ManaCostBeingPaid} object.
+     * @return a {@link forge.game.mana.ManaCostBeingPaid} object.
+     */
     public final void payManaFromAbility(final SpellAbility saPaidFor, ManaCostBeingPaid manaCost, final SpellAbility saPayment) {
         // Mana restriction must be checked before this method is called
+
         final List<SpellAbility> paidAbs = saPaidFor.getPayingManaAbilities();
         AbilityManaPart abManaPart = saPayment.getManaPartRecursive();
 
@@ -201,26 +240,26 @@ public class ManaPool implements Iterable<Mana> {
     public boolean tryPayCostWithColor(byte colorCode, SpellAbility saPaidFor, ManaCostBeingPaid manaCost) {
         Mana manaFound = null;
         String restriction = manaCost.getSourceRestriction();
-        Collection<Mana> cm = floatingMana.get(colorCode);
+        Collection<Mana> coloredMana = this.floatingMana.get(colorCode);
 
-        for (final Mana mana : cm) {
+        for (final Mana mana : coloredMana) {
             if (mana.getManaAbility() != null && !mana.getManaAbility().meetsManaRestrictions(saPaidFor)) {
                 continue;
             }
 
-            if (StringUtils.isNotBlank(restriction) && !mana.getSourceCard().getType().hasStringType(restriction)) {
+            if (StringUtils.isNotBlank(restriction) && !mana.getSourceCard().isType(restriction)) {
                 continue;
             }
 
             manaFound = mana;
             break;
         }
-
-        if (manaFound != null && tryPayCostWithMana(saPaidFor, manaCost, manaFound)) {
+        
+        
+        boolean result = manaFound != null && tryPayCostWithMana(saPaidFor, manaCost, manaFound);
+        if(result)
             saPaidFor.getPayingMana().add(0, manaFound);
-            return true;
-        }
-        return false;
+        return result;
     }
 
     public boolean tryPayCostWithMana(final SpellAbility sa, ManaCostBeingPaid manaCost, final Mana mana) {
@@ -228,14 +267,14 @@ public class ManaPool implements Iterable<Mana> {
             return false;
         }
         manaCost.payMana(mana, this);
-        removeMana(mana);
+        this.removeMana(mana);
         if (mana.addsNoCounterMagic(sa) && sa.getHostCard() != null) {
             sa.getHostCard().setCanCounter(false);
         }
         if (sa.isSpell() && sa.getHostCard() != null) {
             final Card host = sa.getHostCard();
             if (mana.addsKeywords(sa) && mana.addsKeywordsType()
-                    && host.getType().hasStringType(mana.getManaAbility().getAddsKeyowrdsType())) {
+                    && host.isType(mana.getManaAbility().getAddsKeyowrdsType())) {
                 final long timestamp = sa.getHostCard().getGame().getNextTimestamp();
                 final List<String> kws = Arrays.asList(mana.getAddedKeywords().split(" & "));
                 host.addChangedCardKeywords(kws, new ArrayList<String>(), false, timestamp);
@@ -273,6 +312,13 @@ public class ManaPool implements Iterable<Mana> {
         return floatingMana.isEmpty();
     }
 
+    /**
+     * <p>
+     * totalMana.
+     * </p>
+     * 
+     * @return a int.
+     */
     public final int totalMana() {
         return floatingMana.values().size();
     }
@@ -282,7 +328,7 @@ public class ManaPool implements Iterable<Mana> {
     	if (ma == null) {
     		return false;
     	}
-        if (floatingMana.isEmpty()) {
+        if (this.floatingMana.isEmpty()) {
             return false;
         }
 
@@ -291,7 +337,7 @@ public class ManaPool implements Iterable<Mana> {
         boolean manaNotAccountedFor = false;
         // loop over mana produced by mana ability
         for (Mana mana : ma.getLastManaProduced()) {
-            Collection<Mana> poolLane = floatingMana.get(mana.getColor());
+            Collection<Mana> poolLane = this.floatingMana.get(mana.getColor());
 
             if (poolLane != null && poolLane.contains(mana)) {
                 removeFloating.add(mana);
@@ -309,7 +355,7 @@ public class ManaPool implements Iterable<Mana> {
         }
 
         for (int k = 0; k < removeFloating.size(); k++) {
-            removeMana(removeFloating.get(k));
+            this.removeMana(removeFloating.get(k));
         }
         return true;
     }
@@ -323,7 +369,7 @@ public class ManaPool implements Iterable<Mana> {
             sa.getHostCard().setCanCounter(true);
         }
         for (final Mana m : manaPaid) {
-            addMana(m);
+            this.addMana(m);
         }
         manaPaid.clear();
 
@@ -335,7 +381,7 @@ public class ManaPool implements Iterable<Mana> {
 
         for (final SpellAbility am : payingAbilities) {
             // Recursively refund abilities that were used.
-            refundManaPaid(am);
+            this.refundManaPaid(am);
         }
 
         payingAbilities.clear();
@@ -355,21 +401,18 @@ public class ManaPool implements Iterable<Mana> {
         // Fix the index without hardcodes
         int rowIdx = MagicColor.getIndexOfFirstColor(originalColor);
         rowIdx = rowIdx < 0 ? identityMatrix.length - 1 : rowIdx;
-        if (additive) {
+        if (additive)
             colorConversionMatrix[rowIdx] |= replacementColor;
-        }
-        else {
+        else
             colorRestrictionMatrix[rowIdx] &= replacementColor;
-        }
     }
-
+    
     public void restoreColorReplacements() {
-        for (int i = 0; i < colorConversionMatrix.length; i++) {
+        for(int i = 0; i < colorConversionMatrix.length; i++)
             colorConversionMatrix[i] = identityMatrix[i];
-        }
-        for (int i = 0; i < colorRestrictionMatrix.length; i++) {
+
+        for(int i = 0; i < colorRestrictionMatrix.length; i++)
             colorRestrictionMatrix[i] = MagicColor.ALL_COLORS;
-        }
     }
 
     public byte getPossibleColorUses(byte color) {
@@ -384,11 +427,10 @@ public class ManaPool implements Iterable<Mana> {
 
     public boolean canPayForShardWithColor(ManaCostShard shard, byte color) {
         byte line = getPossibleColorUses(color);
-        for (int i = 0; i < MagicColor.NUMBER_OR_COLORS; i++) {
+        for(int i = 0; i < MagicColor.NUMBER_OR_COLORS; i++) {
             byte outColor = MagicColor.WUBRG[i];
-            if ((line & outColor) != 0 && shard.canBePaidWithManaOfColor(outColor)) {
+            if (( line & outColor) != 0  && shard.canBePaidWithManaOfColor(outColor))
                 return true;
-            }
         }
         return shard.canBePaidWithManaOfColor((byte)0);
     }

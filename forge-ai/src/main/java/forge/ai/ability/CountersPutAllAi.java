@@ -83,7 +83,7 @@ public class CountersPutAllAi extends SpellAbilityAi {
                 final List<Card> killable = CardLists.filter(hList, new Predicate<Card>() {
                     @Override
                     public boolean apply(final Card c) {
-                        return c.getNetToughness() <= amount;
+                        return c.getNetDefense() <= amount;
                     }
                 });
                 if (!(killable.size() > 2)) {

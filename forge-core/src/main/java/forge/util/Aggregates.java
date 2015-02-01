@@ -1,7 +1,6 @@
 package forge.util;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -47,24 +46,6 @@ public class Aggregates {
             if (value > max) {
                 max = value;
                 result = c;
-            }
-        }
-        return result;
-    }
-
-    public static final <T> List<T> listWithMin(final Iterable<T> source, final Function<T, Integer> valueAccessor) {
-        if (source == null) { return null; }
-        int min = Integer.MAX_VALUE;
-        List<T> result = Lists.newArrayList();
-        for (final T c : source) {
-            int value = valueAccessor.apply(c);
-            if (value == min) {
-                result.add(c);
-            }
-            if (value < min) {
-                min = value;
-                result.clear();
-                result.add(c);
             }
         }
         return result;
@@ -125,39 +106,25 @@ public class Aggregates {
     }
 
     public static final <T> List<T> random(final Iterable<T> source, final int count) {
-        return random(source, count, new ArrayList<T>());
-    }
-    public static final <T, L extends List<T>> L random(final Iterable<T> source, final int count, final L list) {
         // Using Reservoir Sampling to grab X random values from source
+        final List<T> result = new ArrayList<T>();
+
         Random rnd = MyRandom.getRandom();
         int i = 0;
         for (T item : source) {
             i++;
             if (i <= count) {
                 // Add the first count items into the result list
-                list.add(item);
+                result.add(item);
             } else {
                 // Progressively reduce odds of item > count to get added into the reservoir
                 int j = rnd.nextInt(i);
                 if (j < count) {
-                    list.set(j, item);
+                    result.set(j, item);
                 }
             }
         }
-        return list;
-    }
-
-    public static final <T> T removeRandom(final List<T> source) {
-        if (source == null || source.isEmpty()) { return null; }
-
-        int index;
-        if (source.size() > 1) {
-            index = MyRandom.getRandom().nextInt(source.size());
-        }
-        else {
-            index = 0;
-        }
-        return source.remove(index);
+        return result;
     }
 
     public static int randomInt(int min, int max) {

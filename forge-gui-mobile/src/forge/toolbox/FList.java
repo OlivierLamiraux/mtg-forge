@@ -23,7 +23,7 @@ public class FList<T> extends FScrollPane implements Iterable<T> {
     public static final FSkinColor LINE_COLOR = FORE_COLOR.alphaColor(0.5f);
     public static final float LINE_THICKNESS = Utils.scale(1);
 
-    protected final List<T> items = new ArrayList<T>();
+    private final List<T> items = new ArrayList<T>();
     private FSkinFont font;
     private ListItemRenderer<T> renderer;
     private int pressedIndex = -1;

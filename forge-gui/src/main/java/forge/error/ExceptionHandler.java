@@ -29,6 +29,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import com.esotericsoftware.minlog.Log;
 
 import forge.FTrace;
+import forge.interfaces.IGuiBase;
 import forge.properties.ForgeConstants;
 import forge.util.MultiplexOutputStream;
 
@@ -47,6 +48,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         System.setProperty("sun.awt.exception.handler", ExceptionHandler.class.getName());
     }
 
+    private static IGuiBase gui;
     private static PrintStream oldSystemOut;
     private static PrintStream oldSystemErr;
     private static OutputStream logFileStream;
@@ -55,9 +57,11 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
      * Call this at the beginning to make sure that the class is loaded and the
      * static initializer has run.
      */
-    public static void registerErrorHandling() {
+    public static void registerErrorHandling(final IGuiBase gui) {
         //initialize log file
         File logFile = new File(ForgeConstants.LOG_FILE);
+
+        ExceptionHandler.gui = gui;
 
         int i = 0;
         while (logFile.exists() && !logFile.delete()) {
@@ -104,7 +108,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
     /** {@inheritDoc} */
     @Override
     public final void uncaughtException(final Thread t, final Throwable ex) {
-        BugReporter.reportException(ex);
+        BugReporter.reportException(ex, gui);
     }
 
     /**
@@ -115,6 +119,6 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
      *            a {@link java.lang.Throwable} object.
      */
     public final void handle(final Throwable ex) {
-        BugReporter.reportException(ex);
+        BugReporter.reportException(ex, gui);
     }
 }

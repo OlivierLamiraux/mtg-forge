@@ -1,7 +1,6 @@
 package forge.ai.ability;
 
 import com.google.common.base.Predicate;
-
 import forge.ai.ComputerUtilCard;
 import forge.ai.ComputerUtilCombat;
 import forge.ai.ComputerUtilCost;
@@ -11,7 +10,6 @@ import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.combat.Combat;
 import forge.game.cost.Cost;
@@ -22,6 +20,7 @@ import forge.game.spellability.SpellAbilityStackInstance;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
 
+import java.util.Collection;
 import java.util.List;
 
 public class ChooseSourceAi extends SpellAbilityAi {
@@ -99,7 +98,7 @@ public class ChooseSourceAi extends SpellAbilityAi {
                 if (game.getPhaseHandler().getPhase() != PhaseType.COMBAT_DECLARE_BLOCKERS) {
                     return false;
                 }
-                CardCollectionView choices = game.getCardsIn(ZoneType.Battlefield);
+                List<Card> choices = game.getCardsIn(ZoneType.Battlefield);
                 if (sa.hasParam("Choices")) {
                     choices = CardLists.getValidCards(choices, sa.getParam("Choices"), host.getController(), host);
                 }
@@ -125,7 +124,7 @@ public class ChooseSourceAi extends SpellAbilityAi {
     
     
     @Override
-    public Card chooseSingleCard(final Player aiChoser, SpellAbility sa, Iterable<Card> options, boolean isOptional, Player targetedPlayer) {
+    public Card chooseSingleCard(final Player aiChoser, SpellAbility sa, Collection<Card> options, boolean isOptional, Player targetedPlayer) {
         if ("NeedsPrevention".equals(sa.getParam("AILogic"))) {
             final Player ai = sa.getActivatingPlayer();
             final Game game = ai.getGame();
@@ -158,7 +157,7 @@ public class ChooseSourceAi extends SpellAbilityAi {
     private Card chooseCardOnStack(SpellAbility sa, Player ai, Game game) {
         for (SpellAbilityStackInstance si : game.getStack()) {
             final Card source = si.getSourceCard();
-            final SpellAbility abilityOnStack = si.getSpellAbility(true);
+            final SpellAbility abilityOnStack = si.getSpellAbility();
             
             if (sa.hasParam("Choices") && !abilityOnStack.getHostCard().isValid(sa.getParam("Choices"), ai, sa.getHostCard())) {
                 continue;

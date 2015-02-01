@@ -2,9 +2,7 @@ package forge.match.input;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,7 +18,6 @@ import forge.game.card.Card;
 import forge.game.card.CardUtil;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.replacement.ReplacementEffect;
 import forge.game.spellability.AbilityManaPart;
 import forge.game.spellability.SpellAbility;
@@ -43,7 +40,6 @@ public abstract class InputPayMana extends InputSyncronizedBase {
     protected final SpellAbility saPaidFor;
     private final boolean wasFloatingMana;
     private final Object zoneToRestore;
-    private final Queue<Card> delaySelectCards = new LinkedList<Card>();
 
     private boolean bPaid = false;
     protected Boolean canPayManaCost = null;
@@ -58,64 +54,31 @@ public abstract class InputPayMana extends InputSyncronizedBase {
 
         //if player is floating mana, show mana pool to make it easier to use that mana
         wasFloatingMana = !player.getManaPool().isEmpty();
-        zoneToRestore = wasFloatingMana ? MatchUtil.getController().showManaPool(PlayerView.get(player)) : null;
+        zoneToRestore = wasFloatingMana ? MatchUtil.getController().showManaPool(getController().getPlayerView(player)) : null;
     }
 
     @Override
     protected void onStop() {
         if (wasFloatingMana) { //hide mana pool if it was shown due to floating mana
-            MatchUtil.getController().hideManaPool(PlayerView.get(player), zoneToRestore);
+            MatchUtil.getController().hideManaPool(getController().getPlayerView(player), zoneToRestore);
         }
     }
 
     @Override
-    protected boolean onCardSelected(final Card card, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
-        if (otherCardsToSelect != null) {
-            for (Card c : otherCardsToSelect) {
-                for (SpellAbility sa : c.getManaAbilities()) {
-                    if (sa.canPlay()) {
-                        delaySelectCards.add(c);
-                        break;
-                    }
-                }
-            }
-        }
-        if (!card.getManaAbilities().isEmpty() && activateManaAbility(card, manaCost)) {
-            return true;
-        }
-        return activateDelayedCard();
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        for (SpellAbility sa : card.getManaAbilities()) {
-            if (sa.canPlay()) {
-                return "pay mana with card";
-            }
-        }
-        return null;
-    }
-
-    private boolean activateDelayedCard() {
-        if (delaySelectCards.isEmpty()) {
+    protected boolean onCardSelected(final Card card, final ITriggerEvent triggerEvent) {
+        if (card.getManaAbility().isEmpty()) {
+            flashIncorrectAction();
             return false;
         }
-        if (manaCost.isPaid()) {
-            delaySelectCards.clear(); //clear delayed cards if mana cost already paid
-            return false;
-        }
-        if (activateManaAbility(delaySelectCards.poll(), manaCost)) {
-            return true;
-        }
-        return activateDelayedCard();
+        // only tap card if the mana is needed
+        return activateManaAbility(card, manaCost);
     }
 
     @Override
-    public boolean selectAbility(final SpellAbility ab) {
+    public void selectAbility(final SpellAbility ab) {
         if (ab != null && ab.isManaAbility()) {
-            return activateManaAbility(ab.getHostCard(), manaCost, ab);
+            activateManaAbility(ab.getHostCard(), manaCost, ab);
         }
-        return false;
     }
 
     public List<SpellAbility> getUsefulManaAbilities(Card card) {
@@ -139,11 +102,11 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         }
 
         final String typeRes = manaCost.getSourceRestriction();
-        if (StringUtils.isNotBlank(typeRes) && !card.getType().hasStringType(typeRes)) {
+        if (StringUtils.isNotBlank(typeRes) && !card.isType(typeRes)) {
             return abilities;
         }
 
-        for (SpellAbility ma : card.getManaAbilities()) {
+        for (SpellAbility ma : card.getManaAbility()) {
             ma.setActivatingPlayer(player);
             AbilityManaPart m = ma.getManaPartRecursive();
             if (m == null || !ma.canPlay())                                 { continue; }
@@ -156,16 +119,26 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         return abilities;
     }
 
-    public boolean useManaFromPool(byte colorCode) {
+    public void useManaFromPool(byte colorCode) {
         // find the matching mana in pool.
-        if (player.getManaPool().tryPayCostWithColor(colorCode, saPaidFor, manaCost)) {
-            onManaAbilityPaid();
-            showMessage();
-            return true;
-        }
-        return false;
+        player.getManaPool().tryPayCostWithColor(colorCode, saPaidFor, manaCost);
+        onManaAbilityPaid();
+        showMessage();
     }
 
+    /**
+     * <p>
+     * activateManaAbility.
+     * </p>
+     * 
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @param card
+     *            a {@link forge.game.card.Card} object.
+     * @param manaCost
+     *            a {@link forge.game.mana.ManaCostBeingPaid} object.
+     * @return a {@link forge.game.mana.ManaCostBeingPaid} object.
+     */
     protected boolean activateManaAbility(final Card card, ManaCostBeingPaid manaCost) {
         return activateManaAbility(card, manaCost, null);
     }
@@ -194,17 +167,17 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         if (colorCanUse == 0) { // no mana cost or something 
             return false;
         }
-
+        
         List<SpellAbility> abilities = new ArrayList<SpellAbility>();
         // you can't remove unneeded abilities inside a for (am:abilities) loop :(
 
         final String typeRes = manaCost.getSourceRestriction();
-        if (StringUtils.isNotBlank(typeRes) && !card.getType().hasStringType(typeRes)) {
+        if (StringUtils.isNotBlank(typeRes) && !card.isType(typeRes)) {
             return false;
         }
 
         boolean guessAbilityWithRequiredColors = true;
-        for (SpellAbility ma : card.getManaAbilities()) {
+        for (SpellAbility ma : card.getManaAbility()) {
             ma.setActivatingPlayer(player);
 
             AbilityManaPart m = ma.getManaPartRecursive();
@@ -258,7 +231,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
                         colorMatches.add(sa);
                     }
                 }
-
+    
                 if (colorMatches.isEmpty()) {
                     // can only match colorless just grab the first and move on.
                     // This is wrong. Sometimes all abilities aren't created equal
@@ -273,7 +246,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
 
         final SpellAbility chosen;
         if (chosenAbility == null) {
-            chosen = abilities.size() > 1 && choice ? SGuiChoose.one("Choose mana ability", abilities) : abilities.get(0);
+            chosen = abilities.size() > 1 && choice ? SGuiChoose.one(getGui(), "Choose mana ability", abilities) : abilities.get(0);
         }
         else {
             chosen = chosenAbility;
@@ -282,21 +255,32 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         chosen.getManaPartRecursive().setExpressChoice(colors);
 
         // System.out.println("Chosen sa=" + chosen + " of " + chosen.getHostCard() + " to pay mana");
-
-        locked = true;
-        game.getAction().invoke(new Runnable() {
+        Runnable proc = new Runnable() {
             @Override
             public void run() {
                 HumanPlay.playSpellAbility(getController(), chosen.getActivatingPlayer(), chosen);
                 player.getManaPool().payManaFromAbility(saPaidFor, InputPayMana.this.manaCost, chosen);
-
+                
                 onManaAbilityPaid();
                 onStateChanged();
             }
-        });
+        };
+        locked = true;
+        game.getAction().invoke(proc);
         return true;
     }
 
+    /**
+     * <p>
+     * canMake.  color is like "G", returns "Green".
+     * </p>
+     * 
+     * @param am
+     *            a {@link forge.card.spellability.AbilityMana} object.
+     * @param mana
+     *            a {@link java.lang.String} object.
+     * @return a boolean.
+     */
     private static boolean abilityProducesManaColor(final SpellAbility am, AbilityManaPart m, final byte neededColor) {
         if (0 != (neededColor & ManaAtom.COLORLESS)) {
             return true;
@@ -364,6 +348,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         player.runWithController(proc, new PlayerControllerAi(game, player, player.getOriginalLobbyPlayer()));
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void onOk() {
         if (supportAutoPay()) {
@@ -396,9 +381,6 @@ public abstract class InputPayMana extends InputSyncronizedBase {
 
     protected final void updateMessage() {
         locked = false;
-        if (activateDelayedCard()) {
-            return;
-        }
         if (supportAutoPay()) {
             if (canPayManaCost == null) {
                 //use AI utility to determine if mana cost can be paid if that hasn't been determined yet
@@ -418,6 +400,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
         showMessage(getMessage());
     }
 
+    /** {@inheritDoc} */
     @Override
     public void showMessage() {
         if (isFinished()) { return; }
@@ -431,7 +414,7 @@ public abstract class InputPayMana extends InputSyncronizedBase {
             stop();
         }
         else {
-            FThreads.invokeInEdtNowOrLater(new Runnable() {
+            FThreads.invokeInEdtNowOrLater(getGui(), new Runnable() {
                 @Override
                 public void run() {
                     updateMessage();

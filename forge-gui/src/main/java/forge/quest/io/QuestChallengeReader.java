@@ -3,6 +3,7 @@ package forge.quest.io;
 import forge.ImageKeys;
 import forge.deck.io.DeckSerializer;
 import forge.deck.io.DeckStorage;
+import forge.properties.ForgeConstants;
 import forge.quest.QuestEventChallenge;
 import forge.quest.QuestEventDifficulty;
 import forge.util.FileSection;
@@ -48,13 +49,8 @@ public class QuestChallengeReader extends StorageReaderFolder<QuestEventChalleng
 
         String humanDeck = sectionQuest.get("HumanDeck", null);
         if (humanDeck != null) {
-            // Defined human decks must live in the same directory as each other
-            try {
-                File humanFile = new File(file.getParent(), humanDeck);
-                qc.setHumanDeck(DeckSerializer.fromFile(humanFile));
-            } catch (Exception e) {
-                System.out.println("Defined human deck couldn't be loaded from " + file.getParent());
-            }
+            File humanFile = new File(ForgeConstants.DEFAULT_CHALLENGES_DIR, humanDeck); // Won't work in other worlds!
+            qc.setHumanDeck(DeckSerializer.fromFile(humanFile));
         }
 
         // Common properties

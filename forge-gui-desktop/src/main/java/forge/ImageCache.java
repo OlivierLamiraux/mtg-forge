@@ -33,15 +33,12 @@ import com.google.common.cache.LoadingCache;
 import com.mortennobel.imagescaling.ResampleOp;
 
 import forge.assets.FSkinProp;
-import forge.game.card.CardView;
+import forge.assets.ImageUtil;
 import forge.item.InventoryItem;
-import forge.match.MatchUtil;
-import forge.model.FModel;
 import forge.properties.ForgeConstants;
-import forge.properties.ForgePreferences.FPref;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinIcon;
-import forge.util.ImageUtil;
+import forge.view.CardView;
 
 /**
  * This class stores ALL card images in a cache with soft values. this means
@@ -84,7 +81,7 @@ public class ImageCache {
      * and cannot be loaded from disk.  pass -1 for width and/or height to avoid resizing in that dimension.
      */
     public static BufferedImage getImage(final CardView card, final int width, final int height) {
-        final String key = MatchUtil.getCardImageKey(card.getCurrentState());
+        final String key = card.getOriginal().getImageKey(false);
         return scaleImage(key, width, height, true);
     }
 
@@ -172,7 +169,7 @@ public class ImageCache {
         double scaleX = (-1 == width ? 1 : (double)width / original.getWidth());
         double scaleY = (-1 == height? 1 : (double)height / original.getHeight());
         double bestFitScale = Math.min(scaleX, scaleY);
-        if ((bestFitScale > 1) && !FModel.getPreferences().getPrefBoolean(FPref.UI_SCALE_LARGER)) {
+        if ((bestFitScale > 1) && !ImageUtil.mayEnlarge()) {
             bestFitScale = 1;
         }
 
@@ -197,7 +194,7 @@ public class ImageCache {
      * Returns the Image corresponding to the key.
      */
     private static BufferedImage getImage(final String key) {
-        FThreads.assertExecutedByEdt(true);
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         try {
             return ImageCache._CACHE.get(key);
         } catch (final ExecutionException ex) {

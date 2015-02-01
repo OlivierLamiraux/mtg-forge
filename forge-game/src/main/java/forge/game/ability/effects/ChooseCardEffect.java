@@ -5,8 +5,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates.Presets;
@@ -19,6 +17,7 @@ import forge.util.Lang;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ChooseCardEffect extends SpellAbilityEffect {
@@ -39,7 +38,7 @@ public class ChooseCardEffect extends SpellAbilityEffect {
         final Card host = sa.getHostCard();
         final Player activator = sa.getActivatingPlayer();
         final Game game = activator.getGame();
-        final CardCollection chosen = new CardCollection();
+        List<Card> chosen = new ArrayList<Card>();
 
         final TargetRestrictions tgt = sa.getTargetRestrictions();
         final List<Player> tgtPlayers = getTargetPlayers(sa);
@@ -48,7 +47,7 @@ public class ChooseCardEffect extends SpellAbilityEffect {
         if (sa.hasParam("ChoiceZone")) {
             choiceZone = ZoneType.smartValueOf(sa.getParam("ChoiceZone"));
         }
-        CardCollectionView choices = game.getCardsIn(choiceZone);
+        List<Card> choices = game.getCardsIn(choiceZone);
         if (sa.hasParam("Choices")) {
             choices = CardLists.getValidCards(choices, sa.getParam("Choices"), activator, host);
         }
@@ -78,25 +77,26 @@ public class ChooseCardEffect extends SpellAbilityEffect {
                 
                 // Choose one of each BasicLand given special place
                 for (final String type : CardType.getBasicTypes()) {
-                    final CardCollectionView cl = CardLists.getType(land, type);
+                    final List<Card> cl = CardLists.getType(land, type);
                     if (!cl.isEmpty()) {
                         final String prompt = "Choose " + Lang.nounWithAmount(1, type);
                         Card c = p.getController().chooseSingleEntityForEffect(cl, sa, prompt, false);
-                        if (c != null) {
+                        
+                        if (null != c) {
                             chosen.add(c);
                         }
                     }
                 }
             } else if ((tgt == null) || p.canBeTargetedBy(sa)) {
                 if (sa.hasParam("AtRandom") && !choices.isEmpty()) {
-                    Aggregates.random(choices, validAmount, chosen);
+                    chosen = Aggregates.random(choices, validAmount);
                 } else {
                     String title = sa.hasParam("ChoiceTitle") ? sa.getParam("ChoiceTitle") : "Choose a card ";
-                    chosen.addAll(p.getController().chooseCardsForEffect(choices, sa, title, minAmount, validAmount, !sa.hasParam("Mandatory")));
+                    chosen = p.getController().chooseCardsForEffect(choices, sa, title, minAmount, validAmount, !sa.hasParam("Mandatory"));
                 }
             }
         }
-        host.setChosenCards(chosen);
+        host.setChosenCard(chosen);
         if (sa.hasParam("RememberChosen")) {
             for (final Card rem : chosen) {
                 host.addRemembered(rem);

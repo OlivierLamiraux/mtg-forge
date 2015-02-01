@@ -20,12 +20,14 @@ package forge.game.cost;
 import com.google.common.base.Predicate;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates.Presets;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Class CostTapType.
@@ -88,10 +90,11 @@ public class CostTapType extends CostPartWithList {
      */
     @Override
     public final void refund(final Card source) {
-        for (final Card c : cardList) {
+        for (final Card c : this.getCardList()) {
             c.setTapped(false);
         }
-        cardList.clear();
+
+        this.getCardList().clear();
     }
 
     /*
@@ -105,7 +108,8 @@ public class CostTapType extends CostPartWithList {
     public final boolean canPay(final SpellAbility ability) {
         final Player activator = ability.getActivatingPlayer();
         final Card source = ability.getHostCard();
-
+        
+        List<Card> typeList = new ArrayList<Card>(activator.getCardsIn(ZoneType.Battlefield));
         String type = this.getType();
         boolean sameType = false;
         
@@ -121,7 +125,7 @@ public class CostTapType extends CostPartWithList {
             type = type.replace("+withTotalPowerGE" + totalP, "");
         }
 
-        CardCollection typeList = CardLists.getValidCards(activator.getCardsIn(ZoneType.Battlefield), type.split(";"), activator, source);
+        typeList = CardLists.getValidCards(typeList, type.split(";"), activator, source);
 
         if (!canTapSource) {
             typeList.remove(source);

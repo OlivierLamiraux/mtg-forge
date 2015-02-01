@@ -7,14 +7,13 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 
-import forge.card.CardStateName;
+import com.google.common.collect.Lists;
+
+import forge.card.CardCharacteristicName;
 import forge.card.mana.ManaCostShard;
 import forge.game.Game;
-import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
@@ -27,6 +26,7 @@ import forge.game.staticability.StaticAbility;
 import forge.game.zone.ZoneType;
 
 public class ManaCostAdjustment {
+
     public static final void adjust(ManaCostBeingPaid cost, final SpellAbility sa, boolean test) {
         final Game game = sa.getActivatingPlayer().getGame();
         final Card originalCard = sa.getHostCard();
@@ -37,14 +37,27 @@ public class ManaCostAdjustment {
     
         boolean isStateChangeToFaceDown = false;
         if (sa.isSpell()) {
-            if (((Spell) sa).isCastFaceDown()) {
+            if (sa.isDelve()) {
+                final Player pc = originalCard.getController();
+                final List<Card> mutableGrave = new ArrayList<Card>(pc.getCardsIn(ZoneType.Graveyard));
+                final List<Card> toExile = pc.getController().chooseCardsToDelve(cost.getUnpaidShards(ManaCostShard.COLORLESS), mutableGrave);
+                for (final Card c : toExile) {
+                    cost.decreaseColorlessMana(1);
+                    if (!test) {
+                        pc.getGame().getAction().exile(c);
+                    }
+                }
+            }
+            else if (sa.getHostCard().hasKeyword("Convoke")) {
+                adjustCostByConvoke(cost, sa, test);
+            } else if (((Spell) sa).isCastFaceDown()) {
             	// Turn face down to apply cost modifiers correctly
-            	originalCard.setState(CardStateName.FaceDown, false);
+            	originalCard.setState(CardCharacteristicName.FaceDown);
             	isStateChangeToFaceDown = true;
             }
         } // isSpell
     
-        CardCollection cardsOnBattlefield = new CardCollection(game.getCardsIn(ZoneType.Battlefield));
+        List<Card> cardsOnBattlefield = Lists.newArrayList(game.getCardsIn(ZoneType.Battlefield));
         cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Stack));
         cardsOnBattlefield.addAll(game.getCardsIn(ZoneType.Command));
         if (!cardsOnBattlefield.contains(originalCard)) {
@@ -56,7 +69,7 @@ public class ManaCostAdjustment {
     
         // Sort abilities to apply them in proper order
         for (Card c : cardsOnBattlefield) {
-            final Iterable<StaticAbility> staticAbilities = c.getStaticAbilities();
+            final ArrayList<StaticAbility> staticAbilities = c.getStaticAbilities();
             for (final StaticAbility stAb : staticAbilities) {
                 if (stAb.getMapParams().get("Mode").equals("RaiseCost")) {
                     raiseAbilities.add(stAb);
@@ -86,28 +99,10 @@ public class ManaCostAdjustment {
         for (final StaticAbility stAb : setAbilities) {
             applyAbility(stAb, "SetCost", sa, cost);
         }
-
-        if (sa.isSpell()) {
-            if (sa.isDelve()) {
-                final Player pc = originalCard.getController();
-                final CardCollection mutableGrave = new CardCollection(pc.getCardsIn(ZoneType.Graveyard));
-                final CardCollectionView toExile = pc.getController().chooseCardsToDelve(cost.getUnpaidShards(ManaCostShard.COLORLESS), mutableGrave);
-                for (final Card c : toExile) {
-                    cost.decreaseColorlessMana(1);
-                    if (!test) {
-                        sa.getHostCard().addDelved(c);
-                        pc.getGame().getAction().exile(c);
-                    }
-                }
-            }
-            else if (sa.getHostCard().hasKeyword("Convoke")) {
-                adjustCostByConvoke(cost, sa, test);
-            }
-        } // isSpell
         
         // Reset card state (if changed)
         if (isStateChangeToFaceDown) {
-        	originalCard.setState(CardStateName.Original, false);
+        	originalCard.setState(CardCharacteristicName.Original);
         }
     }
   // GetSpellCostChange
@@ -144,10 +139,11 @@ public class ManaCostAdjustment {
         if (mode.equals("SetCost")) { //Set cost is only used by Trinisphere
             applyRaiseCostAbility(stAb, sa, originalCost);
         }
-    }
-
+    }    
+    
     private static void adjustCostByConvoke(ManaCostBeingPaid cost, final SpellAbility sa, boolean test) {
-        CardCollectionView untappedCreats = CardLists.filter(sa.getActivatingPlayer().getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.CREATURES);
+    
+        List<Card> untappedCreats = CardLists.filter(sa.getActivatingPlayer().getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.CREATURES);
         untappedCreats = CardLists.filter(untappedCreats, CardPredicates.Presets.UNTAPPED);
     
         Map<Card, ManaCostShard> convokedCards = sa.getActivatingPlayer().getController().chooseCardsForConvoke(sa, cost.toManaCost(), untappedCreats);
@@ -167,7 +163,7 @@ public class ManaCostAdjustment {
 
     private static void adjustCostByOffering(final ManaCostBeingPaid cost, final SpellAbility sa) {
         String offeringType = "";
-        for (String kw : sa.getHostCard().getKeywords()) {
+        for (String kw : sa.getHostCard().getKeyword()) {
             if (kw.endsWith(" offering")) {
                 offeringType = kw.split(" ")[0];
                 break;
@@ -175,13 +171,14 @@ public class ManaCostAdjustment {
         }
     
         Card toSac = null;
-        CardCollectionView canOffer = CardLists.filter(sa.getActivatingPlayer().getCardsIn(ZoneType.Battlefield),
-                CardPredicates.isType(offeringType), CardPredicates.canBeSacrificedBy(sa));
-
-        final CardCollectionView toSacList = sa.getHostCard().getController().getController().choosePermanentsToSacrifice(sa, 0, 1, canOffer, offeringType);
-
+        List<Card> canOffer = CardLists.filter(sa.getActivatingPlayer().getCardsIn(ZoneType.Battlefield),
+                CardPredicates.isType(offeringType));
+    
+        final List<Card> toSacList = sa.getHostCard().getController().getController().choosePermanentsToSacrifice(sa, 0, 1, canOffer,
+                offeringType);
+    
         if (!toSacList.isEmpty()) {
-            toSac = toSacList.getFirst();
+            toSac = toSacList.get(0);
         }
         else {
             return;
@@ -230,7 +227,7 @@ public class ManaCostAdjustment {
                     if (activator == null ) {
                         return;
                     }
-                    if (CardLists.filterControlledBy(activator.getGame().getStack().getSpellsCastThisTurn(),
+                    if (CardLists.filterControlledBy(activator.getGame().getStack().getCardsCastThisTurn(),
                             activator).size() > 0) {
                         return;
                     }
@@ -249,10 +246,6 @@ public class ManaCostAdjustment {
                 }
             } else if (params.get("Type").equals("MorphUp")) {
                 if (!sa.isMorphUp()) {
-                    return;
-                }
-            } else if (params.get("Type").equals("SelfIntrinsicAbility")) {
-                if (!(sa instanceof AbilityActivated) || sa.isReplacementAbility() || sa.isTemporary()) {
                     return;
                 }
             }
@@ -277,7 +270,7 @@ public class ManaCostAdjustment {
                 return;
             }
             boolean targetValid = false;
-            for (GameObject target : sa.getTargets().getTargets()) {
+            for (Card target : sa.getTargets().getTargetCards()) {
                 if (target.isValid(params.get("ValidTarget").split(","), hostCard.getController(), hostCard)) {
                     targetValid = true;
                 }
@@ -375,7 +368,7 @@ public class ManaCostAdjustment {
                     if (activator == null ) {
                         return;
                     }
-                    if (CardLists.filterControlledBy(activator.getGame().getStack().getSpellsCastThisTurn(),
+                    if (CardLists.filterControlledBy(activator.getGame().getStack().getCardsCastThisTurn(),
                             activator).size() > 0) {
                         return;
                     }

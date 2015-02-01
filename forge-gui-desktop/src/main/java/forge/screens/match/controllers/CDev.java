@@ -27,7 +27,7 @@ public enum CDev implements ICDoc {
     public void togglePlayManyLandsPerTurn() {
         boolean newValue = !VDev.SINGLETON_INSTANCE.getLblUnlimitedLands().getToggled();
         VDev.SINGLETON_INSTANCE.getLblUnlimitedLands().setToggled(newValue);
-        MatchUtil.getHumanController().cheat().setCanPlayUnlimitedLands(newValue);
+        MatchUtil.getGameView().cheat().setCanPlayUnlimitedLands(newValue);
     }
 
     private final MouseListener madViewAll = new MouseAdapter() {
@@ -39,7 +39,7 @@ public enum CDev implements ICDoc {
     public void toggleViewAllCards() {
         boolean newValue = !VDev.SINGLETON_INSTANCE.getLblViewAll().getToggled();
         VDev.SINGLETON_INSTANCE.getLblViewAll().setToggled(newValue);
-        MatchUtil.getHumanController().cheat().setViewAllCards(newValue);
+        MatchUtil.getGameView().cheat().setViewAllCards(newValue);
     }
 
     private final MouseListener madMana = new MouseAdapter() {
@@ -49,7 +49,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void generateMana() {
-        MatchUtil.getHumanController().cheat().generateMana();
+        MatchUtil.getGameView().cheat().generateMana();
     }
 
     private final MouseListener madSetup = new MouseAdapter() {
@@ -59,17 +59,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void setupGameState() {
-        MatchUtil.getHumanController().cheat().setupGameState();
-    }
-    
-    private final MouseListener madDump = new MouseAdapter() {
-        @Override
-        public void mousePressed(final MouseEvent e) {
-            dumpGameState();
-        }
-    };
-    public void dumpGameState() {
-        MatchUtil.getHumanController().cheat().dumpGameState();
+        MatchUtil.getGameView().cheat().setupGameState();
     }
 
     private final MouseListener madTutor = new MouseAdapter() {
@@ -79,7 +69,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void tutorForCard() {
-        MatchUtil.getHumanController().cheat().tutorForCard();
+        MatchUtil.getGameView().cheat().tutorForCard();
     }
 
     private final MouseListener madCardToHand = new MouseAdapter() {
@@ -89,7 +79,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void addCardToHand() {
-        MatchUtil.getHumanController().cheat().addCardToHand();
+        MatchUtil.getGameView().cheat().addCardToHand();
     }
 
     private final MouseListener madCounter = new MouseAdapter() {
@@ -99,7 +89,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void addCounterToPermanent() {
-        MatchUtil.getHumanController().cheat().addCountersToPermanent();
+        MatchUtil.getGameView().cheat().addCountersToPermanent();
     }
 
     private final MouseListener madTap = new MouseAdapter() {
@@ -109,7 +99,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void tapPermanent() {
-        MatchUtil.getHumanController().cheat().tapPermanents();
+        MatchUtil.getGameView().cheat().tapPermanents();
     }
 
     private final MouseListener madUntap = new MouseAdapter() {
@@ -119,7 +109,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void untapPermanent() {
-        MatchUtil.getHumanController().cheat().untapPermanents();
+        MatchUtil.getGameView().cheat().untapPermanents();
     }
 
     private final MouseListener madLife = new MouseAdapter() {
@@ -129,7 +119,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void setPlayerLife() {
-        MatchUtil.getHumanController().cheat().setPlayerLife();
+        MatchUtil.getGameView().cheat().setPlayerLife();
     }
 
     private final MouseListener madWinGame = new MouseAdapter() {
@@ -139,7 +129,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void winGame() {
-        MatchUtil.getHumanController().cheat().winGame();
+        MatchUtil.getGameView().cheat().winGame();
     }
 
     private final MouseListener madCardToBattlefield = new MouseAdapter() {
@@ -149,7 +139,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void addCardToBattlefield() {
-        MatchUtil.getHumanController().cheat().addCardToBattlefield();
+        MatchUtil.getGameView().cheat().addCardToBattlefield();
     }
 
     private final MouseListener madRiggedRoll = new MouseAdapter() {
@@ -159,7 +149,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void riggedPlanerRoll() {
-        MatchUtil.getHumanController().cheat().riggedPlanarRoll();
+        MatchUtil.getGameView().cheat().riggedPlanarRoll();
     }
 
     private final MouseListener madWalkToPlane = new MouseAdapter() {
@@ -169,7 +159,7 @@ public enum CDev implements ICDoc {
         }
     };
     public void planeswalkTo() {
-        MatchUtil.getHumanController().cheat().planeswalkTo();
+        MatchUtil.getGameView().cheat().planeswalkTo();
     }
 
     //========== End mouse listener inits
@@ -191,7 +181,6 @@ public enum CDev implements ICDoc {
         VDev.SINGLETON_INSTANCE.getLblViewAll().addMouseListener(madViewAll);
         VDev.SINGLETON_INSTANCE.getLblGenerateMana().addMouseListener(madMana);
         VDev.SINGLETON_INSTANCE.getLblSetupGame().addMouseListener(madSetup);
-        VDev.SINGLETON_INSTANCE.getLblDumpGame().addMouseListener(madDump);
         VDev.SINGLETON_INSTANCE.getLblTutor().addMouseListener(madTutor);
         VDev.SINGLETON_INSTANCE.getLblCardToHand().addMouseListener(madCardToHand);
         VDev.SINGLETON_INSTANCE.getLblCounterPermanent().addMouseListener(madCounter);
@@ -209,7 +198,7 @@ public enum CDev implements ICDoc {
      */
     @Override
     public void update() {
-        VDev.SINGLETON_INSTANCE.getLblUnlimitedLands().setToggled(MatchUtil.getHumanController().canPlayUnlimitedLands());
-        VDev.SINGLETON_INSTANCE.getLblViewAll().setToggled(MatchUtil.getHumanController().mayLookAtAllCards());
+        VDev.SINGLETON_INSTANCE.getLblUnlimitedLands().setToggled(MatchUtil.getGameView().canPlayUnlimitedLands());
+        VDev.SINGLETON_INSTANCE.getLblViewAll().setToggled(MatchUtil.getGameView().canViewAllCards());
     }
 }

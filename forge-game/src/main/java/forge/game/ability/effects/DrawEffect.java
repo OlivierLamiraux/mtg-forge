@@ -3,7 +3,6 @@ package forge.game.ability.effects;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
@@ -57,7 +56,7 @@ public class DrawEffect extends SpellAbilityEffect {
                     actualNum = p.getController().chooseNumber(sa, "How may cards do you want to draw?", 0, numCards);
                 }
 
-                final CardCollectionView drawn = p.drawCards(actualNum);
+                final List<Card> drawn = p.drawCards(actualNum);
                 if (sa.hasParam("Reveal")) {
                     p.getGame().getAction().reveal(drawn, p);
                 }

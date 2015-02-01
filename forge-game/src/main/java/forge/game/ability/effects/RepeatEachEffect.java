@@ -1,14 +1,12 @@
 package forge.game.ability.effects;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CounterType;
 import forge.game.player.Player;
@@ -16,7 +14,7 @@ import forge.game.spellability.AbilitySub;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.util.Aggregates;
-import forge.util.FCollection;
+
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -40,7 +38,7 @@ public class RepeatEachEffect extends SpellAbilityEffect {
         boolean useImprinted = sa.hasParam("UseImprinted");
         boolean loopOverCards = false;
         boolean recordChoice = sa.hasParam("RecordChoice");
-        CardCollectionView repeatCards = null;
+        List<Card> repeatCards = null;
 
         if (sa.hasParam("RepeatCards")) {
             List<ZoneType> zone = new ArrayList<ZoneType>();
@@ -55,20 +53,13 @@ public class RepeatEachEffect extends SpellAbilityEffect {
         }
         else if (sa.hasParam("DefinedCards")) {
             repeatCards = AbilityUtils.getDefinedCards(source, sa.getParam("DefinedCards"), sa);
-            if (sa.hasParam("AdditionalRestriction")) { // lki cards might not be in game
-                repeatCards = CardLists.getValidCards(repeatCards,
-                        sa.getParam("AdditionalRestriction"), source.getController(), source);
-            }
             if (!repeatCards.isEmpty()) {
                 loopOverCards = true;
             }
         }
 
-        if (sa.hasParam("ClearRemembered")) {
-            source.clearRemembered();
-        }
-
         if (loopOverCards) {
+
             // TODO (ArsenalNut 22 Dec 2012) Add logic to order cards for AI
             if (sa.hasParam("ChooseOrder") && repeatCards.size() >= 2) {
                 repeatCards = player.getController().orderMoveToZoneList(repeatCards, ZoneType.Stack);
@@ -76,14 +67,14 @@ public class RepeatEachEffect extends SpellAbilityEffect {
 
             for (Card card : repeatCards) {
                 if (useImprinted) {
-                    source.addImprintedCard(card);
+                    source.addImprinted(card);
                 } else {
                     source.addRemembered(card);
                 }
 
                 AbilityUtils.resolve(repeat);
                 if (useImprinted) {
-                    source.removeImprintedCard(card);
+                    source.removeImprinted(card);
                 } else {
                     source.removeRemembered(card);
                 }
@@ -91,12 +82,12 @@ public class RepeatEachEffect extends SpellAbilityEffect {
         }
 
         if (sa.hasParam("RepeatPlayers")) {
-            final FCollection<Player> repeatPlayers = AbilityUtils.getDefinedPlayers(source, sa.getParam("RepeatPlayers"), sa);
+            final List<Player> repeatPlayers = AbilityUtils.getDefinedPlayers(source, sa.getParam("RepeatPlayers"), sa);
             boolean optional = sa.hasParam("RepeatOptionalForEachPlayer");
             if (sa.hasParam("StartingWithActivator")) {
                 int size = repeatPlayers.size();
                 Player activator = sa.getActivatingPlayer();
-                while (!activator.equals(repeatPlayers.getFirst())) {
+                while (!activator.equals(Iterables.getFirst(repeatPlayers, null))) {
                     repeatPlayers.add(size - 1, repeatPlayers.remove(0));
                 }
             }
@@ -141,15 +132,14 @@ public class RepeatEachEffect extends SpellAbilityEffect {
                         recordMap.put(p, Lists.newArrayList(card));
                     }
                 }
-            }
-            else if (sa.hasParam("ChooseCard")) {
+            } else if (sa.hasParam("ChooseCard")) {
                 List<Card> list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield),
                         sa.getParam("ChooseCard"), source.getController(), source);
                 String filterController = sa.getParam("FilterControlledBy");
                 // default: Starting with you and proceeding in the chosen direction
                 Player p = sa.getActivatingPlayer();
                 do {
-                    CardCollection valid = new CardCollection(list);
+                    List<Card> valid = new ArrayList<Card>(list);
                     if ("NextPlayerInChosenDirection".equals(filterController)) {
                         valid = CardLists.filterControlledBy(valid,
                                 game.getNextPlayerAfter(p, source.getChosenDirection()));
@@ -166,15 +156,16 @@ public class RepeatEachEffect extends SpellAbilityEffect {
                         p = game.getNextPlayerAfter(p);
                     }
                 } while (!p.equals(sa.getActivatingPlayer()));
+               
             }
 
             for (Entry<Player, List<Card>> entry : recordMap.entrySet()) {
                 // Remember the player and imprint the cards
                 source.addRemembered(entry.getKey());
-                source.addImprintedCards(entry.getValue());
+                source.getImprinted().addAll(entry.getValue());
                 AbilityUtils.resolve(repeat);
                 source.removeRemembered(entry.getKey());
-                source.removeImprintedCards(entry.getValue());
+                source.getImprinted().removeAll(entry.getValue());
             }
         }
     }

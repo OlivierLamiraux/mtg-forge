@@ -6,7 +6,6 @@ import forge.game.cost.Cost;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.util.Aggregates;
-import forge.util.FCollection;
 
 import java.util.List;
 
@@ -53,7 +52,7 @@ public class ChooseGenericEffectAi extends SpellAbilityAi {
                 Cost unless = new Cost(unlessCost, false);
                 SpellAbility paycost = new SpellAbility.EmptySa(sa.getHostCard(), player);
                 paycost.setPayCosts(unless);
-                if (ComputerUtilCost.willPayUnlessCost(sp, player, unless, false, new FCollection<Player>(player))
+                if (ComputerUtilCost.willPayUnlessCost(sp, player, unless, false, Lists.newArrayList(player))
                         && ComputerUtilCost.canPayCost(paycost, player)) {
                     return sp;
                 }

@@ -21,7 +21,6 @@ import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
 import forge.game.card.CardFactoryUtil;
 import forge.game.spellability.SpellAbility;
-import forge.game.spellability.SpellAbilityStackInstance;
 import forge.util.Expressions;
 
 import java.util.Map;
@@ -98,7 +97,7 @@ public class TriggerChangesZone extends Trigger {
             final String comparator = condition.length < 2 ? "GE1" : condition[1];
             final int referenceValue = AbilityUtils.calculateAmount(host, comparator.substring(2), this);
             final Card triggered = (Card)runParams2.get("Card"); 
-            final int actualValue = CardFactoryUtil.xCount(triggered, host.getSVar(condition[0]));
+            final int actualValue = CardFactoryUtil.xCount((Card)triggered, host.getSVar(condition[0]));
             if (!Expressions.compare(actualValue, comparator.substring(0, 2), referenceValue)) {
                 return false;
             }
@@ -127,18 +126,6 @@ public class TriggerChangesZone extends Trigger {
             if (!expr) {
                 return false;
             }
-        }
-
-        if (this.mapParams.containsKey("OncePerEffect")) {
-            // A "once per effect" trigger will only trigger once regardless of how many things the effect caused
-            // to change zones. The SpellAbilityStackInstance keeps track of which host cards with "OncePerEffect"
-            // triggers already fired as a result of that effect.
-            //
-            // TODO This isn't quite ideal, since it really should be keeping track of the SpellAbility of the host
-            // card, rather than keeping track of the host card itself - but it's good enough for now - since there are
-            // no cards with multiple different OncePerEffect triggers.
-            SpellAbilityStackInstance si = (SpellAbilityStackInstance) runParams2.get("SpellAbilityStackInstance");
-            return si.attemptOncePerEffectTrigger(this.getHostCard());
         }
 
         return true;

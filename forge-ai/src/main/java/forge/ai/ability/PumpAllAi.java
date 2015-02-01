@@ -9,7 +9,6 @@ import forge.game.Game;
 import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.combat.Combat;
 import forge.game.phase.PhaseType;
@@ -49,14 +48,14 @@ public class PumpAllAi extends PumpAiBase {
         }
 
         final Player opp = ai.getOpponent();
-        CardCollection comp = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), valid, source.getController(), source);
-        CardCollection human = CardLists.getValidCards(opp.getCardsIn(ZoneType.Battlefield), valid, source.getController(), source);
+        List<Card> comp = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), valid, source.getController(), source);
+        List<Card> human = CardLists.getValidCards(opp.getCardsIn(ZoneType.Battlefield), valid, source.getController(), source);
 
         final TargetRestrictions tgt = sa.getTargetRestrictions();
         if (tgt != null && sa.canTarget(opp) && sa.hasParam("IsCurse")) {
             sa.resetTargets();
             sa.getTargets().add(opp);
-            comp.clear();
+            comp = new ArrayList<Card>();
         }
 
         if (!game.getStack().isEmpty() && !sa.isCurse()) {
@@ -67,7 +66,7 @@ public class PumpAllAi extends PumpAiBase {
                 comp = CardLists.filter(comp, new Predicate<Card>() {
                     @Override
                     public boolean apply(final Card c) {
-                        if (c.getNetToughness() <= -defense) {
+                        if (c.getNetDefense() <= -defense) {
                             return true; // can kill indestructible creatures
                         }
                         return ((ComputerUtilCombat.getDamageToKill(c) <= -defense) && !c.hasKeyword("Indestructible"));
@@ -76,7 +75,7 @@ public class PumpAllAi extends PumpAiBase {
                 human = CardLists.filter(human, new Predicate<Card>() {
                     @Override
                     public boolean apply(final Card c) {
-                        if (c.getNetToughness() <= -defense) {
+                        if (c.getNetDefense() <= -defense) {
                             return true; // can kill indestructible creatures
                         }
                         return ((ComputerUtilCombat.getDamageToKill(c) <= -defense) && !c.hasKeyword("Indestructible"));
@@ -95,12 +94,12 @@ public class PumpAllAi extends PumpAiBase {
                     if (combat == null || !combat.isAttacking(c)) {
                         continue;
                     }
-                    totalPower += Math.min(c.getNetPower(), power * -1);
+                    totalPower += Math.min(c.getNetAttack(), power * -1);
                     if (phase == PhaseType.COMBAT_DECLARE_BLOCKERS && combat.isUnblocked(c)) {
                         if (ComputerUtilCombat.lifeInDanger(sa.getActivatingPlayer(), combat)) {
                             return true;
                         }
-                        totalPower += Math.min(c.getNetPower(), power * -1);
+                        totalPower += Math.min(c.getNetAttack(), power * -1);
                     }
                     if (totalPower >= power * -2) {
                         return true;

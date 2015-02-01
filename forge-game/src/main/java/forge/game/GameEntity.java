@@ -18,201 +18,424 @@
 package forge.game;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.event.GameEventCardAttachment;
 import forge.game.event.GameEventCardAttachment.AttachMethod;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 
-
-public abstract class GameEntity extends GameObject implements IIdentifiable {
-    protected final int id;
+/**
+ * <p>
+ * Abstract Player class.
+ * </p>
+ * 
+ * @author Forge
+ * @version $Id: Player.java 10091 2011-08-30 16:11:21Z Sloth $
+ */
+public abstract class GameEntity extends GameObject {
     private String name = "";
     private int preventNextDamage = 0;
-    private CardCollection enchantedBy;
     private TreeMap<Card, Map<String, String>> preventionShieldsWithEffects = new TreeMap<Card, Map<String, String>>();
 
-    protected GameEntity(int id0) {
-        id = id0;
-    }
+    /** The enchanted by. */
+    private ArrayList<Card> enchantedBy = new ArrayList<Card>();
 
-    @Override
-    public int getId() {
-        return id;
-    }
-
+    /**
+     * <p>
+     * Getter for the field <code>name</code>.
+     * </p>
+     * 
+     * @return a {@link java.lang.String} object.
+     */
     public String getName() {
-        return name;
-    }
-    public void setName(final String s) {
-        name = s;
-        getView().updateName(this);
+        return this.name;
     }
 
+    /**
+     * <p>
+     * Setter for the field <code>name</code>.
+     * </p>
+     * 
+     * @param s
+     *            a {@link java.lang.String} object.
+     */
+    public void setName(final String s) {
+        this.name = s;
+    }
+
+    // ////////////////////////
+    //
+    // methods for handling damage
+    //
+    // ////////////////////////
+
+    /**
+     * <p>
+     * addDamage.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @return whether or not damage was dealt
+     */
     public boolean addDamage(final int damage, final Card source) {
         int damageToDo = damage;
 
-        damageToDo = replaceDamage(damageToDo, source, false);
-        damageToDo = preventDamage(damageToDo, source, false);
+        damageToDo = this.replaceDamage(damageToDo, source, false);
+        damageToDo = this.preventDamage(damageToDo, source, false);
 
-        return addDamageAfterPrevention(damageToDo, source, false);
+        return this.addDamageAfterPrevention(damageToDo, source, false);
     }
 
+    /**
+     * <p>
+     * addDamageWithoutPrevention.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @return whether or not damage was dealt
+     */
     public boolean addDamageWithoutPrevention(final int damage, final Card source) {
-        int damageToDo = replaceDamage(damage, source, false);
-        return addDamageAfterPrevention(damageToDo, source, false);
+        int damageToDo = damage;
+
+        damageToDo = this.replaceDamage(damageToDo, source, false);
+
+        return this.addDamageAfterPrevention(damageToDo, source, false);
     }
 
-    // This function handles damage after replacement and prevention effects are applied
+    // This function handles damage after replacement and prevention effects are
+    // applied
+    /**
+     * <p>
+     * addDamageAfterPrevention.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @param isCombat
+     *            a boolean.
+     * @return whether or not damage was dealt
+     */
     public abstract boolean addDamageAfterPrevention(final int damage, final Card source, final boolean isCombat);
 
-    // This should be also usable by the AI to forecast an effect (so it must
-    // not change the game state)
-    public abstract int staticDamagePrevention(final int damage, final Card source, final boolean isCombat, final boolean isTest);
 
     // This should be also usable by the AI to forecast an effect (so it must
     // not change the game state)
-    public abstract int staticReplaceDamage(final int damage, final Card source, final boolean isCombat);
+    /**
+     * <p>
+     * staticDamagePrevention.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @param isCombat
+     *            a boolean.
+     * @return a int.
+     */
+    public int staticDamagePrevention(final int damage, final Card source, final boolean isCombat, final boolean isTest) {
+        return 0;
+    }
 
+    // This should be also usable by the AI to forecast an effect (so it must
+    // not change the game state)
+    /**
+     * <p>
+     * staticReplaceDamage.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @param isCombat
+     *            a boolean.
+     * @return a int.
+     */
+    public int staticReplaceDamage(final int damage, final Card source, final boolean isCombat) {
+        return 0;
+    }
+
+    /**
+     * <p>
+     * replaceDamage.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @param isCombat
+     *            a boolean.
+     * @return a int.
+     */
     public abstract int replaceDamage(final int damage, final Card source, final boolean isCombat);
 
+    /**
+     * <p>
+     * preventDamage.
+     * </p>
+     * 
+     * @param damage
+     *            a int.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @param isCombat
+     *            a boolean.
+     * @return a int.
+     */
     public abstract int preventDamage(final int damage, final Card source, final boolean isCombat);
 
-    public int getPreventNextDamage() {
-        return preventNextDamage;
-    }
+    // ////////////////////////
+    //
+    // methods for handling Damage Prevention
+    //
+    // ////////////////////////
+
+    // PreventNextDamage
+    /**
+     * <p>
+     * Setter for the field <code>preventNextDamage</code>.
+     * </p>
+     * 
+     * @param n
+     *            a int.
+     */
     public void setPreventNextDamage(final int n) {
-        preventNextDamage = n;
+        this.preventNextDamage = n;
     }
+
+    /**
+     * <p>
+     * Getter for the field <code>preventNextDamage</code>.
+     * </p>
+     * 
+     * @return a int.
+     */
+    public int getPreventNextDamage() {
+        return this.preventNextDamage;
+    }
+
+    /**
+     * <p>
+     * addPreventNextDamage.
+     * </p>
+     * 
+     * @param n
+     *            a int.
+     */
     public void addPreventNextDamage(final int n) {
-        preventNextDamage += n;
+        this.preventNextDamage += n;
     }
+
+    /**
+     * <p>
+     * subtractPreventNextDamage.
+     * </p>
+     * 
+     * @param n
+     *            a int.
+     */
     public void subtractPreventNextDamage(final int n) {
-        preventNextDamage -= n;
+        this.preventNextDamage -= n;
     }
+
+    /**
+     * <p>
+     * resetPreventNextDamage.
+     * </p>
+     */
     public void resetPreventNextDamage() {
-        preventNextDamage = 0;
+        this.preventNextDamage = 0;
     }
 
     // PreventNextDamageWithEffect
+    /**
+     * <p>
+     * Gets the map of damage prevention shields with effects.
+     * </p>
+     * 
+     * @return the map of damage prevention shields with effects.
+     */
     public TreeMap<Card, Map<String, String>> getPreventNextDamageWithEffect() {
-        return preventionShieldsWithEffects;
+        return this.preventionShieldsWithEffects;
     }
+
+    /**
+     * <p>
+     * Adds a damage prevention shield with an effect that happens at time of prevention.
+     * </p>
+     * 
+     * @param shieldSource    The source card which generated the shield
+     * @param effectMap       A map of the effect occurring with the damage prevention
+     */
+    public void addPreventNextDamageWithEffect(final Card shieldSource, TreeMap<String, String> effectMap) {
+        if (this.preventionShieldsWithEffects.containsKey(shieldSource)) {
+            int currentShields = Integer.valueOf(this.preventionShieldsWithEffects.get(shieldSource).get("ShieldAmount"));
+            currentShields += Integer.valueOf(effectMap.get("ShieldAmount"));
+            effectMap.put("ShieldAmount", Integer.toString(currentShields));
+            this.preventionShieldsWithEffects.put(shieldSource, effectMap);
+        } else {
+            this.preventionShieldsWithEffects.put(shieldSource, effectMap);
+        }
+    }
+
+    /**
+     * <p>
+     * subtractPreventNextDamageWithEffect.
+     * </p>
+     * 
+     * @param shieldSource    The source card which generated the shield
+     * @param n               The number of shields to remove originating from shieldSource
+     */
+    public void subtractPreventNextDamageWithEffect(final Card shieldSource, final int n) {
+        int currentShields = Integer.valueOf(this.preventionShieldsWithEffects.get(shieldSource).get("ShieldAmount"));
+        if (currentShields > n) {
+            this.preventionShieldsWithEffects.get(shieldSource).put("ShieldAmount", String.valueOf(currentShields - n));
+        } else {
+            this.preventionShieldsWithEffects.remove(shieldSource);
+        }
+    }
+
+    /**
+     * <p>
+     * resetPreventNextDamageWithEffect.
+     * </p>
+     */
+    public void resetPreventNextDamageWithEffect() {
+        this.preventionShieldsWithEffects = new TreeMap<Card, Map<String, String>>();
+    }
+
+    /**
+     * <p>
+     * Gets the total amount of damage prevention shields.
+     * </p>
+     * 
+     * @return the number of damage prevention shields with and without effects.
+     */
     public int getPreventNextDamageTotalShields() {
-        int shields = preventNextDamage;
-        for (final Map<String, String> value : preventionShieldsWithEffects.values()) {
+        int shields = this.preventNextDamage;
+        for (final Map<String, String> value : this.preventionShieldsWithEffects.values()) {
             shields += Integer.valueOf(value.get("ShieldAmount"));
         }
         return shields;
     }
+
     /**
-     * Adds a damage prevention shield with an effect that happens at time of prevention.
-     * @param shieldSource - The source card which generated the shield
-     * @param effectMap - A map of the effect occurring with the damage prevention
+     * Checks for keyword.
+     * 
+     * @param keyword
+     *            the keyword
+     * @return true, if successful
      */
-    public void addPreventNextDamageWithEffect(final Card shieldSource, TreeMap<String, String> effectMap) {
-        if (preventionShieldsWithEffects.containsKey(shieldSource)) {
-            int currentShields = Integer.valueOf(preventionShieldsWithEffects.get(shieldSource).get("ShieldAmount"));
-            currentShields += Integer.valueOf(effectMap.get("ShieldAmount"));
-            effectMap.put("ShieldAmount", Integer.toString(currentShields));
-            preventionShieldsWithEffects.put(shieldSource, effectMap);
-        } else {
-            preventionShieldsWithEffects.put(shieldSource, effectMap);
-        }
-    }
-    public void subtractPreventNextDamageWithEffect(final Card shieldSource, final int n) {
-        int currentShields = Integer.valueOf(preventionShieldsWithEffects.get(shieldSource).get("ShieldAmount"));
-        if (currentShields > n) {
-            preventionShieldsWithEffects.get(shieldSource).put("ShieldAmount", String.valueOf(currentShields - n));
-        } else {
-            preventionShieldsWithEffects.remove(shieldSource);
-        }
-    }
-    public void resetPreventNextDamageWithEffect() {
-        preventionShieldsWithEffects = new TreeMap<Card, Map<String, String>>();
-    }
-
-    public abstract boolean hasKeyword(final String keyword);
-
-    // GameEntities can now be Enchanted
-    public final CardCollectionView getEnchantedBy(boolean allowModify) {
-        return CardCollection.getView(enchantedBy, allowModify);
-    }
-    public final void setEnchantedBy(final CardCollection cards) {
-        enchantedBy = cards;
-        getView().updateEnchantedBy(this);
-    }
-    public final void setEnchantedBy(final Iterable<Card> cards) {
-        if (cards == null) {
-            enchantedBy = null;
-        }
-        else {
-            enchantedBy = new CardCollection(cards);
-        }
-        getView().updateEnchantedBy(this);
-    }
-    public final boolean isEnchanted() {
-        return CardCollection.hasCard(enchantedBy);
-    }
-    public final boolean isEnchantedBy(Card c) {
-        return CardCollection.hasCard(enchantedBy, c);
-    }
-    public final boolean isEnchantedBy(final String cardName) {
-        for (final Card aura : getEnchantedBy(false)) {
-            if (aura.getName().equals(cardName)) {
-                return true;
-            }
-        }
+    public boolean hasKeyword(final String keyword) {
         return false;
     }
+
+    // GameEntities can now be Enchanted
+    /**
+     * <p>
+     * Getter for the field <code>enchantedBy</code>.
+     * </p>
+     * 
+     * @return a {@link java.util.ArrayList} object.
+     */
+    public final ArrayList<Card> getEnchantedBy() {
+        return this.enchantedBy;
+    }
+
+    /**
+     * <p>
+     * Setter for the field <code>enchantedBy</code>.
+     * </p>
+     * 
+     * @param list
+     *            a {@link java.util.ArrayList} object.
+     */
+    public final void setEnchantedBy(final ArrayList<Card> list) {
+        this.enchantedBy = list;
+    }
+
+    /**
+     * <p>
+     * isEnchanted.
+     * </p>
+     * 
+     * @return a boolean.
+     */
+    public final boolean isEnchanted() {
+        return this.enchantedBy.size() != 0;
+    }
+
+    /**
+     * <p>
+     * addEnchantedBy.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.game.card.Card} object.
+     */
     public final void addEnchantedBy(final Card c) {
-        if (enchantedBy == null) {
-            enchantedBy = new CardCollection();
-        }
-        if (enchantedBy.add(c)) {
-            getView().updateEnchantedBy(this);
-            getGame().fireEvent(new GameEventCardAttachment(c, null, this, AttachMethod.Enchant));
-        }
+        this.enchantedBy.add(c);
+        getGame().fireEvent(new GameEventCardAttachment(c, null, this, AttachMethod.Enchant));
     }
+
+    /**
+     * <p>
+     * removeEnchantedBy.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.game.card.Card} object.
+     */
     public final void removeEnchantedBy(final Card c) {
-        if (enchantedBy == null) { return; }
-
-        if (enchantedBy.remove(c)) {
-            if (enchantedBy.isEmpty()) {
-                enchantedBy = null;
-            }
-            getView().updateEnchantedBy(this);
-            getGame().fireEvent(new GameEventCardAttachment(c, this, null, AttachMethod.Enchant));
-        }
+        this.enchantedBy.remove(c);
+        getGame().fireEvent(new GameEventCardAttachment(c, this, null, AttachMethod.Enchant));
     }
+
+    /**
+     * <p>
+     * unEnchantAllCards.
+     * </p>
+     */
     public final void unEnchantAllCards() {
-        if (isEnchanted()) {
-            for (Card c : getEnchantedBy(true)) {
-                c.unEnchantEntity(this);
-            }
+        for (int i = 0; i < this.enchantedBy.size(); i++) {
+            this.enchantedBy.get(i).unEnchantEntity(this);
         }
     }
 
-    public abstract boolean hasProtectionFrom(final Card source);
-
-    @Override
-    public final boolean equals(Object o) {
-        if (o == null) { return false; }
-        return o.hashCode() == id && o.getClass().equals(getClass());
+    /**
+     * 
+     * hasProtectionFrom.
+     * 
+     * @param source
+     *            Card
+     * @return boolean
+     */
+    public boolean hasProtectionFrom(final Card source) {
+        return false;
     }
 
-    @Override
-    public final int hashCode() {
-        return id;
-    }
+    // //////////////////////////////
+    //
+    // generic Object overrides
+    //
+    // ///////////////////////////////
 
+    /** {@inheritDoc} */
     @Override
     public String toString() {
-        return name;
+        return this.name;
     }
 
     public abstract Game getGame();
-    public abstract GameEntityView getView();
 }

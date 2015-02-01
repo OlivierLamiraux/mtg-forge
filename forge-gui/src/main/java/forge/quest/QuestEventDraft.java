@@ -17,7 +17,6 @@
  */
 package forge.quest;
 
-import forge.GuiBase;
 import forge.card.CardEdition;
 import forge.card.CardEdition.CardInSet;
 import forge.card.CardRarity;
@@ -25,6 +24,7 @@ import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckGroup;
 import forge.deck.DeckSection;
+import forge.interfaces.IGuiBase;
 import forge.item.BoosterPack;
 import forge.item.PaperCard;
 import forge.limited.BoosterDraft;
@@ -35,7 +35,6 @@ import forge.player.GamePlayerUtil;
 import forge.quest.data.QuestPreferences.QPref;
 import forge.quest.io.ReadPriceList;
 import forge.util.NameGenerator;
-import forge.util.TextUtil;
 import forge.util.storage.IStorage;
 
 import java.text.SimpleDateFormat;
@@ -667,10 +666,10 @@ public class QuestEventDraft {
         return creditsAvailable < getEntryFee();
     }
 
-    public BoosterDraft enter() {
+    public BoosterDraft enter(final IGuiBase gui) {
         FModel.getQuest().getAchievements().setCurrentDraft(this);
         FModel.getQuest().getAssets().subtractCredits(getEntryFee());
-        return BoosterDraft.createDraft(LimitedPoolType.Block, FModel.getBlocks().get(getBlock()), getBoosterConfiguration());
+        return BoosterDraft.createDraft(gui, LimitedPoolType.Block, FModel.getBlocks().get(getBlock()), getBoosterConfiguration());
     }
 
     public boolean isStarted() {
@@ -748,16 +747,9 @@ public class QuestEventDraft {
      * @return The created draft or null in the event no draft could be created.
      */
     public static QuestEventDraft getRandomDraftOrNull(final QuestController quest) {
-        
         List<CardBlock> possibleBlocks = getAvailableBlocks(quest);
-        
-        if (possibleBlocks == null) {
-            return null;
-        }
-        
         Collections.shuffle(possibleBlocks);
         return getDraftOrNull(quest, possibleBlocks.get(0));
-        
     }
 
     /**
@@ -771,7 +763,7 @@ public class QuestEventDraft {
         if (block.getNumberSets() == 1) {
             String boosterConfiguration = "";
             for (int i = 0; i < block.getCntBoostersDraft(); i++) {
-                boosterConfiguration += block.getSets().get(0).getCode();
+                boosterConfiguration += block.getSets()[0].getCode();
                 if (i != block.getCntBoostersDraft() - 1) {
                     boosterConfiguration += "/";
                 }
@@ -814,7 +806,7 @@ public class QuestEventDraft {
             usedNames.add(event.aiNames[i]);
         }
         
-        int numberOfIcons = GuiBase.getInterface().getAvatarCount();
+        int numberOfIcons = quest.getGui().getAvatarCount();
         List<Integer> usedIcons = new ArrayList<>();
         
         for (int i = 0; i < 7; i++) {
@@ -860,55 +852,44 @@ public class QuestEventDraft {
     }
     
     private static List<String> getSetCombos(final CardBlock block) {
-        List<String> result = new ArrayList<>();
 
-        List<CardEdition> sets = block.getSets();
-        final String s0c = sets.get(0).getCode();
-        if (sets.size() == 1) {
-            result.add(String.format("%s/%s/%s", s0c, s0c, s0c));
-            return result;
-        }
-
-        final String s1c = sets.get(1).getCode();
-        final String s2c = sets.size() > 2 ? sets.get(2).getCode() : null; 
-
-        boolean s0isLarge = sets.get(0).getCards().length > 200;
-        boolean s1isLarge = sets.get(1).getCards().length > 200;
+        List<String> setCombos = new ArrayList<>();
+        CardEdition[] sets = block.getSets();
         
-        final String largerSet = s0isLarge == s1isLarge ? null : s0isLarge ? s0c : s1c;
+        Arrays.sort(sets, new Comparator<CardEdition>() {
+            @Override
+            public int compare(CardEdition set1, CardEdition set2) {
+                if (set1.getDate().after(set2.getDate())) {
+                    return -1;
+                } else if (set1.getDate().before(set2.getDate())) {
+                    return 1;
+                }
+                return 0;
+            }
+        });
         
-        if (s2c == null) {
-            if (largerSet != null ) {
-                result.add(String.format("%s/%s/%s", s0c, largerSet, s1c));
+        if (sets.length == 2) {
+            
+            if (sets[0].getCards().length < 200) {
+                setCombos.add(String.format("%s/%s/%s", sets[0].getCode(), sets[1].getCode(), sets[1].getCode()));
+            } else if (sets[1].getCards().length < 200) {
+                setCombos.add(String.format("%s/%s/%s", sets[1].getCode(), sets[0].getCode(), sets[0].getCode()));
             } else {
-                result.add(String.format("%s/%s/%s", s1c, s1c, s1c));
-                result.add(String.format("%s/%s/%s", s0c, s1c, s1c));
-                result.add(String.format("%s/%s/%s", s0c, s0c, s1c));
-                result.add(String.format("%s/%s/%s", s0c, s0c, s0c));
+                setCombos.add(String.format("%s/%s/%s", sets[1].getCode(), sets[1].getCode(), sets[1].getCode()));
+                setCombos.add(String.format("%s/%s/%s", sets[0].getCode(), sets[1].getCode(), sets[1].getCode()));
+                setCombos.add(String.format("%s/%s/%s", sets[0].getCode(), sets[0].getCode(), sets[1].getCode()));
+                setCombos.add(String.format("%s/%s/%s", sets[0].getCode(), sets[0].getCode(), sets[0].getCode()));
             }
-        } else {
-            result.add(String.format("%s/%s/%s", s0c, s0c, s0c));
-            result.add(String.format("%s/%s/%s", s0c, s1c, s2c));
+            
+        } else if (sets.length >= 3) {
 
-            // allow separate drafts with 3rd large set (ex: ROE, AVR)
-            if( sets.get(2).getCards().length > 200)
-                result.add(String.format("%s/%s/%s", s2c, s2c, s2c));
-        }
-
-        // This is set to Scars of Mirrodin date to account for the fact that MBS is drafted as a part of the Scars of Mirrodin block.
-        // Setting it to the date of Mirrodin Besieged makes it treat all drafts that feature Scars of Mirrodin incorrectly.
-        Date SOMDate = FModel.getMagicDb().getEditions().get("SOM").getDate();
-        boolean openOlderPacksFirst = sets.get(0).getDate().before(SOMDate); // before Mirrodin Besieged, sets were drafted in the opposite order (old->new instead of new->old)
-
-        if( !openOlderPacksFirst ){
-            for(int i = result.size() - 1; i >= 0; i--) {
-                List<String> parts = Arrays.asList(TextUtil.split(result.get(i), '/'));
-                Collections.reverse(parts);
-                result.set(i, TextUtil.join(parts, "/"));
-            }
+            setCombos.add(String.format("%s/%s/%s", sets[0].getCode(), sets[1].getCode(), sets[2].getCode()));
+            setCombos.add(String.format("%s/%s/%s", sets[2].getCode(), sets[2].getCode(), sets[2].getCode()));
+            
         }
         
-        return result;
+        return setCombos;
+        
     }
     
 }

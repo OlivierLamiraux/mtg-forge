@@ -18,7 +18,7 @@ public class Utils {
     public static final int DEV_SCREEN_WIDTH = (int)BASE_WIDTH, DEV_SCREEN_HEIGHT = (int)BASE_HEIGHT;
     //private static final float ppcX = 169f / AVG_FINGER_SIZE_CM, ppcY = 237f / AVG_FINGER_SIZE_CM;
     //public static final int DEV_SCREEN_WIDTH = 400, DEV_SCREEN_HEIGHT = 600;
-    //private static final float scaleX = 1.41f, scaleY = 1.25f;
+    //private static final float scaleX = 1.9f, scaleY = 1.5f;
     //private static final float ppcX = Gdx.graphics.getPpcX() * scaleX, ppcY = Gdx.graphics.getPpcY() * scaleY;
     //public static final int DEV_SCREEN_WIDTH = (int)(BASE_WIDTH * scaleX), DEV_SCREEN_HEIGHT = (int)(BASE_HEIGHT * scaleY);
 

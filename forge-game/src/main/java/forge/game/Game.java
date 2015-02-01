@@ -19,7 +19,6 @@ package forge.game;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -32,20 +31,21 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
 
 import forge.card.CardRarity;
-import forge.card.CardType.Supertype;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
-import forge.game.card.CardView;
 import forge.game.combat.Combat;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventGameOutcome;
+import forge.game.io.GameStateDeserializer;
+import forge.game.io.GameStateSerializer;
+import forge.game.io.IGameStateObject;
+import forge.game.phase.EndOfTurn;
 import forge.game.phase.Phase;
 import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
@@ -53,7 +53,6 @@ import forge.game.phase.Untap;
 import forge.game.phase.Upkeep;
 import forge.game.player.IGameEntitiesFactory;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.player.RegisteredPlayer;
 import forge.game.replacement.ReplacementHandler;
 import forge.game.spellability.SpellAbility;
@@ -63,25 +62,23 @@ import forge.game.trigger.TriggerType;
 import forge.game.zone.MagicStack;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
-import forge.trackable.Tracker;
 import forge.util.Aggregates;
-import forge.util.FCollection;
-import forge.util.FCollectionView;
-import forge.util.Visitor;
 
 /**
  * Represents the state of a <i>single game</i>, a new instance is created for each game.
  */
-public class Game {
+public class Game implements IGameStateObject {
     private final GameRules rules;
-    private final FCollection<Player> allPlayers = new FCollection<Player>();
-    private final FCollection<Player> ingamePlayers = new FCollection<Player>();
+    private List<Player> roIngamePlayers;
+    private List<Player> roIngamePlayersReversed;
+    private final List<Player> allPlayers;
+    private final List<Player> ingamePlayers = new ArrayList<Player>();
 
     private List<Card> activePlanes = null;
 
     public final Phase cleanup;
+    public final EndOfTurn endOfTurn;
     public final Phase endOfCombat;
-    public final Phase endOfTurn;
     public final Untap untap;
     public final Upkeep upkeep;
     public final MagicStack stack;
@@ -103,33 +100,64 @@ public class Game {
     private GameOutcome outcome;
     private boolean disableAutoYields;
 
-    private final GameView view; 
-    private final Tracker tracker = new Tracker();
-
-    private GameEntityCache<Player, PlayerView> playerCache = new GameEntityCache<>();
-    public Player getPlayer(PlayerView playerView) {
-        return playerCache.get(playerView);
-    }
-    public void addPlayer(Integer id, Player player) {
-        playerCache.put(id, player);
-    }
-
-    public GameEntityCache<Card, CardView> cardCache = new GameEntityCache<>();
-    public Card getCard(CardView cardView) {
-        return cardCache.get(cardView);
-    }
-    public void addCard(Integer id, Card card) {
-        cardCache.put(id, card);
-    }
-    public CardCollection getCardList(Iterable<CardView> cardViews) {
-        CardCollection list = new CardCollection();
-        cardCache.addToList(cardViews, list);
-        return list;
+    @Override
+    public void loadState(GameStateDeserializer gsd) {
+        gsd.readObject(rules);
+        gsd.readObject(cleanup);
+        gsd.readObject(endOfTurn);
+        gsd.readObject(endOfCombat);
+        gsd.readObject(untap);
+        gsd.readObject(upkeep);
+        gsd.readObject(stack);
+        gsd.readObject(phaseHandler);
+        gsd.readObject(staticEffects);
+        gsd.readObject(triggerHandler);
+        gsd.readObject(gameLog);
+        gsd.readObject(stackZone);
+        turnOrder = Direction.valueOf(gsd.readString());
+        timestamp = gsd.readLong();
+        age = GameStage.valueOf(gsd.readString());
+        outcome = (GameOutcome)gsd.readObject();
+        gsd.readPlayerList(allPlayers);
+        gsd.readPlayerList(ingamePlayers);
     }
 
+    @Override
+    public void saveState(GameStateSerializer gss) {
+        gss.write(rules);
+        gss.write(cleanup);
+        gss.write(endOfTurn);
+        gss.write(endOfCombat);
+        gss.write(untap);
+        gss.write(upkeep);
+        gss.write(stack);
+        gss.write(phaseHandler);
+        gss.write(staticEffects);
+        gss.write(triggerHandler);
+        gss.write(replacementHandler);
+        gss.write(gameLog);
+        gss.write(stackZone);
+        gss.write(turnOrder.name());
+        gss.write(timestamp);
+        gss.write(age.name());
+        gss.write(outcome);
+        gss.writePlayerList(allPlayers);
+        gss.writePlayerList(ingamePlayers);
+        roIngamePlayers = Collections.unmodifiableList(ingamePlayers);
+        roIngamePlayersReversed = Lists.reverse(roIngamePlayers); // reverse of unmodifiable list is also unmodifiable
+    }
+
+    /**
+     * Constructor.
+     * @param match0
+     */
     public Game(List<RegisteredPlayer> players0, GameRules rules0, Match match0) { /* no more zones to map here */
         rules = rules0;
         match = match0;
+        List<Player> players = new ArrayList<Player>();
+        allPlayers = Collections.unmodifiableList(players);
+        roIngamePlayers = Collections.unmodifiableList(ingamePlayers);
+        roIngamePlayersReversed = Lists.reverse(roIngamePlayers); // reverse of unmodifiable list is also unmodifiable
 
         int highestTeam = -1;
         for (RegisteredPlayer psc : players0) {
@@ -142,9 +170,9 @@ public class Game {
 
         int plId = 0;
         for (RegisteredPlayer psc : players0) {
-            IGameEntitiesFactory factory = (IGameEntitiesFactory)psc.getPlayer();
+        	IGameEntitiesFactory factory = (IGameEntitiesFactory)psc.getPlayer();
             Player pl = factory.createIngamePlayer(this, plId++);
-            allPlayers.add(pl);
+            players.add(pl);
             ingamePlayers.add(pl);
 
             pl.setStartingLife(psc.getStartingLife());
@@ -168,126 +196,154 @@ public class Game {
         untap = new Untap(this);
         upkeep = new Upkeep(this);
         cleanup = new Phase(PhaseType.CLEANUP);
+        endOfTurn = new EndOfTurn(this);
         endOfCombat = new Phase(PhaseType.COMBAT_END);
-        endOfTurn = new Phase(PhaseType.END_OF_TURN);
-
-        view = new GameView(this);
 
         subscribeToEvents(gameLog.getEventVisitor());
     }
 
-    public GameView getView() {
-        return view;
-    }
-
-    public Tracker getTracker() {
-        return tracker;
-    }
-
-    /**
-     * Gets the players who are still fighting to win.
-     */
-    public final FCollectionView<Player> getPlayers() {
-        return ingamePlayers;
-    }
-
     /**
      * Gets the players who are still fighting to win, in turn order.
+     * 
+     * @return the players
      */
-    public final FCollectionView<Player> getPlayersInTurnOrder() {
-        if (turnOrder.isDefaultDirection()) {
-            return ingamePlayers;
-        }
-        final FCollection<Player> players = new FCollection<Player>(ingamePlayers);
-        Collections.reverse(players);
-        return players;
+    public final List<Player> getPlayersInTurnOrder() {
+    	if (turnOrder.isDefaultDirection()) {
+    		return roIngamePlayers;
+    	}
+    	return roIngamePlayersReversed;
     }
-
+    
     /**
-     * Gets the nonactive players who are still fighting to win, in turn order.
+     * Gets the players who are still fighting to win.
+     * 
+     * @return the players
      */
-    public final FCollectionView<Player> getNonactivePlayers() {
-        // Don't use getPlayersInTurnOrder to prevent copying the player collection twice
-        final FCollection<Player> players = new FCollection<Player>(ingamePlayers);;
-        players.remove(phaseHandler.getPlayerTurn());
-        if (!turnOrder.isDefaultDirection()) {
-            Collections.reverse(players);
-        }
-        return players;
+    public final List<Player> getPlayers() {
+    	return roIngamePlayers;
     }
 
     /**
      * Gets the players who participated in match (regardless of outcome).
      * <i>Use this in UI and after match calculations</i>
+     * 
+     * @return the players
      */
     public final List<Player> getRegisteredPlayers() {
         return allPlayers;
     }
 
-    public final Untap getUntap() {
-        return untap;
-    }
-    public final Upkeep getUpkeep() {
-        return upkeep;
-    }
-    public final Phase getEndOfCombat() {
-        return endOfCombat;
-    }
-    public final Phase getEndOfTurn() {
-        return endOfTurn;
-    }
+    /**
+     * Gets the cleanup step.
+     * 
+     * @return the cleanup step
+     */
     public final Phase getCleanup() {
         return cleanup;
     }
 
+    /**
+     * Gets the end of turn.
+     * 
+     * @return the endOfTurn
+     */
+    public final EndOfTurn getEndOfTurn() {
+        return endOfTurn;
+    }
+
+    /**
+     * Gets the end of combat.
+     * 
+     * @return the endOfCombat
+     */
+    public final Phase getEndOfCombat() {
+        return endOfCombat;
+    }
+
+    /**
+     * Gets the upkeep.
+     * 
+     * @return the upkeep
+     */
+    public final Upkeep getUpkeep() {
+        return upkeep;
+    }
+
+    /**
+     * Gets the untap.
+     * 
+     * @return the upkeep
+     */
+    public final Untap getUntap() {
+        return untap;
+    }
+
+    /**
+     * Gets the phaseHandler.
+     * 
+     * @return the phaseHandler
+     */
     public final PhaseHandler getPhaseHandler() {
         return phaseHandler;
     }
-    public final void updateTurnForView() {
-        view.updateTurn(phaseHandler);
-    }
-    public final void updatePhaseForView() {
-        view.updatePhase(phaseHandler);
-    }
-    public final void updatePlayerTurnForView() {
-        view.updatePlayerTurn(phaseHandler);
-    }
 
+    /**
+     * Gets the stack.
+     * 
+     * @return the stack
+     */
     public final MagicStack getStack() {
         return stack;
     }
-    public final void updateStackForView() {
-        view.updateStack(stack);
-    }
 
+    /**
+     * Gets the static effects.
+     * 
+     * @return the staticEffects
+     */
     public final StaticEffects getStaticEffects() {
         return staticEffects;
     }
 
+    /**
+     * Gets the trigger handler.
+     * 
+     * @return the triggerHandler
+     */
     public final TriggerHandler getTriggerHandler() {
         return triggerHandler;
     }
 
+    /**
+     * Gets the combat.
+     * 
+     * @return the combat
+     */
     public final Combat getCombat() {
         return getPhaseHandler().getCombat();
     }
-    public final void updateCombatForView() {
-        view.updateCombat(getCombat());
-    }
 
+    /**
+     * Gets the game log.
+     * 
+     * @return the game log
+     */
     public final GameLog getGameLog() {
         return gameLog;
     }
-    public final void updateGameLogForView() {
-        view.updateGameLog(gameLog);
-    }
 
+    /**
+     * Gets the stack zone.
+     * 
+     * @return the stackZone
+     */
     public final Zone getStackZone() {
         return stackZone;
     }
 
-    public CardCollectionView getCardsPlayerCanActivateInStack() {
-        return CardLists.filter(stackZone.getCards(), new Predicate<Card>() {
+    public List<Card> getCardsPlayerCanActivateInStack() {
+        List<Card> list = stackZone.getCards();
+        list = CardLists.filter(list, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
                 for (final SpellAbility sa : c.getSpellAbilities()) {
@@ -299,28 +355,41 @@ public class Game {
                 return false;
             }
         });
+        return list;
     }
     
     /**
-     * The Direction in which the turn order of this Game currently proceeds.
+     * Get the turn order.
+     * @return the Direction in which the turn order of this Game currently
+     * proceeds.
      */
     public final Direction getTurnOrder() {
     	return turnOrder;
     }
+    
     public final void reverseTurnOrder() {
     	turnOrder = turnOrder.getOtherDirection();
     }
+
     public final void resetTurnOrder() {
     	turnOrder = Direction.getDefaultDirection();
     }
 
     /**
      * Create and return the next timestamp.
+     * 
+     * @return the next timestamp
      */
     public final long getNextTimestamp() {
         timestamp = getTimestamp() + 1;
         return getTimestamp();
     }
+
+    /**
+     * Gets the timestamp.
+     * 
+     * @return the timestamp
+     */
     public final long getTimestamp() {
         return timestamp;
     }
@@ -329,14 +398,24 @@ public class Game {
         return outcome;
     }
 
+    /**
+     * @return the replacementHandler
+     */
     public ReplacementHandler getReplacementHandler() {
         return replacementHandler;
     }
 
+    /**
+     * @return the gameOver
+     */
     public synchronized boolean isGameOver() {
         return age == GameStage.GameOver;
     }
 
+    /**
+     * @param reason
+     * @param go the gameOver to set
+     */
     public synchronized void setGameOver(GameEndReason reason) {
         age = GameStage.GameOver;
         for (Player p : allPlayers) {
@@ -349,11 +428,9 @@ public class Game {
 
         final GameOutcome result = new GameOutcome(reason, getRegisteredPlayers());
         result.setTurnsPlayed(getPhaseHandler().getTurn());
-
+        
         outcome = result;
         match.addGamePlayed(this);
-
-        view.updateGameOver(this);
 
         // The log shall listen to events and generate text internally
         fireEvent(new GameEventGameOutcome(result, match.getPlayedGames()));
@@ -363,12 +440,12 @@ public class Game {
         return card.getZone();
     }
 
-    public synchronized CardCollectionView getCardsIn(final ZoneType zone) {
+    public synchronized List<Card> getCardsIn(final ZoneType zone) {
         if (zone == ZoneType.Stack) {
             return getStackZone().getCards();
         }
         else {
-            CardCollection cards = new CardCollection();
+            List<Card> cards = new ArrayList<Card>();
             for (final Player p : getPlayers()) {
                 cards.addAll(p.getZone(zone).getCards());
             }
@@ -376,12 +453,12 @@ public class Game {
         }
     }
 
-    public CardCollectionView getCardsIncludePhasingIn(final ZoneType zone) {
+    public List<Card> getCardsIncludePhasingIn(final ZoneType zone) {
         if (zone == ZoneType.Stack) {
             return getStackZone().getCards();
         }
         else {
-            CardCollection cards = new CardCollection();
+            List<Card> cards = new ArrayList<Card>();
             for (final Player p : getPlayers()) {
                 cards.addAll(p.getCardsIncludePhasingIn(zone));
             }
@@ -389,8 +466,8 @@ public class Game {
         }
     }
 
-    public CardCollectionView getCardsIn(final Iterable<ZoneType> zones) {
-        CardCollection cards = new CardCollection();
+    public List<Card> getCardsIn(final Iterable<ZoneType> zones) {
+        final List<Card> cards = new ArrayList<Card>();
         for (final ZoneType z : zones) {
             cards.addAll(getCardsIn(z));
         }
@@ -419,8 +496,8 @@ public class Game {
         return false;
     }
 
-    public CardCollectionView getColoredCardsInPlay(final String color) {
-        final CardCollection cards = new CardCollection();
+    public List<Card> getColoredCardsInPlay(final String color) {
+        final List<Card> cards = new ArrayList<Card>();
         for (Player p : getPlayers()) {
             cards.addAll(p.getColoredCardsInPlay(color));
         }
@@ -436,27 +513,17 @@ public class Game {
         return card;
     }
 
-    // Allows visiting cards in game without allocating a temporary list.
-    public void forEachCardInGame(Visitor<Card> visitor) {
+    public List<Card> getCardsInGame() {
+        final List<Card> all = new ArrayList<Card>();
         for (final Player player : getPlayers()) {
-            visitor.visitAll(player.getZone(ZoneType.Graveyard).getCards());
-            visitor.visitAll(player.getZone(ZoneType.Hand).getCards());
-            visitor.visitAll(player.getZone(ZoneType.Library).getCards());
-            visitor.visitAll(player.getZone(ZoneType.Battlefield).getCards(false));
-            visitor.visitAll(player.getZone(ZoneType.Exile).getCards());
-            visitor.visitAll(player.getZone(ZoneType.Command).getCards());
+            all.addAll(player.getZone(ZoneType.Graveyard).getCards());
+            all.addAll(player.getZone(ZoneType.Hand).getCards());
+            all.addAll(player.getZone(ZoneType.Library).getCards());
+            all.addAll(player.getZone(ZoneType.Battlefield).getCards(false));
+            all.addAll(player.getZone(ZoneType.Exile).getCards());
+            all.addAll(player.getZone(ZoneType.Command).getCards());
         }
-        visitor.visitAll(getStackZone().getCards());
-    }
-    public CardCollectionView getCardsInGame() {
-        final CardCollection all = new CardCollection();
-        Visitor<Card> visitor = new Visitor<Card>() {
-            @Override
-            public void visit(Card card) {
-                all.add(card);
-            }
-        };
-        forEachCardInGame(visitor);
+        all.addAll(getStackZone().getCards());
         return all;
     }
 
@@ -488,9 +555,9 @@ public class Game {
      * {@code null} if there are no players in the game.
      */
     public Player getNextPlayerAfter(final Player playerTurn, final Direction turnOrder) {
-        int iPlayer = ingamePlayers.indexOf(playerTurn);
+        int iPlayer = roIngamePlayers.indexOf(playerTurn);
 
-        if (ingamePlayers.isEmpty()) {
+        if (roIngamePlayers.isEmpty()) {
             return null;
         }
 
@@ -504,27 +571,31 @@ public class Game {
                 if (iPlayer < 0) {
                 	iPlayer += totalNumPlayers;
                 }
-                iAlive = ingamePlayers.indexOf(allPlayers.get(iPlayer));
+                iAlive = roIngamePlayers.indexOf(allPlayers.get(iPlayer));
             } while (iAlive < 0);
             iPlayer = iAlive;
         }
         else { // for the case playerTurn hasn't died
-        	final int numPlayersInGame = ingamePlayers.size();
+        	final int numPlayersInGame = roIngamePlayers.size();
         	iPlayer = (iPlayer + shift) % numPlayersInGame;
         	if (iPlayer < 0) {
         		iPlayer += numPlayersInGame;
         	}
         }
 
-        return ingamePlayers.get(iPlayer);
+        return roIngamePlayers.get(iPlayer);
     }
 
     public int getPosition(Player player, Player startingPlayer) {
-        int startPosition = ingamePlayers.indexOf(startingPlayer);
-        int position = (ingamePlayers.indexOf(player) + startPosition) % ingamePlayers.size() + 1;
+        int startPosition = roIngamePlayers.indexOf(startingPlayer);
+        int position = (roIngamePlayers.indexOf(player) + startPosition) % roIngamePlayers.size() + 1;
         return position;
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     * @param p
+     */
     public void onPlayerLost(Player p) {
         ingamePlayers.remove(p);
 
@@ -548,13 +619,23 @@ public class Game {
         events.register(subscriber);
     }
 
+    /**
+     * @return the type of game (Constructed/Limited/Planechase/etc...)
+     */
     public GameRules getRules() {
         return rules;
     }
 
+    /**
+     * @return the activePlane
+     */
     public List<Card> getActivePlanes() {
         return activePlanes;
     }
+
+    /**
+     * @param activePlane0 the activePlane to set
+     */
     public void setActivePlanes(List<Card> activePlane0) {
         activePlanes = activePlane0;
     }
@@ -569,9 +650,9 @@ public class Game {
 
         for (int i = 0; i < getCardsIn(ZoneType.Command).size(); i++) {
             Card c = getCardsIn(ZoneType.Command).get(i);
-            if (c.isScheme() && !c.getType().hasSupertype(Supertype.Ongoing)) {
+            if (c.isScheme() && !c.isType("Ongoing")) {
                 boolean foundonstack = false;
-                for (SpellAbilityStackInstance si : stack) {
+                for (SpellAbilityStackInstance si : getStack()) {
                     if (si.getSourceCard().equals(c)) {
                         foundonstack = true;
                         break;
@@ -597,12 +678,10 @@ public class Game {
         age = value;
     }
 
-    private int cardIdCounter = 0, hiddenCardIdCounter = 0;
+    private int cardIdCounter;
     public int nextCardId() {
+        // TODO Auto-generated method stub
         return ++cardIdCounter;
-    }
-    public int nextHiddenCardId() {
-        return ++hiddenCardIdCounter;
     }
 
     public boolean getDisableAutoYields() {
@@ -621,7 +700,7 @@ public class Game {
             
             List<CardRarity> validRarities = new ArrayList<>(Arrays.asList(CardRarity.values()));
             for (final Player player : getPlayers()) {
-                final Set<CardRarity> playerRarity = getValidRarities(player.getCardsIn(ZoneType.Library));
+                Set<CardRarity> playerRarity = getValidRarities(player.getCardsIn(ZoneType.Library));
                 if (onePlayerHasTimeShifted == false) {
                     onePlayerHasTimeShifted = playerRarity.contains(CardRarity.Special);
                 }
@@ -649,8 +728,9 @@ public class Game {
             System.out.println("Rarity chosen for ante: " + anteRarity.name());
             
             for (final Player player : getPlayers()) {
-                CardCollection library = new CardCollection(player.getCardsIn(ZoneType.Library));
-                CardCollection toRemove = new CardCollection();
+                
+                List<Card> library = new ArrayList<>(player.getCardsIn(ZoneType.Library));
+                List<Card> toRemove = new ArrayList<>();
                 
                 //Remove all cards that aren't of the chosen rarity
                 for (Card card : library) {
@@ -671,7 +751,7 @@ public class Game {
                     }
                 }
                 
-                library.removeAll((Collection<?>)toRemove);
+                library.removeAll(toRemove);
                 
                 if (library.size() > 0) { //Make sure that matches were found. If not, use the original method to choose antes
                     Card ante = library.get(new Random().nextInt(library.size()));
@@ -687,11 +767,12 @@ public class Game {
                 chooseRandomCardsForAnte(player, anteed);
             }
         }
+        
         return anteed;
     }
 
     private void chooseRandomCardsForAnte(final Player player, final Multimap<Player, Card> anteed) {
-        final CardCollectionView lib = player.getCardsIn(ZoneType.Library);
+        final List<Card> lib = player.getCardsIn(ZoneType.Library);
         Predicate<Card> goodForAnte = Predicates.not(CardPredicates.Presets.BASIC_LANDS);
         Card ante = Aggregates.random(Iterables.filter(lib, goodForAnte));
         if (ante == null) {
@@ -701,9 +782,9 @@ public class Game {
         anteed.put(player, ante);
     }
 
-    private static Set<CardRarity> getValidRarities(final Iterable<Card> cards) {
-        final Set<CardRarity> rarities = new HashSet<>();
-        for (final Card card : cards) {
+    private Set<CardRarity> getValidRarities(final Iterable<Card> cards) {
+        Set<CardRarity> rarities = new HashSet<>();
+        for (Card card : cards) {
             if (card.getRarity() == CardRarity.Rare || card.getRarity() == CardRarity.MythicRare) {
                 //Since both rare and mythic rare are considered the same, adding both rarities
                 //massively increases the odds chances of the game picking rare cards to ante.

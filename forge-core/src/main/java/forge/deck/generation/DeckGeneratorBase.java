@@ -49,7 +49,7 @@ public abstract class DeckGeneratorBase {
 
     protected ColorSet colors;
     protected final CardPool tDeck = new CardPool();
-    protected final IDeckGenPool pool;
+    protected final ICardDatabase cardDb;
 
     // 2-colored deck generator has its own constants. The rest works fine with these ones
     protected float getLandsPercentage() { return 0.44f; }
@@ -58,15 +58,15 @@ public abstract class DeckGeneratorBase {
 
     StringBuilder tmpDeck = new StringBuilder();
 
-    public DeckGeneratorBase(IDeckGenPool pool0) {
-        pool = pool0;
+    public DeckGeneratorBase(ICardDatabase cardDb) {
+        this.cardDb =  cardDb;
     }
 
     public void setSingleton(boolean singleton){
-        maxDuplicates = singleton ? 1 : 4;
+        this.maxDuplicates = singleton ? 1 : 4;
     }
     public void setUseArtifacts(boolean value) {
-        useArtifacts = value;
+        this.useArtifacts = value;
     }
 
     protected void addCreaturesAndSpells(int size, List<ImmutablePair<FilterCMC, Integer>> cmcLevels, boolean forAi) {
@@ -93,35 +93,28 @@ public abstract class DeckGeneratorBase {
         return null; // all but theme deck do override this method
     }
 
-    protected boolean addSome(int cnt, List<PaperCard> source) {
-        int srcLen = source.size();
-        if (srcLen == 0) { return false; }
-
+    protected void addSome(int cnt, List<PaperCard> source) {
         for (int i = 0; i < cnt; i++) {
             PaperCard cp;
             int lc = 0;
+            int srcLen = source.size();
             do {
-                cp = source.get(r.nextInt(srcLen));
+                cp = source.get(this.r.nextInt(srcLen));
                 lc++;
-            } while (cardCounts.get(cp.getName()) > maxDuplicates - 1 && lc <= 100);
+            } while (this.cardCounts.get(cp.getName()) > this.maxDuplicates - 1 && lc <= 100);
 
             if (lc > 100) {
-                return false;
+                throw new RuntimeException("Generate2ColorDeck : get2ColorDeck -- looped too much, please try again -- Cr12");
             }
 
-            tDeck.add(pool.getCard(cp.getName(), cp.getEdition()));
+            tDeck.add(cardDb.getCard(cp.getName(),cp.getEdition()));
 
-            final int n = cardCounts.get(cp.getName());
-            cardCounts.put(cp.getName(), n + 1);
-            if (n + 1 == maxDuplicates) {
-                if (source.remove(cp)) {
-                    srcLen--;
-                    if (srcLen == 0) { return false; }
-                }
-            }
+            final int n = this.cardCounts.get(cp.getName());
+            this.cardCounts.put(cp.getName(), n + 1);
+            if( n + 1 == this.maxDuplicates )
+                source.remove(cp);
             tmpDeck.append(String.format("(%d) %s [%s]%n", cp.getRules().getManaCost().getCMC(), cp.getName(), cp.getRules().getManaCost()));
         }
-        return true;
     }
 
     protected int addSomeStr(int cnt, List<String> source) {
@@ -130,19 +123,19 @@ public abstract class DeckGeneratorBase {
             String s;
             int lc = 0;
             do {
-                s = source.get(r.nextInt(source.size()));
+                s = source.get(this.r.nextInt(source.size()));
                 lc++;
-            } while ((cardCounts.get(s) >= maxDuplicates) && (lc <= 50));
+            } while ((this.cardCounts.get(s) >= maxDuplicates) && (lc <= 50));
             // not an error if looped too much - could play singleton mode, with 6 slots for 3 non-basic lands.
 
             if (lc > 50) {
             	break;
             }
             
-            tDeck.add(pool.getCard(s));
+            tDeck.add(cardDb.getCard(s));
 
-            final int n = cardCounts.get(s);
-            cardCounts.put(s, n + 1);
+            final int n = this.cardCounts.get(s);
+            this.cardCounts.put(s, n + 1);
             tmpDeck.append(s + "\n");
             res++;
         }
@@ -172,25 +165,23 @@ public abstract class DeckGeneratorBase {
         for (Entry<String, Integer> c : clrCnts.entrySet()) {
             String basicLandName = c.getKey();
 
+
             // calculate number of lands for each color
             final int nLand = Math.min(landsLeft, Math.round(cnt * c.getValue() / totalColor));
             tmpDeck.append("nLand-").append(basicLandName).append(":").append(nLand).append("\n");
 
             // just to prevent a null exception by the deck size fixing code
-            cardCounts.put(basicLandName, nLand);
+            this.cardCounts.put(basicLandName, nLand);
 
             PaperCard cp;
-            if (edition != null) {
-            	cp = pool.getCard(basicLandName, edition);
-            }
-            else {
-            	cp = pool.getCard(basicLandName);
-            }
-
+            if(edition != null)
+            	cp = cardDb.getCard(basicLandName, edition);
+            else
+            	cp = cardDb.getCard(basicLandName);
             String basicLandSet = cp.getEdition();
 
-            for (int i = 0; i < nLand; i++) {
-                tDeck.add(pool.getCard(cp.getName(), basicLandSet, -1), 1);
+            for (int i=0; i < nLand; i++) {
+                tDeck.add(cardDb.getCard(cp.getName(), basicLandSet, -1), 1);
             }
 
             landsLeft -= nLand;
@@ -201,9 +192,10 @@ public abstract class DeckGeneratorBase {
         // fix under-sized or over-sized decks, due to integer arithmetic
         int actualSize = tDeck.countAll();
         if (actualSize < targetSize) {
-            addSome(targetSize - actualSize, tDeck.toFlatList());
-        }
-        else if (actualSize > targetSize) {
+            final int diff = targetSize - actualSize;
+            addSome(diff, tDeck.toFlatList());
+        } else if (actualSize > targetSize) {
+
             Predicate<PaperCard> exceptBasicLand = Predicates.not(Predicates.compose(CardRulesPredicates.Presets.IS_BASIC_LAND, PaperCard.FN_GET_RULES));
 
             for (int i = 0; i < 3 && actualSize > targetSize; i++) {
@@ -229,7 +221,7 @@ public abstract class DeckGeneratorBase {
         float desiredWeight = (float)cnt / ( maxDuplicates * variability ); 
         float desiredOverTotal = desiredWeight / totalWeight;
         float requestedOverTotal = (float)cnt / totalWeight;
-
+        
         for (ImmutablePair<FilterCMC, Integer> pair : cmcLevels) {
             Iterable<PaperCard> matchingCards = Iterables.filter(source, Predicates.compose(pair.getLeft(), PaperCard.FN_GET_RULES));
             int cmcCountForPool = (int) Math.ceil(pair.getRight().intValue() * desiredOverTotal);
@@ -240,8 +232,8 @@ public abstract class DeckGeneratorBase {
             final List<PaperCard> curved = Aggregates.random(matchingCards, cmcCountForPool);
             final List<PaperCard> curvedRandomized = Lists.newArrayList();
             for (PaperCard c : curved) {
-                cardCounts.put(c.getName(), 0);
-                curvedRandomized.add(pool.getCard(c.getName()));
+                this.cardCounts.put(c.getName(), 0);
+                curvedRandomized.add(cardDb.getCard(c.getName()));
             }
 
             addSome(addOfThisCmc, curvedRandomized);
@@ -258,7 +250,7 @@ public abstract class DeckGeneratorBase {
         if (useArtifacts) {
             hasColor = Predicates.or(hasColor, COLORLESS_CARDS);
         }
-        return Iterables.filter(pool.getAllCards(), Predicates.compose(Predicates.and(canPlay, hasColor), PaperCard.FN_GET_RULES));
+        return Iterables.filter(cardDb.getAllCards(), Predicates.compose(Predicates.and(canPlay, hasColor), PaperCard.FN_GET_RULES));
     }
 
     protected static Map<String, Integer> countLands(ItemPool<PaperCard> outList) {

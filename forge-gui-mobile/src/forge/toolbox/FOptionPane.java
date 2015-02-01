@@ -16,7 +16,7 @@ import forge.screens.match.views.VPrompt;
 import forge.toolbox.FEvent.*;
 import forge.util.Callback;
 import forge.util.Utils;
-import forge.game.card.CardView;
+import forge.view.CardView;
 
 public class FOptionPane extends FDialog {
     public static final FSkinImage QUESTION_ICON = FSkinImage.QUESTION;

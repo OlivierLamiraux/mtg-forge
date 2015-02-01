@@ -13,7 +13,6 @@ import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactory;
 import forge.game.card.CardLists;
 import forge.game.event.GameEventCombatChanged;
@@ -25,7 +24,6 @@ import forge.game.trigger.TriggerHandler;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
 import forge.util.Aggregates;
-import forge.util.FCollectionView;
 import forge.util.PredicateString.StringOp;
 
 import org.apache.commons.lang3.StringUtils;
@@ -80,17 +78,6 @@ public class CopyPermanentEffect extends SpellAbilityEffect {
         final int numCopies = sa.hasParam("NumCopies") ? AbilityUtils.calculateAmount(hostCard,
                 sa.getParam("NumCopies"), sa) : 1;
 
-        Player controller = null;
-        if (sa.hasParam("Controller")) {
-            final FCollectionView<Player> defined = AbilityUtils.getDefinedPlayers(hostCard, sa.getParam("Controller"), sa);
-            if (!defined.isEmpty()) {
-                controller = defined.getFirst();
-            }
-        }
-        if (controller == null) {
-            controller = sa.getActivatingPlayer();
-        }
-
         List<Card> tgtCards = getTargetCards(sa);
         final TargetRestrictions tgt = sa.getTargetRestrictions();
 
@@ -139,10 +126,22 @@ public class CopyPermanentEffect extends SpellAbilityEffect {
 
                 tgtCards.clear();
                 if (!cards.isEmpty()) {
-                    tgtCards.add(Card.fromPaperCard(cards.get(0), controller));
+                    tgtCards.add(Card.fromPaperCard(cards.get(0), null));
                 }
             }
         }
+
+        Player controller = null;
+        if (sa.hasParam("Controller")) {
+            List<Player> defined = AbilityUtils.getDefinedPlayers(hostCard, sa.getParam("Controller"), sa);
+            if (!defined.isEmpty()) {
+                controller = defined.get(0);
+            }
+        }
+        if (controller == null) {
+            controller = sa.getActivatingPlayer();
+        }
+
         hostCard.clearClones();
 
         for (final Card c : tgtCards) {
@@ -174,12 +173,12 @@ public class CopyPermanentEffect extends SpellAbilityEffect {
                     }
 
                     // Temporarily register triggers of an object created with CopyPermanent
-                    //game.getTriggerHandler().registerActiveTrigger(copy, false);
+                    game.getTriggerHandler().registerActiveTrigger(copy, false);
                     final Card copyInPlay = game.getAction().moveToPlay(copy);
 
                     // when copying something stolen:
                     copyInPlay.setController(controller, 0);
-                    copyInPlay.setSetCode(c.getSetCode());
+                    copyInPlay.setCurSetCode(c.getCurSetCode());
 
                     copyInPlay.setCloneOrigin(hostCard);
                     sa.getHostCard().addClone(copyInPlay);
@@ -191,20 +190,14 @@ public class CopyPermanentEffect extends SpellAbilityEffect {
                         copyInPlay.setTapped(true);
                     }
                     if (sa.hasParam("CopyAttacking") && game.getPhaseHandler().inCombat()) {
-                        final String attacked = sa.getParam("CopyAttacking");
-                        GameEntity defender;
-                        if ("True".equals(attacked)) {
-                            FCollectionView<GameEntity> defs = game.getCombat().getDefenders();
-                            defender = c.getController().getController().chooseSingleEntityForEffect(defs, sa, "Choose which defender to attack with " + c, false);
-                        } else {
-                            defender = AbilityUtils.getDefinedPlayers(hostCard, sa.getParam("CopyAttacking"), sa).get(0);
-                        }
+                        final GameEntity defender = AbilityUtils.getDefinedPlayers(hostCard, sa.getParam("CopyAttacking"), sa).get(0);
                         game.getCombat().addAttacker(copyInPlay, defender);
                         game.fireEvent(new GameEventCombatChanged());
                     }
 
                     if (sa.hasParam("AttachedTo")) {
-                        CardCollectionView list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
+                        List<Card> list = AbilityUtils.getDefinedCards(hostCard,
+                                sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
                             list = copyInPlay.getController().getGame().getCardsIn(ZoneType.Battlefield);
                             list = CardLists.getValidCards(list, sa.getParam("AttachedTo"), copyInPlay.getController(), copyInPlay);
@@ -241,7 +234,7 @@ public class CopyPermanentEffect extends SpellAbilityEffect {
         } // end foreach Card
     } // end resolve
 
-    private static void registerDelayedTrigger(final SpellAbility sa, final String location, final List<Card> crds) {
+    private void registerDelayedTrigger(final SpellAbility sa, final String location, final List<Card> crds) {
         String delTrig = "Mode$ Phase | Phase$ End Of Turn | TriggerDescription$ "
                 + location + " " + crds + " at the beginning of the next end step.";
         final Trigger trig = TriggerHandler.parseTrigger(delTrig, sa.getHostCard(), true);

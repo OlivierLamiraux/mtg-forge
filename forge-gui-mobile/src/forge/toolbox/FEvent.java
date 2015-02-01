@@ -7,8 +7,7 @@ public class FEvent {
         CHANGE,
         ACTIVATE,
         SAVE,
-        DELETE,
-        CLOSE
+        DELETE
     }
 
     private FDisplayObject source;

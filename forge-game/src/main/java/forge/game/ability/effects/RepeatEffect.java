@@ -5,7 +5,6 @@ import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
@@ -14,15 +13,18 @@ import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.util.Expressions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RepeatEffect extends SpellAbilityEffect {
 
     @Override
-    protected String getStackDescription(final SpellAbility sa) {
+    protected String getStackDescription(SpellAbility sa) {
         return "Repeat something. Somebody should really write a better StackDescription!";
     } // end repeatStackDescription()
 
     @Override
-    public void resolve(final SpellAbility sa) {
+    public void resolve(SpellAbility sa) {
         Card source = sa.getHostCard();
 
         // setup subability to repeat
@@ -65,26 +67,27 @@ public class RepeatEffect extends SpellAbilityEffect {
      * @param SA
      *            a {@link forge.game.spellability.SpellAbility} object.
      */
-    private static boolean checkRepeatConditions(final SpellAbility sa) {
+    private boolean checkRepeatConditions(final SpellAbility sa) {
         //boolean doAgain = false;
         final Player activator = sa.getActivatingPlayer();
         final Game game = activator.getGame();
 
+
         if (sa.hasParam("RepeatPresent")) {
             final String repeatPresent = sa.getParam("RepeatPresent");
+            List<Card> list = new ArrayList<Card>();
 
             String repeatCompare = "GE1";
             if (sa.hasParam("RepeatCompare")) {
                 repeatCompare = sa.getParam("RepeatCompare");
             }
 
-            CardCollectionView list;
             if (sa.hasParam("RepeatDefined")) {
-                list = AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("RepeatDefined"), sa);
-            }
-            else {
+                list.addAll(AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("RepeatDefined"), sa));
+            } else {
                 list = game.getCardsIn(ZoneType.Battlefield);
             }
+
             list = CardLists.getValidCards(list, repeatPresent.split(","), sa.getActivatingPlayer(), sa.getHostCard());
 
             int right;

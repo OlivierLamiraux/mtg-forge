@@ -92,7 +92,7 @@ public class CEditorWinstonProcess extends ACEditorBase<PaperCard, DeckGroup> {
     }
 
     /**
-     * Show GuiBase.getInterface().
+     * Show gui.
      *
      * @param inBoosterDraft
      *            the in_booster draft

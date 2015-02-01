@@ -4,13 +4,13 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
-import forge.game.card.CardPredicates;
-import forge.game.card.CardUtil;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SacrificeAllEffect extends SpellAbilityEffect {
 
@@ -39,33 +39,31 @@ public class SacrificeAllEffect extends SpellAbilityEffect {
         final Player activator = sa.getActivatingPlayer();
         final Game game = activator.getGame();
 
+
         String valid = "";
 
         if (sa.hasParam("ValidCards")) {
             valid = sa.getParam("ValidCards");
         }
 
-        CardCollectionView list;
+        List<Card> list;
         if (sa.hasParam("Defined")) {
-            list = AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("Defined"), sa);
-        }
-        else {
+            list = new ArrayList<Card>(AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("Defined"), sa));
+        } else {
             list = AbilityUtils.filterListByType(game.getCardsIn(ZoneType.Battlefield), valid, sa);
         }
         if (sa.hasParam("Controller")) {
             list = CardLists.filterControlledBy(list, AbilityUtils.getDefinedPlayers(sa.getHostCard(), sa.getParam("Controller"), sa));
         }
-        list = CardLists.filter(list, CardPredicates.canBeSacrificedBy(sa));
 
         final boolean remSacrificed = sa.hasParam("RememberSacrificed");
         if (remSacrificed) {
             card.clearRemembered();
         }
 
-        for (Card sac : list) {
-            final Card lKICopy = CardUtil.getLKICopy(sac);
-            if (game.getAction().sacrifice(sac, sa) != null && remSacrificed) {
-                card.addRemembered(lKICopy);
+        for (int i = 0; i < list.size(); i++) {
+            if (game.getAction().sacrifice(list.get(i), sa) != null && remSacrificed) {
+                card.addRemembered(list.get(i));
             }
         }
     }

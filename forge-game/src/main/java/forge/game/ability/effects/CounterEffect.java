@@ -26,7 +26,7 @@ public class CounterEffect extends SpellAbilityEffect {
         if (sa.hasParam("AllType")) {
             sas = new ArrayList<SpellAbility>();
             for (SpellAbilityStackInstance si : game.getStack()) {
-                SpellAbility spell = si.getSpellAbility(true);
+                SpellAbility spell = si.getSpellAbility();
                 if (sa.getParam("AllType").equals("Spell") && !spell.isSpell()) {
                     continue;
                 }
@@ -71,7 +71,7 @@ public class CounterEffect extends SpellAbilityEffect {
         if (sa.hasParam("AllType")) {
             sas = new ArrayList<SpellAbility>();
             for (SpellAbilityStackInstance si : game.getStack()) {
-                SpellAbility spell = si.getSpellAbility(true);
+                SpellAbility spell = si.getSpellAbility();
                 if (sa.getParam("AllType").equals("Spell") && !spell.isSpell()) {
                     continue;
                 }
@@ -96,7 +96,7 @@ public class CounterEffect extends SpellAbilityEffect {
             final Card tgtSACard = tgtSA.getHostCard();
             // should remember even that spell cannot be countered, e.g. Dovescape
             if (sa.hasParam("RememberCounteredCMC")) {
-                sa.getHostCard().addRemembered(Integer.valueOf(tgtSACard.getCMC()));
+                sa.getHostCard().addRemembered((Integer) tgtSACard.getCMC());
             }
 
             if (tgtSA.isSpell() && !CardFactoryUtil.isCounterableBy(tgtSACard, sa)) {
@@ -112,7 +112,7 @@ public class CounterEffect extends SpellAbilityEffect {
                 continue;
             }
 
-            removeFromStack(tgtSA, sa, si);
+            this.removeFromStack(tgtSA, sa, si);
 
             // Destroy Permanent may be able to be turned into a SubAbility
             if (tgtSA.isAbility() && sa.hasParam("DestroyPermanent")) {
@@ -127,7 +127,7 @@ public class CounterEffect extends SpellAbilityEffect {
 
             if (sa.hasParam("RememberSplicedOntoCounteredSpell")) {
                 if (tgtSA.getSplicedCards() != null) {
-                    sa.getHostCard().addRemembered(tgtSA.getSplicedCards());
+                    sa.getHostCard().getRemembered().addAll(tgtSA.getSplicedCards());
                 }
             }
         }
@@ -147,8 +147,7 @@ public class CounterEffect extends SpellAbilityEffect {
      *            object.
      * @param sa
      */
-    private static void removeFromStack(final SpellAbility tgtSA,
-            final SpellAbility srcSA, final SpellAbilityStackInstance si) {
+    private void removeFromStack(final SpellAbility tgtSA, final SpellAbility srcSA, final SpellAbilityStackInstance si) {
         final Game game = tgtSA.getActivatingPlayer().getGame();
         // Run any applicable replacement effects. 
         final HashMap<String, Object> repParams = new HashMap<String, Object>();

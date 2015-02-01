@@ -15,9 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package forge.game;
 
 import forge.game.event.IGameEventVisitor;
+import forge.game.io.GameStateDeserializer;
+import forge.game.io.GameStateSerializer;
+import forge.game.io.IGameStateObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,11 +34,10 @@ import java.util.Observable;
  * @author Forge
  * @version $Id: GameLog.java 12297 2011-11-28 19:56:47Z slapshot5 $
  */
-public class GameLog extends Observable {
+public class GameLog extends Observable implements IGameStateObject {
     private List<GameLogEntry> log = new ArrayList<GameLogEntry>();
 
     private GameLogFormatter formatter = new GameLogFormatter(this);
-
     /** Logging level:
      * 0 - Turn
      * 2 - Stack items
@@ -43,9 +46,30 @@ public class GameLog extends Observable {
      * 6 - All Phase information
      */
 
+    @Override
+    public void loadState(GameStateDeserializer gsd) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void saveState(GameStateSerializer gss) {
+        gss.writeList(log);
+    }
+
+    /**
+     * Instantiates a new game log.
+     */
     public GameLog() {
     }
 
+    /**
+     * Adds the.
+     *
+     * @param type the type
+     * @param message the message
+     * @param type the level
+     */
     public void add(final GameLogEntryType type, final String message) {
         add(new GameLogEntry(type, message));
     }
@@ -67,9 +91,8 @@ public class GameLog extends Observable {
     
         for (int i = log.size() - 1; i >= 0; i--) {
             GameLogEntry le = log.get(i);
-            if (logLevel == null || le.type.compareTo(logLevel) <= 0) {
+            if(logLevel == null || le.type.compareTo(logLevel) <= 0 )
                 result.add(le);
-            }
         }
         return result;
     }
@@ -79,9 +102,8 @@ public class GameLog extends Observable {
     
         for (int i = log.size() - 1; i >= 0; i--) {
             GameLogEntry le = log.get(i);
-            if (logLevel == null || le.type.compareTo(logLevel) == 0) {
+            if(logLevel == null || le.type.compareTo(logLevel) == 0 )
                 result.add(le);
-            }
         }
         return result;
     }

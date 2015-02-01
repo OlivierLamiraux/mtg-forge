@@ -18,11 +18,13 @@
 package forge.game.cost;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Class CostReturn.
@@ -90,7 +92,7 @@ public class CostReturn extends CostPartWithList {
         if (!this.payCostFromSource()) {
             boolean needsAnnoucement = ability.hasParam("Announce") && this.getType().contains(ability.getParam("Announce"));
             
-            CardCollectionView typeList = activator.getCardsIn(ZoneType.Battlefield);
+            List<Card> typeList = new ArrayList<Card>(activator.getCardsIn(ZoneType.Battlefield));
             typeList = CardLists.getValidCards(typeList, this.getType().split(";"), activator, source);
 
             final Integer amount = this.convertAmount();

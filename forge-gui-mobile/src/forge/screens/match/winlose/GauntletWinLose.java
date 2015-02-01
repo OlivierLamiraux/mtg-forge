@@ -18,10 +18,11 @@ package forge.screens.match.winlose;
  */
 
 import forge.FThreads;
+import forge.GuiBase;
 import forge.assets.FSkinProp;
-import forge.game.GameView;
 import forge.gauntlet.GauntletWinLoseController;
 import forge.util.gui.SOptionPane;
+import forge.view.IGameView;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class GauntletWinLose extends ControlWinLose {
      * @param view0 ViewWinLose object
      * @param match
      */
-    public GauntletWinLose(final ViewWinLose view0, GameView lastGame) {
+    public GauntletWinLose(final ViewWinLose view0, IGameView lastGame) {
         super(view0, lastGame);
         controller = new GauntletWinLoseController(view0, lastGame) {
             @Override
@@ -66,7 +67,7 @@ public class GauntletWinLose extends ControlWinLose {
                             sb.deleteCharAt(sb.length() - 1); //remove final new line character
                         }
 
-                        SOptionPane.showMessageDialog(sb.toString(), "Gauntlet Progress", icon);
+                        SOptionPane.showMessageDialog(GuiBase.getInterface(), sb.toString(), "Gauntlet Progress", icon);
                     }
                 });
             }

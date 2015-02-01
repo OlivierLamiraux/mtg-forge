@@ -26,22 +26,21 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.awt.image.BufferedImage;
+
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
 import net.miginfocom.swing.MigLayout;
 import forge.assets.FSkinProp;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
 import forge.gui.SOverlayUtils;
-import forge.match.MatchUtil;
 import forge.toolbox.FOverlay;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinnedLabel;
 import forge.toolbox.imaging.FImagePanel;
 import forge.toolbox.imaging.FImagePanel.AutoSizeImageMode;
 import forge.toolbox.imaging.FImageUtil;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
 
 /** 
  * Displays card image at its original size and correct orientation.
@@ -173,6 +172,7 @@ public enum CardZoomer {
      * the middle mouse button or left and right mouse buttons simultaneously.
      */    
     public void doMouseButtonZoom(final CardView newCard) {
+
         // don't display zoom if already zoomed or just closed zoom 
         // (handles mouse wheeling while middle clicking)
         if (isOpen || System.currentTimeMillis() - lastClosedTime < 250) {
@@ -201,7 +201,7 @@ public enum CardZoomer {
      * Displays a graphical indicator that shows whether the current card can be flipped or transformed.
      */
     private void setFlipIndicator() {
-        if (MatchUtil.canCardBeFlipped(thisCard)) {
+        if (thisCard.hasAltState()) {
             imagePanel.setLayout(new MigLayout("insets 0, w 100%!, h 100%!"));        
             imagePanel.add(lblFlipcard, "pos (100% - 100px) 0");
         }
@@ -212,10 +212,7 @@ public enum CardZoomer {
      */
     private void setImage() {
         imagePanel = new FImagePanel();
-
-        BufferedImage xlhqImage = FImageUtil.getImageXlhq(getState());
-        imagePanel.setImage(xlhqImage == null ? FImageUtil.getImage(getState()) : xlhqImage, getInitialRotation(), AutoSizeImageMode.SOURCE);
-
+        imagePanel.setImage(FImageUtil.getImage(getState()), getInitialRotation(), AutoSizeImageMode.SOURCE);
         pnlMain.removeAll();
         pnlMain.add(imagePanel, "w 80%!, h 80%!");
         pnlMain.validate();
@@ -223,7 +220,7 @@ public enum CardZoomer {
     }
 
     private int getInitialRotation() {
-        return (thisCard.isSplitCard() || thisCard.getCurrentState().getType().isPlane() || thisCard.getCurrentState().getType().isPhenomenon() ? 90 : 0);
+        return (thisCard.isSplitCard() ? 90 : 0);
     }   
 
     private void setLayout() {
@@ -279,7 +276,7 @@ public enum CardZoomer {
      * Toggles between primary and alternate image associated with card if applicable.
      */
     private void toggleCardImage() {
-        if (MatchUtil.canCardBeFlipped(thisCard)) {
+        if (thisCard.hasAltState()) {
             toggleFlipCard();
         }
     }

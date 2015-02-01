@@ -214,7 +214,7 @@ public abstract class Trigger extends TriggerReplacementBase {
     public final boolean requirementsCheck(Game game) {
 
         if (this.mapParams.containsKey("APlayerHasMoreLifeThanEachOther")) {
-            int highestLife = Integer.MIN_VALUE; // Negative base just in case a few Lich's or Platinum Angels are running around
+            int highestLife = -50; // Negative base just in case a few Lich's or Platinum Angels are running around
             final List<Player> healthiest = new ArrayList<Player>();
             for (final Player p : game.getPlayers()) {
                 if (p.getLife() > highestLife) {
@@ -270,8 +270,8 @@ public abstract class Trigger extends TriggerReplacementBase {
                 // sb.append(this.getHostCard().getName());
                 // throw new RuntimeException(sb.toString());
             }
-            if (moved.getNetPower() <= this.getHostCard().getNetPower()
-                    && moved.getNetToughness() <= this.getHostCard().getNetToughness()) {
+            if (moved.getNetAttack() <= this.getHostCard().getNetAttack()
+                    && moved.getNetDefense() <= this.getHostCard().getNetDefense()) {
                 return false;
             }
         }

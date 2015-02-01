@@ -6,8 +6,7 @@ public enum DeckType {
     QUEST_OPPONENT_DECK ("Quest Opponent Decks"),
     COLOR_DECK ("Random Color Decks"),
     THEME_DECK ("Random Theme Decks"),
-    RANDOM_DECK ("Random Decks"),
-    NET_DECK ("Net Decks");
+    RANDOM_DECK ("Random Decks");
 
     private String value;
     private DeckType(String value) {

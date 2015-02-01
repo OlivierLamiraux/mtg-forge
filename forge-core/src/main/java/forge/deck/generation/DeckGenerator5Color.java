@@ -18,10 +18,9 @@
 package forge.deck.generation;
 
 import com.google.common.collect.Lists;
-
 import forge.card.ColorSet;
+import forge.card.ICardDatabase;
 import forge.deck.CardPool;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.util.List;
@@ -51,8 +50,8 @@ public class DeckGenerator5Color extends DeckGeneratorBase {
     /**
      * Instantiates a new generate5 color deck.
      */
-    public DeckGenerator5Color(IDeckGenPool pool) {
-        super(pool);
+    public DeckGenerator5Color(ICardDatabase cardDb) {
+        super(cardDb);
         colors = ColorSet.fromMask(0).inverse();
     }
 

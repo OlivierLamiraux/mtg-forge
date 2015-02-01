@@ -7,7 +7,6 @@ import forge.ai.SpellAbilityAi;
 import forge.game.Game;
 import forge.game.GameObject;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
 import forge.game.combat.Combat;
@@ -49,7 +48,7 @@ public class RegenerateAllAi extends SpellAbilityAi {
             valid = sa.getParam("ValidCards");
         }
 
-        CardCollectionView list = game.getCardsIn(ZoneType.Battlefield);
+        List<Card> list = game.getCardsIn(ZoneType.Battlefield);
         list = CardLists.getValidCards(list, valid.split(","), hostCard.getController(), hostCard);
         list = CardLists.filter(list, CardPredicates.isController(ai));
 
@@ -62,7 +61,7 @@ public class RegenerateAllAi extends SpellAbilityAi {
             final List<GameObject> objects = ComputerUtil.predictThreatenedObjects(sa.getActivatingPlayer(), sa);
 
             for (final Card c : list) {
-                if (objects.contains(c) && c.getShieldCount() == 0) {
+                if (objects.contains(c) && c.getShield().isEmpty()) {
                     numSaved++;
                 }
             }
@@ -71,7 +70,7 @@ public class RegenerateAllAi extends SpellAbilityAi {
                 final List<Card> combatants = CardLists.filter(list, CardPredicates.Presets.CREATURES);
                 final Combat combat = game.getCombat();
                 for (final Card c : combatants) {
-                    if (c.getShieldCount() == 0 && ComputerUtilCombat.combatantWouldBeDestroyed(ai, c, combat)) {
+                    if (c.getShield().isEmpty() && ComputerUtilCombat.combatantWouldBeDestroyed(ai, c, combat)) {
                         numSaved++;
                     }
                 }

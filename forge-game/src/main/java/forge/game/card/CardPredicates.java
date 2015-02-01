@@ -20,12 +20,12 @@ package forge.game.card;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-
 import forge.game.combat.CombatUtil;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
-import forge.util.FCollectionView;
 import forge.util.PredicateString;
+
+import java.util.List;
 
 
 /**
@@ -46,7 +46,7 @@ public final class CardPredicates {
             }
         };
     }
-    public static final Predicate<Card> isControlledByAnyOf(final FCollectionView<Player> pList) {
+    public static final Predicate<Card> isControlledByAnyOf(final List<Player> pList) {
         return new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
@@ -67,7 +67,7 @@ public final class CardPredicates {
         return new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
-                return c.getType().hasStringType(cardType);
+                return c.isType(cardType);
             }
         };
     }
@@ -85,7 +85,7 @@ public final class CardPredicates {
         return new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
-                return Iterables.any(c.getKeywords(), PredicateString.contains(keyword));
+                return Iterables.any(c.getKeyword(), PredicateString.contains(keyword));
             }
         };
     }
@@ -176,24 +176,6 @@ public final class CardPredicates {
             @Override
             public boolean apply(final Card c) {
                 return c.getCMC() == cmc;
-            }
-        };
-    }
-
-    public static final Predicate<Card> hasCounter(final CounterType type) {
-        return new Predicate<Card>() {
-            @Override
-            public boolean apply(final Card c) {
-                return c.getCounters(type) > 0;
-            }
-        };
-    }
-
-    public static final Predicate<Card> hasGreaterPowerThan(final int minPower) {
-        return new Predicate<Card>() {
-            @Override
-            public boolean apply(final Card c) {
-                return c.getNetPower() > minPower;
             }
         };
     }
@@ -373,14 +355,14 @@ public final class CardPredicates {
         public static final Function<Card, Integer> fnGetDefense = new Function<Card, Integer>() {
             @Override
             public Integer apply(Card a) {
-                return a.getNetToughness();
+                return a.getNetDefense();
             }
         };
 
-        public static final Function<Card, Integer> fnGetNetPower = new Function<Card, Integer>() {
+        public static final Function<Card, Integer> fnGetNetAttack = new Function<Card, Integer>() {
             @Override
             public Integer apply(Card a) {
-                return a.getNetPower();
+                return a.getNetAttack();
             }
         };
 

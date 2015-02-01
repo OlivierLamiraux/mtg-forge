@@ -23,7 +23,7 @@ public class FNumericTextField extends FTextField {
 
     @Override
     protected boolean validate() {
-        return getText().matches("\\d+");
+        return getText().matches("\\d*");
     }
 
     @Override
@@ -36,12 +36,7 @@ public class FNumericTextField extends FTextField {
             }
         }
         super.setText(text0);
-        if (getText().length() > 0) {
-            value = Integer.parseInt(getText());
-        }
-        else {
-            value = 0;
-        }
+        value = Integer.parseInt(getText());
     }
 
     @Override
@@ -54,11 +49,6 @@ public class FNumericTextField extends FTextField {
             }
         }
         super.insertText(text0);
-        if (getText().length() > 0) {
-            value = Integer.parseInt(getText());
-        }
-        else {
-            value = 0;
-        }
+        value = Integer.parseInt(getText());
     }
 }

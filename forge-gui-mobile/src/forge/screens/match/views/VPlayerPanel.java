@@ -13,8 +13,6 @@ import forge.assets.FSkinColor;
 import forge.assets.FSkinFont;
 import forge.assets.FSkinImage;
 import forge.assets.FSkinColor.Colors;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
 import forge.game.zone.ZoneType;
 import forge.match.MatchUtil;
 import forge.model.FModel;
@@ -24,6 +22,8 @@ import forge.screens.match.MatchScreen;
 import forge.toolbox.FContainer;
 import forge.toolbox.FDisplayObject;
 import forge.util.Utils;
+import forge.view.CardView;
+import forge.view.PlayerView;
 
 public class VPlayerPanel extends FContainer {
     private static final FSkinFont LIFE_FONT = FSkinFont.get(18);
@@ -40,6 +40,7 @@ public class VPlayerPanel extends FContainer {
     private final VZoneDisplay commandZone;
     private final LifeLabel lblLife;
     private final InfoTab tabManaPool;
+    private final InfoTab tabFlashbackZone;
     private final Map<ZoneType, InfoTab> zoneTabs = new HashMap<ZoneType, InfoTab>();
     private final List<InfoTab> tabs = new ArrayList<InfoTab>();
     private InfoTab selectedTab;
@@ -54,7 +55,10 @@ public class VPlayerPanel extends FContainer {
         addZoneDisplay(ZoneType.Hand, FSkinImage.HAND);
         addZoneDisplay(ZoneType.Graveyard, FSkinImage.GRAVEYARD);
         addZoneDisplay(ZoneType.Library, FSkinImage.LIBRARY);
-        addZoneDisplay(ZoneType.Flashback, FSkinImage.FLASHBACK);
+
+        VFlashbackZone flashbackZone = add(new VFlashbackZone(player0));
+        tabFlashbackZone = add(new InfoTab(FSkinImage.FLASHBACK, flashbackZone));
+        tabs.add(tabFlashbackZone);
 
         VManaPool manaPool = add(new VManaPool(player));
         tabManaPool = add(new InfoTab(FSkinImage.MANA_X, manaPool));
@@ -182,7 +186,7 @@ public class VPlayerPanel extends FContainer {
             case Graveyard:
             case Library:
             case Exile:
-                zoneTabs.get(ZoneType.Flashback).update();
+                tabFlashbackZone.update();
                 break;
             default:
                 break;
@@ -299,7 +303,7 @@ public class VPlayerPanel extends FContainer {
             }
 
             //when gui player loses life, vibrate device for a length of time based on amount of life lost
-            if (vibrateDuration > 0 && player.isLobbyPlayer(MatchUtil.getGuiPlayer()) &&
+            if (vibrateDuration > 0 && player.getLobbyPlayer() == MatchUtil.getGuiPlayer() &&
                     FModel.getPreferences().getPrefBoolean(FPref.UI_VIBRATE_ON_LIFE_LOSS)) {
                 //never vibrate more than two seconds regardless of life lost or poison counters gained
                 Gdx.input.vibrate(Math.min(vibrateDuration, 2000)); 
@@ -308,7 +312,7 @@ public class VPlayerPanel extends FContainer {
 
         @Override
         public boolean tap(float x, float y, int count) {
-            MatchUtil.getHumanController().selectPlayer(player, null); //treat tapping on life the same as tapping on the avatar
+            MatchUtil.getGameView().selectPlayer(player, null); //treat tapping on life the same as tapping on the avatar
             return true;
         }
 
@@ -454,7 +458,7 @@ public class VPlayerPanel extends FContainer {
         }
 
         @Override
-        protected void refreshCardPanels(Iterable<CardView> model) {
+        protected void refreshCardPanels(List<CardView> model) {
             int oldCount = getCount();
             super.refreshCardPanels(model);
             int newCount = getCount();

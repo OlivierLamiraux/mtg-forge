@@ -1,6 +1,6 @@
 package forge.game.ability.effects;
 
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.game.Game;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
@@ -13,7 +13,7 @@ import java.util.List;
 public class SetStateEffect extends SpellAbilityEffect {
 
     @Override
-    protected String getStackDescription(final SpellAbility sa) {
+    protected String getStackDescription(SpellAbility sa) {
         final StringBuilder sb = new StringBuilder();
 
         final List<Card> tgtCards = getTargetCards(sa);
@@ -26,7 +26,12 @@ public class SetStateEffect extends SpellAbilityEffect {
 
         final Iterator<Card> it = tgtCards.iterator();
         while (it.hasNext()) {
-            sb.append(it.next());
+            final Card tgtC = it.next();
+            if (tgtC.isFaceDown()) {
+                sb.append("Morph ").append("(").append(tgtC.getUniqueNumber()).append(")");
+            } else {
+                sb.append(tgtC);
+            }
 
             if (it.hasNext()) {
                 sb.append(", ");
@@ -37,7 +42,7 @@ public class SetStateEffect extends SpellAbilityEffect {
     }
 
     @Override
-    public void resolve(final SpellAbility sa) {
+    public void resolve(SpellAbility sa) {
 
         final Card host = sa.getHostCard();
         final Game game = host.getGame();
@@ -60,35 +65,35 @@ public class SetStateEffect extends SpellAbilityEffect {
         }
     }
 
-    private static boolean changeCardState(final Card tgt, final String mode, final String customState) {
+    private boolean changeCardState(final Card tgt, final String mode, final String customState) {
         if (mode == null)
-            return tgt.changeToState(CardStateName.smartValueOf(customState));
+            return tgt.changeToState(CardCharacteristicName.smartValueOf(customState));
 
         // flip and face-down don't overlap. That is there is no chance to turn face down a flipped permanent
         // and then any effect have it turn upface again and demand its former flip state to be restored
         // Proof: Morph cards never have ability that makes them flip, Ixidron does not suppose cards to be turned face up again, 
         // Illusionary Mask affects cards in hand.
-        CardStateName oldState = tgt.getCurrentStateName();
+        CardCharacteristicName oldState = tgt.getCurState();
         if (mode.equals("Transform") && tgt.isDoubleFaced()) {
             if (tgt.hasKeyword("CARDNAME can't transform")) {
                 return false;
             }
-            CardStateName destState = oldState == CardStateName.Transformed ? CardStateName.Original : CardStateName.Transformed;
+            CardCharacteristicName destState = oldState == CardCharacteristicName.Transformed ? CardCharacteristicName.Original : CardCharacteristicName.Transformed;
             return tgt.changeToState(destState);
             
         } else if (mode.equals("Flip") && tgt.isFlipCard()) {
-            CardStateName destState = oldState == CardStateName.Flipped ? CardStateName.Original : CardStateName.Flipped;
+            CardCharacteristicName destState = oldState == CardCharacteristicName.Flipped ? CardCharacteristicName.Original : CardCharacteristicName.Flipped;
             return tgt.changeToState(destState);
         } else if (mode.equals("TurnFace")) {
-            if (oldState == CardStateName.Original) {
+            if (oldState == CardCharacteristicName.Original) {
                 // Reset cloned state if Vesuvan Shapeshifter
-                if (tgt.isCloned() && tgt.getState(CardStateName.Cloner).getName().equals("Vesuvan Shapeshifter")) {
-                    tgt.switchStates(CardStateName.Cloner, CardStateName.Original, false);
-                    tgt.setState(CardStateName.Original, false);
-                    tgt.clearStates(CardStateName.Cloner, false);
+                if (tgt.isCloned() && tgt.getState(CardCharacteristicName.Cloner).getName().equals("Vesuvan Shapeshifter")) {
+                    tgt.switchStates(CardCharacteristicName.Cloner, CardCharacteristicName.Original);
+                    tgt.setState(CardCharacteristicName.Original);
+                    tgt.clearStates(CardCharacteristicName.Cloner);
                 }
                 return tgt.turnFaceDown();
-            } else if (oldState == CardStateName.FaceDown) {
+            } else if (oldState == CardCharacteristicName.FaceDown) {
                 return tgt.turnFaceUp();
             }
         }

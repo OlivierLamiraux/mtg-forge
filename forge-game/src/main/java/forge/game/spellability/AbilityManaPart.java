@@ -29,11 +29,11 @@ import forge.game.replacement.ReplacementHandler;
 import forge.game.replacement.ReplacementLayer;
 import forge.game.replacement.ReplacementResult;
 import forge.game.trigger.TriggerType;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -242,7 +242,7 @@ public class AbilityManaPart implements java.io.Serializable {
         // Convert random SVars if there are other cards with this effect
         if (c.isValid(parse[0], c.getController(), c)) {
             String abStr = "DB$ PutCounter | Defined$ Self | CounterType$ " + parse[1]
-                    + " | ETB$ True | CounterNum$ " + parse[2] + " | SubAbility$ ManaDBETBCounters";
+                    + " | CounterNum$ " + parse[2] + " | SubAbility$ ManaDBETBCounters";
             String dbStr = "DB$ ChangeZone | Hidden$ True | Origin$ All | Destination$ Battlefield"
                     + " | Defined$ ReplacedCard";
             try {
@@ -341,8 +341,9 @@ public class AbilityManaPart implements java.io.Serializable {
      */
     public final String mana() {
         if (this.getOrigProduced().contains("Chosen")) {
-            if (this.getSourceCard() != null && this.getSourceCard().hasChosenColor()) {
-                return MagicColor.toShortString(this.getSourceCard().getChosenColor());
+            if (this.getSourceCard() != null && !this.getSourceCard().getChosenColor().isEmpty()) {
+                return MagicColor.toShortString(this.getSourceCard()
+                .getChosenColor().get(0));
             }
         }
         return this.getOrigProduced();
@@ -472,7 +473,8 @@ public class AbilityManaPart implements java.io.Serializable {
         }
 
         if (this.getOrigProduced().contains("Chosen") && sourceCard != null ) {
-            if (this.getSourceCard().hasChosenColor() && MagicColor.toShortString(this.getSourceCard().getChosenColor()).contains(s)) {
+            List<String> chosenCol = this.getSourceCard().getChosenColor();
+            if ( !chosenCol.isEmpty() && MagicColor.toShortString(chosenCol.get(0)).contains(s)) {
                 return true;
             }
         }

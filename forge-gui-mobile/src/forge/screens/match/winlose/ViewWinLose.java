@@ -1,24 +1,18 @@
 package forge.screens.match.winlose;
 
-import java.util.List;
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.g2d.BitmapFont.HAlignment;
 
-import forge.FThreads;
 import forge.Forge;
 import forge.LobbyPlayer;
 import forge.assets.FSkinColor;
-import forge.assets.FSkinProp;
 import forge.assets.FSkinColor.Colors;
 import forge.assets.FSkinFont;
 import forge.game.GameLogEntry;
 import forge.game.GameLogEntryType;
-import forge.game.GameView;
 import forge.interfaces.IWinLoseView;
-import forge.item.PaperCard;
 import forge.menu.FMagnifyView;
 import forge.model.FModel;
 import forge.toolbox.FButton;
@@ -30,8 +24,7 @@ import forge.toolbox.FLabel;
 import forge.toolbox.FOverlay;
 import forge.toolbox.FTextArea;
 import forge.util.Utils;
-import forge.util.gui.SGuiChoose;
-import forge.util.gui.SOptionPane;
+import forge.view.IGameView;
 
 public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
     private static final float INSETS_FACTOR = 0.025f;
@@ -41,9 +34,9 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
     private final FLabel lblTitle, lblLog, lblStats, btnCopyLog;
     private final FTextArea txtLog;
     private final OutcomesPanel pnlOutcomes;
-    private final GameView game;
+    private final IGameView game;
 
-    public ViewWinLose(final GameView game0) {
+    public ViewWinLose(final IGameView game0) {
         super(FSkinColor.get(Colors.CLR_OVERLAY).alphaColor(0.75f));
 
         game = game0;
@@ -65,9 +58,6 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
             break;
         case QuestDraft:
             //control = new QuestDraftWinLose(this, game0);
-            break;
-        case PlanarConquest:
-            control = new ConquestWinLose(this, game0);
             break;
         case Draft:
             if (!FModel.getGauntletMini().isGauntletDraft()) {
@@ -95,7 +85,7 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
         btnContinue.setEnabled(!game0.isMatchOver());
 
         lblLog = add(new FLabel.Builder().text("Game Log").align(HAlignment.CENTER).font(FSkinFont.get(18)).build());
-        txtLog = add(new FTextArea(true, StringUtils.join(game.getGameLog().getLogEntries(null), "\r\n").replace("[COMPUTER]", "[AI]")) {
+        txtLog = add(new FTextArea(true, StringUtils.join(game.getLogEntries(null), "\r\n").replace("[COMPUTER]", "[AI]")) {
             @Override
             public boolean tap(float x, float y, int count) {
                 if (txtLog.getMaxScrollTop() > 0) {
@@ -120,7 +110,7 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
         control.showRewards();
     }
 
-    private String composeTitle(final GameView game) {
+    private String composeTitle(final IGameView game) {
         final LobbyPlayer winner = game.getWinningPlayer();
         final int winningTeam = game.getWinningTeam();
         if (winner == null) {
@@ -145,13 +135,13 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
     }
 
     private void showGameOutcomeSummary() {
-        for (GameLogEntry o : game.getGameLog().getLogEntriesExact(GameLogEntryType.GAME_OUTCOME)) {
+        for (GameLogEntry o : game.getLogEntriesExact(GameLogEntryType.GAME_OUTCOME)) {
             pnlOutcomes.add(new FLabel.Builder().text(o.message).font(FSkinFont.get(14)).build());
         }
     }
 
     private void showPlayerScores() {
-        for (GameLogEntry o : game.getGameLog().getLogEntriesExact(GameLogEntryType.MATCH_RESULTS)) {
+        for (GameLogEntry o : game.getLogEntriesExact(GameLogEntryType.MATCH_RESULTS)) {
             lblStats.setText(removePlayerTypeFromLogMessage(o.message));
         }
     }
@@ -217,21 +207,5 @@ public class ViewWinLose extends FOverlay implements IWinLoseView<FButton> {
             return true;
         }
         return super.keyDown(keyCode);
-    }
-
-    @Override
-    public void showRewards(Runnable runnable) {
-        //invoke reward logic in background thread so dialogs can be shown
-        FThreads.invokeInBackgroundThread(runnable);
-    }
-
-    @Override
-    public void showCards(String title, List<PaperCard> cards) {
-        SGuiChoose.reveal(title, cards);
-    }
-
-    @Override
-    public void showMessage(String message, String title, FSkinProp icon) {
-        SOptionPane.showMessageDialog(message, title, icon);
     }
 }

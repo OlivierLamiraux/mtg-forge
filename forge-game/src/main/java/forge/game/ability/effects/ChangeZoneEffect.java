@@ -1,11 +1,10 @@
 package forge.game.ability.effects;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.game.Game;
 import forge.game.GameEntity;
 import forge.game.ability.AbilityUtils;
@@ -24,7 +23,6 @@ import forge.game.trigger.TriggerType;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.util.Aggregates;
-import forge.util.FCollectionView;
 import forge.util.Lang;
 import forge.util.MessageUtil;
 
@@ -395,15 +393,16 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
         final String imprint = sa.getParam("Imprint");
 
         if (sa.hasParam("Unimprint")) {
-            hostCard.clearImprintedCards();
+            hostCard.clearImprinted();
         }
 
         if (sa.hasParam("ForgetOtherRemembered")) {
             hostCard.clearRemembered();
         }
 
-        final boolean optional = sa.hasParam("Optional");
-        final long ts = game.getNextTimestamp();
+        boolean optional = sa.hasParam("Optional");
+
+        long ts = game.getNextTimestamp();
 
         for (final Card tgtC : tgtCards) {
             if (tgt != null && tgtC.isInPlay() && !tgtC.canBeTargetedBy(sa)) {
@@ -455,9 +454,10 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         }
                     }
                     if (sa.hasParam("AttachedTo")) {
-                        CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
+                        List<Card> list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), tgtC.getController(), tgtC);
+                            list = game.getCardsIn(ZoneType.Battlefield);
+                            list = CardLists.getValidCards(list, sa.getParam("AttachedTo"), tgtC.getController(), tgtC);
                         }
                         if (!list.isEmpty()) {
                             Card attachedTo = player.getController().chooseSingleEntityForEffect(list, sa, tgtC + " - Select a card to attach to.");
@@ -471,14 +471,14 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                                 tgtC.enchantEntity(attachedTo);
                             } else if (tgtC.isEquipment()) { //Equipment
                                 if (tgtC.isEquipping()) {
-                                    final Card oldEquiped = tgtC.getEquipping();
+                                    final Card oldEquiped = tgtC.getEquippingCard();
                                     if ( null != oldEquiped )
                                         tgtC.unEquipCard(oldEquiped);
                                 }
                                 tgtC.equipCard(attachedTo);
                             } else { // fortification
                                 if (tgtC.isFortifying()) {
-                                    final Card oldFortified = tgtC.getFortifying();
+                                    final Card oldFortified = tgtC.getFortifyingCard();
                                     if( oldFortified != null )
                                         tgtC.unFortifyCard(oldFortified);
                                 }
@@ -504,15 +504,15 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         movedCard.setUnearthed(true);
                     }
                     if (sa.hasParam("FaceDown")) {
-                        movedCard.setState(CardStateName.FaceDown, true);
+                        movedCard.setState(CardCharacteristicName.FaceDown);
                     }
                     if (sa.hasParam("Ninjutsu") || sa.hasParam("Attacking")) {
                         // What should they attack?
                         // TODO Ninjutsu needs to actually select the Defender, instead of auto selecting player
-                        FCollectionView<GameEntity> defenders = game.getCombat().getDefenders();
+                        List<GameEntity> defenders = game.getCombat().getDefenders();
                         if (!defenders.isEmpty()) { 
                             // Blockeres are already declared, set this to unblocked
-                            game.getCombat().addAttacker(tgtC, defenders.getFirst());
+                            game.getCombat().addAttacker(tgtC, defenders.get(0));
                             game.getCombat().getBandOfAttacker(tgtC).setBlocked(false);
                             game.fireEvent(new GameEventCombatChanged());
                         }
@@ -525,7 +525,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     movedCard = game.getAction().moveTo(destination, tgtC);
                     // If a card is Exiled from the stack, remove its spells from the stack
                     if (sa.hasParam("Fizzle")) {
-                        final FCollectionView<SpellAbility> spells = tgtC.getSpellAbilities();
+                        final List<SpellAbility> spells = tgtC.getSpellAbilities();
                         for (SpellAbility spell : spells) {
                             if (tgtC.isInZone(ZoneType.Exile) || tgtC.isInZone(ZoneType.Hand)) {
                                 final SpellAbilityStackInstance si = game.getStack().getInstanceFromSpellAbility(spell);
@@ -536,7 +536,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         }
                     }
                     if (sa.hasParam("ExileFaceDown")) {
-                        movedCard.setState(CardStateName.FaceDown, true);
+                        movedCard.setState(CardCharacteristicName.FaceDown);
                     }
                 }
             }
@@ -544,10 +544,10 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 hostCard.addRemembered(movedCard);
             }
             if (forget != null && !movedCard.getZone().equals(originZone)) {
-                hostCard.removeRemembered(movedCard);
+                hostCard.getRemembered().remove(movedCard);
             }
             if (imprint != null && !movedCard.getZone().equals(originZone)) {
-                hostCard.addImprintedCard(movedCard);
+                hostCard.addImprinted(movedCard);
             }
         }
     }
@@ -562,7 +562,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
      * @param sa
      *            a {@link forge.game.spellability.SpellAbility} object.
      */
-    private static void changeHiddenOriginResolve(final SpellAbility sa) {
+    private void changeHiddenOriginResolve(final SpellAbility sa) {
         List<Player> fetchers;
 
         if (sa.hasParam("DefinedPlayer")) {
@@ -594,8 +594,8 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             changeZonePlayerInvariant(decider, sa, player);
         }
     }
-
-    private static void changeZonePlayerInvariant(Player decider, SpellAbility sa, Player player) {
+    
+    private void changeZonePlayerInvariant(Player decider, SpellAbility sa, Player player) {
         final TargetRestrictions tgt = sa.getTargetRestrictions();
         if (tgt != null) {
             final List<Player> players = Lists.newArrayList(sa.getTargets().getTargetPlayers());
@@ -619,7 +619,8 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             // Currently only used for Mishra, but may be used by other things
             // Improve how this message reacts for other cards
             final List<ZoneType> alt = ZoneType.listValueOf(sa.getParam("OriginAlternative"));
-            CardCollectionView altFetchList = AbilityUtils.filterListByType(player.getCardsIn(alt), sa.getParam("ChangeType"), sa);
+            List<Card> altFetchList = player.getCardsIn(alt);
+            altFetchList = AbilityUtils.filterListByType(altFetchList, sa.getParam("ChangeType"), sa);
 
             final StringBuilder sb = new StringBuilder();
             sb.append(sa.getParam("AlternativeMessage")).append(" ");
@@ -645,7 +646,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
         final boolean optional = sa.hasParam("Optional");
         if (optional) {
-            String message = MessageUtil.formatMessage(defined ? "Put that card from {player's} " + Lang.joinHomogenous(origin).toLowerCase() + "to " + destination.name().toLowerCase() : "Search {player's} " + Lang.joinHomogenous(origin).toLowerCase() + "?", decider, player);
+            String message = MessageUtil.formatMessage(defined ? "Put that card from {player's} " + Lang.joinHomogenous(origin).toLowerCase() + "to " + destination.name().toLowerCase() : "Search {player's} " + Lang.joinHomogenous(origin).toLowerCase() + "?", player, decider);
             if (!decider.getController().confirmAction(sa, PlayerActionConfirmMode.ChangeZoneGeneral, message)) {
                 return;
             }
@@ -653,32 +654,28 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
         String changeType = sa.getParam("ChangeType"); 
 
-        CardCollection fetchList;
+        List<Card> fetchList;
         boolean shuffleMandatory = true;
         boolean searchedLibrary = false;
         if (defined) {
-            fetchList = new CardCollection(AbilityUtils.getDefinedCards(source, sa.getParam("Defined"), sa));
+            fetchList = new ArrayList<Card>(AbilityUtils.getDefinedCards(source, sa.getParam("Defined"), sa));
             if (!sa.hasParam("ChangeNum")) {
                 changeNum = fetchList.size();
             }
-        }
-        else if (!origin.contains(ZoneType.Library) && !origin.contains(ZoneType.Hand)
+        } else if (!origin.contains(ZoneType.Library) && !origin.contains(ZoneType.Hand)
                 && !sa.hasParam("DefinedPlayer")) {
-            fetchList = new CardCollection(player.getGame().getCardsIn(origin));
-        }
-        else {
-            fetchList = new CardCollection(player.getCardsIn(origin));
+            fetchList = player.getGame().getCardsIn(origin);
+        } else {
+            fetchList = player.getCardsIn(origin);
             if (origin.contains(ZoneType.Library) && !sa.hasParam("NoLooking")) {
                 searchedLibrary = true;
                 if (decider.hasKeyword("LimitSearchLibrary")) { // Aven Mindcensor
                     fetchList.removeAll(player.getCardsIn(ZoneType.Library));
                     final int fetchNum = Math.min(player.getCardsIn(ZoneType.Library).size(), 4);
-                    if (fetchNum == 0) {
+                    if (fetchNum == 0)
                         searchedLibrary = false;
-                    }
-                    else {
+                    else
                         fetchList.addAll(player.getCardsIn(ZoneType.Library, fetchNum));
-                    }
                 }
                 if (decider.hasKeyword("CantSearchLibrary")) {
                     fetchList.removeAll(player.getCardsIn(ZoneType.Library));
@@ -695,7 +692,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
         if (!defined) {
             if (origin.contains(ZoneType.Library) && searchedLibrary) {
                 final int fetchNum = Math.min(player.getCardsIn(ZoneType.Library).size(), 4);
-                CardCollectionView shown = !decider.hasKeyword("LimitSearchLibrary") ? player.getCardsIn(ZoneType.Library) : player.getCardsIn(ZoneType.Library, fetchNum);
+                List<Card> shown = !decider.hasKeyword("LimitSearchLibrary") ? player.getCardsIn(ZoneType.Library) : player.getCardsIn(ZoneType.Library, fetchNum);
                 // Look at whole library before moving onto choosing a card
                 delayedReveal = new DelayedReveal(shown, ZoneType.Library, player, source.getName() + " - Looking at cards in ");
             }
@@ -709,7 +706,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 // should only count the number of searching player's own library
                 decider.incLibrarySearched();
                 // Panglacial Wurm
-                CardCollection canCastWhileSearching = CardLists.getKeyword(fetchList,
+                List<Card> canCastWhileSearching = CardLists.getKeyword(fetchList,
                         "While you're searching your library, you may cast CARDNAME from your library.");
                 for (final Card tgtCard : canCastWhileSearching) {
                     List<SpellAbility> sas = AbilityUtils.getBasicSpellsFromPlayEffect(tgtCard, decider);
@@ -733,7 +730,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
         }
 
         if (!defined && changeType != null) {
-            fetchList = (CardCollection)AbilityUtils.filterListByType(fetchList, sa.getParam("ChangeType"), sa);
+            fetchList = AbilityUtils.filterListByType(fetchList, sa.getParam("ChangeType"), sa);
         }
 
         if (sa.hasParam("NoShuffle")) {
@@ -742,34 +739,22 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
         final Game game = player.getGame();
         if (sa.hasParam("Unimprint")) {
-            source.clearImprintedCards();
+            source.clearImprinted();
         }
 
         final boolean remember = sa.hasParam("RememberChanged");
         final boolean champion = sa.hasParam("Champion");
         final boolean forget = sa.hasParam("ForgetChanged");
         final boolean imprint = sa.hasParam("Imprint");
-        final String selectPrompt = sa.hasParam("SelectPrompt") ? sa.getParam("SelectPrompt") : MessageUtil.formatMessage("Select a card from {player's} " + Lang.joinHomogenous(origin).toLowerCase(), decider, player);
+        final String selectPrompt = sa.hasParam("SelectPrompt") ? sa.getParam("SelectPrompt") : MessageUtil.formatMessage("Select a card from {player's} " + Lang.joinHomogenous(origin).toLowerCase(), player, decider);
         final String totalcmc = sa.getParam("WithTotalCMC");
         int totcmc = AbilityUtils.calculateAmount(source, totalcmc, sa);
 
-        CardCollection chosenCards = new CardCollection();
+        List<Card> chosenCards = new ArrayList<Card>();
         for (int i = 0; i < changeNum && destination != null; i++) {
             if (sa.hasParam("DifferentNames")) {
                 for (Card c : chosenCards) {
                     fetchList = CardLists.filter(fetchList, Predicates.not(CardPredicates.nameEquals(c.getName())));
-                }
-            }
-            if (sa.hasParam("ShareLandType")) {
-                for (final Card card : chosenCards) {
-                	
-                    fetchList = CardLists.filter(fetchList, new Predicate<Card>() {
-                    	 @Override
-                         public boolean apply(final Card c) {
-                    		return  c.sharesLandTypeWith(card);
-                    	 }
-                    	
-                    });
                 }
             }
             if (totalcmc != null) {
@@ -827,7 +812,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             player.shuffle(sa);
         }
 
-        CardCollection movedCards = new CardCollection();
+        List<Card> movedCards = new ArrayList<Card>();
         long ts = game.getNextTimestamp();
         for (Card c : chosenCards) {
             Card movedCard = null;
@@ -847,9 +832,10 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 }
 
                 if (sa.hasParam("AttachedTo")) {
-                    CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachedTo"), sa);
+                    List<Card> list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachedTo"), sa);
                     if (list.isEmpty()) {
-                        list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), c.getController(), c);
+                        list = game.getCardsIn(ZoneType.Battlefield);
+                        list = CardLists.getValidCards(list, sa.getParam("AttachedTo"), c.getController(), c);
                     }
                     if (!list.isEmpty()) {
                         Card attachedTo = null;
@@ -870,7 +856,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         }
                         else if (c.isEquipment()) { //Equipment
                             if (c.isEquipping()) {
-                                final Card oldEquiped = c.getEquipping();
+                                final Card oldEquiped = c.getEquippingCard();
                                 if ( null != oldEquiped )
                                     c.unEquipCard(oldEquiped);
                             }
@@ -878,7 +864,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         }
                         else {
                             if (c.isFortifying()) {
-                                final Card oldFortified = c.getFortifying();
+                                final Card oldFortified = c.getFortifyingCard();
                                 if ( null != oldFortified )
                                     c.unFortifyCard(oldFortified);
                             }
@@ -891,7 +877,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 }
 
                 if (sa.hasParam("AttachedToPlayer")) {
-                    FCollectionView<Player> list = AbilityUtils.getDefinedPlayers(source, sa.getParam("AttachedToPlayer"), sa);
+                    List<Player> list = AbilityUtils.getDefinedPlayers(source, sa.getParam("AttachedToPlayer"), sa);
                     if (!list.isEmpty()) {
                         Player attachedTo = player.getController().chooseSingleEntityForEffect(list, sa, c + " - Select a player to attach to.");
                         if (c.isAura()) {
@@ -912,7 +898,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 if (sa.hasParam("Attacking")) {
                     final Combat combat = game.getCombat();
                     if ( null != combat ) {
-                        final FCollectionView<GameEntity> e = combat.getDefenders();
+                        final List<GameEntity> e = combat.getDefenders();
                         final GameEntity defender = player.getController().chooseSingleEntityForEffect(e, sa, "Declare " + c);
                         combat.addAttacker(c, defender);
                         game.fireEvent(new GameEventCombatChanged());
@@ -921,7 +907,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 if (sa.hasParam("Blocking")) {
                     final Combat combat = game.getCombat();
                     if ( null != combat ) {
-                        CardCollection attackers = AbilityUtils.getDefinedCards(source, sa.getParam("Blocking"), sa);
+                        List<Card> attackers = AbilityUtils.getDefinedCards(source, sa.getParam("Blocking"), sa);
                         if (!attackers.isEmpty()) {
                             Card attacker = attackers.get(0);
                             if (combat.isAttacking(attacker)) {
@@ -937,14 +923,14 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     movedCard.setTapped(true);
                 }
                 if (sa.hasParam("FaceDown")) {
-                    movedCard.setState(CardStateName.FaceDown, true);
+                    movedCard.setState(CardCharacteristicName.FaceDown);
                 }
                 movedCard.setTimestamp(ts);
             }
             else if (destination.equals(ZoneType.Exile)) {
                 movedCard = game.getAction().exile(c);
                 if (sa.hasParam("ExileFaceDown")) {
-                    movedCard.setState(CardStateName.FaceDown, true);
+                    movedCard.setState(CardCharacteristicName.FaceDown);
                 }
             }
             else {
@@ -968,7 +954,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             }
             // for imprinted since this doesn't use Target
             if (imprint) {
-                source.addImprintedCard(movedCard);
+                source.addImprinted(movedCard);
             }
         }
 

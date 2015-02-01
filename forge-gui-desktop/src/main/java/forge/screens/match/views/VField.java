@@ -28,7 +28,6 @@ import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 
 import net.miginfocom.swing.MigLayout;
-import forge.game.player.PlayerView;
 import forge.game.zone.ZoneType;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
@@ -42,6 +41,7 @@ import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinnedPanel;
 import forge.toolbox.special.PhaseIndicator;
 import forge.toolbox.special.PlayerDetailsPanel;
+import forge.view.PlayerView;
 import forge.view.arcane.PlayArea;
 
 /** 
@@ -99,14 +99,11 @@ public class VField implements IVDoc<CField> {
 
         control = new CField(player, this);
 
-        lblAvatar.setFocusable(false);
-        lblLife.setFocusable(false);
-
         avatarArea.setOpaque(false);
         avatarArea.setBackground(FSkin.getColor(FSkin.Colors.CLR_HOVER));
         avatarArea.setLayout(new MigLayout("insets 0, gap 0"));
-        avatarArea.add(lblAvatar, "w 100%-6px!, h 100%-23px!, wrap, gap 3 3 3 0");
-        avatarArea.add(lblLife, "w 100%!, h 20px!");
+        avatarArea.add(lblAvatar, "w 100%!, h 70%!, wrap, gaptop 4%");
+        avatarArea.add(lblLife, "w 100%!, h 30%!, gaptop 4%");
 
         // Player area hover effect
         avatarArea.addMouseListener(new MouseAdapter() {
@@ -135,66 +132,114 @@ public class VField implements IVDoc<CField> {
         updateDetails();
     }
 
+    //========= Overridden methods
+
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#populate()
+     */
     @Override
     public void populate() {
         final JPanel pnl = parentCell.getBody();
         pnl.setLayout(new MigLayout("insets 0, gap 0"));
 
-        pnl.add(avatarArea, "w 10%!, h 35%!");
+        pnl.add(avatarArea, "w 10%!, h 30%!");
         pnl.add(phaseIndicator, "w 5%!, h 100%!, span 1 2");
         pnl.add(scroller, "w 85%!, h 100%!, span 1 2, wrap");
-        pnl.add(detailsPanel, "w 10%!, h 64%!, gapleft 1px");
+        pnl.add(detailsPanel, "w 10%!, h 69%!, gapleft 1px");
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getDocumentID()
+     */
     @Override
     public EDocID getDocumentID() {
         return docID;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getTabLabel()
+     */
     @Override
     public DragTab getTabLabel() {
         return tab;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getLayoutControl()
+     */
     @Override
     public CField getLayoutControl() {
         return control;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#setParentCell()
+     */
     @Override
     public void setParentCell(final DragCell cell0) {
         this.parentCell = cell0;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.IVDoc#getParentCell()
+     */
     @Override
     public DragCell getParentCell() {
         return this.parentCell;
     }
 
+    //========= Populate helper methods
+
+
+    // ========== Observer update methods
+
+    //========= Retrieval methods
+    /**
+     * Gets the player currently associated with this field.
+     * @return {@link forge.game.player.Player}
+     */
     public PlayerView getPlayer() {
         return this.player;
     }
 
+    /**
+     * Gets the tabletop.
+     *
+     * @return PlayArea where cards for this field are in play
+     */
     public PlayArea getTabletop() {
         return this.tabletop;
     }
 
+    /**
+     * Gets the avatar area.
+     *
+     * @return JPanel containing avatar pic and life label
+     */
     public JPanel getAvatarArea() {
         return this.avatarArea;
     }
 
+    /** @return {@link javax.swing.JLabel} */
     public FLabel getLblAvatar() {
         return this.lblAvatar;
     }
 
+    /** @return {@link javax.swing.JLabel} */
     public FLabel getLblLife() {
         return this.lblLife;
     }
 
+    /**
+     * @return the phase indicator
+     */
     public PhaseIndicator getPhaseIndicator() {
         return phaseIndicator;
     }
 
+    /**
+     * @return the detailsPanel
+     */
     public PlayerDetailsPanel getDetailsPanel() {
         return detailsPanel;
     }
@@ -203,6 +248,10 @@ public class VField implements IVDoc<CField> {
         return MatchUtil.isHighlighted(player);
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     * @param player2
+     */
     public void updateDetails() {
         detailsPanel.updateDetails();
 

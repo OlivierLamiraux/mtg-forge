@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.base.Predicate;
-
 import forge.ai.ComputerUtil;
 import forge.ai.ComputerUtilCard;
 import forge.ai.ComputerUtilCost;
@@ -16,7 +14,6 @@ import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardFactory;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
@@ -98,7 +95,7 @@ public class TokenAi extends SpellAbilityAi {
         for (final String type : this.tokenTypes) {
             if (type.equals("Legendary")) {
                 // Don't kill AIs Legendary tokens
-                if (ai.isCardInPlay(this.tokenName)) {
+                if (!ai.getCardsIn(ZoneType.Battlefield, this.tokenName).isEmpty()) {
                     return false;
                 }
             }
@@ -162,29 +159,7 @@ public class TokenAi extends SpellAbilityAi {
                 if (sa.canTarget(ai)) {
                     sa.getTargets().add(ai);
                 } else {
-                	//Flash Foliage
-        	        CardCollection list = CardLists.filterControlledBy(game.getCardsIn(ZoneType.Battlefield), ai.getOpponents());
-        	        list = CardLists.getValidCards(list, tgt.getValidTgts(), source.getController(), source);
-        	        list = CardLists.getTargetableCards(list, sa);
-        	        CardCollection betterList = CardLists.filter(list, new Predicate<Card>() {
-        	            @Override
-        	            public boolean apply(Card c) {
-        	                return c.getLethalDamage() == 1;
-        	            }
-        	        });
-        	        if (!betterList.isEmpty()) {
-        	        	list = betterList;
-        	        }
-        	        betterList = CardLists.getNotKeyword(list, "Trample");
-        	        if (!betterList.isEmpty()) {
-        	        	list = betterList;
-        	        }
-        	        if (!list.isEmpty()) {
-        	        	sa.getTargets().add(ComputerUtilCard.getBestCreatureAI(list));
-        	        } else {
-        	        	return false;
-        	        }
-                    
+                    return false;
                 }
             }
         }
@@ -215,7 +190,7 @@ public class TokenAi extends SpellAbilityAi {
             String num = sa.getParam("Amount");
             num = (num == null) ? "1" : num;
             final int nToSac = AbilityUtils.calculateAmount(topStack.getHostCard(), num, topStack);
-            CardCollection list =
+            List<Card> list =
                     CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), valid.split(","), opp, topStack.getHostCard());
             list = CardLists.filter(list, CardPredicates.canBeSacrificedBy(topStack));
             if (!list.isEmpty() && nTokens > 0 && list.size() == nToSac) { //only care about saving single creature for now
@@ -321,7 +296,7 @@ public class TokenAi extends SpellAbilityAi {
         for (int i = 0; i < substitutedColors.length; i++) {
             if (substitutedColors[i].equals("ChosenColor")) {
                 // this currently only supports 1 chosen color
-                substitutedColors[i] = host.getChosenColor();
+                substitutedColors[i] = host.getChosenColor().get(0);
             }
         }
         String colorDesc = "";
@@ -368,10 +343,9 @@ public class TokenAi extends SpellAbilityAi {
             }
         }
         final String substitutedName = tokenName.equals("ChosenType") ? host.getChosenType() : tokenName;
-        final String imageName = imageNames.get(MyRandom.getRandom().nextInt(imageNames.size()));
-        final CardFactory.TokenInfo tokenInfo = new CardFactory.TokenInfo(substitutedName, imageName,
-                cost, substitutedTypes, tokenKeywords, finalPower, finalToughness);
-        final List<Card> tokens = CardFactory.makeToken(tokenInfo, ai);
+        final List<Card> tokens = CardFactory.makeToken(substitutedName,
+                imageNames.get(MyRandom.getRandom().nextInt(imageNames.size())),
+                ai, cost, substitutedTypes, finalPower, finalToughness, tokenKeywords);
         
         // Grant rule changes
         if (tokenHiddenKeywords != null) {
@@ -390,7 +364,7 @@ public class TokenAi extends SpellAbilityAi {
                     final SpellAbility grantedAbility = AbilityFactory.getAbility(actualAbility, c);
                     c.addSpellAbility(grantedAbility);
                     // added ability to intrinsic list so copies and clones work
-                    c.getCurrentState().addUnparsedAbility(actualAbility);
+                    c.getUnparsedAbilities().add(actualAbility);
                 }
             }
         }

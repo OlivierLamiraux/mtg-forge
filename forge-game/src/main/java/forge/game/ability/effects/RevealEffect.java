@@ -4,8 +4,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
@@ -13,6 +11,7 @@ import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
 import forge.util.Aggregates;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RevealEffect extends SpellAbilityEffect {
@@ -28,15 +27,15 @@ public class RevealEffect extends SpellAbilityEffect {
         for (final Player p : getTargetPlayers(sa)) {
             final Game game = p.getGame();
             if (tgt == null || p.canBeTargetedBy(sa)) {
-                final CardCollectionView cardsInHand = p.getZone(ZoneType.Hand).getCards();
-                if (cardsInHand.isEmpty()) {
+                final List<Card> cardsInHand = p.getZone(ZoneType.Hand).getCards();
+                if (cardsInHand.isEmpty())
                     continue; 
-                }
-                final CardCollection revealed = new CardCollection();
+                
+                final List<Card> revealed = new ArrayList<Card>();
                 if (sa.hasParam("Random")) {
                     if (sa.hasParam("NumCards")) {
                         final int revealnum = Math.min(cardsInHand.size(), cnt);
-                        final CardCollection hand = new CardCollection(cardsInHand);
+                        final List<Card> hand = new ArrayList<Card>(cardsInHand);
                         for (int i = 0; i < revealnum; i++) {
                             final Card random = Aggregates.random(hand);
                             revealed.add(random);
@@ -49,7 +48,7 @@ public class RevealEffect extends SpellAbilityEffect {
                 } else if (sa.hasParam("RevealDefined")) {
                     revealed.addAll(AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("RevealDefined"), sa));
                 } else {
-                    CardCollection valid = new CardCollection(cardsInHand);
+                    List<Card> valid = new ArrayList<Card>(cardsInHand);
 
                     if (sa.hasParam("RevealValid")) {
                         valid = CardLists.getValidCards(valid, sa.getParam("RevealValid"), p, host);

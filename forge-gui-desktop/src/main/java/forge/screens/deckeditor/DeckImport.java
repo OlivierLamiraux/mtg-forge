@@ -105,7 +105,7 @@ public class DeckImport<TItem extends InventoryItem, TModel extends DeckBase> ex
      * @param g
      *            the g
      */
-    public DeckImport(final ACEditorBase<TItem, TModel> g, boolean allowCardsFromAllSets) {
+    public DeckImport(final ACEditorBase<TItem, TModel> g) {
         this.host = g;
 
         final int wWidth = 700;
@@ -132,7 +132,6 @@ public class DeckImport<TItem extends InventoryItem, TModel extends DeckBase> ex
         this.add(yearDropdown, "w 15%");
         fillDateDropdowns();
 
-        this.onlyCoreExpCheck.setSelected(!allowCardsFromAllSets);
         this.add(this.onlyCoreExpCheck, "cell 0 4, w 50%, ax c");
         
         this.add(this.scrollOutput, "cell 1 0, w 50%, growy, pushy");

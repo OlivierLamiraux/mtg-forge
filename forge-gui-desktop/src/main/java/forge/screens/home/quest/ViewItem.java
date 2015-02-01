@@ -79,11 +79,17 @@ public class ViewItem extends FPanel {
 
                 SkinImage i;
                 try {
-                    i = (SkinImage) bazaarItem.getIcon(qA);
-                } catch (final Exception e1) {
-                    // give up, icon unknown
-                    e1.printStackTrace();
-                    i = (SkinImage) GuiBase.getInterface().getSkinIcon(FSkinProp.ICO_UNKNOWN);
+                    final FSkinProp f = FSkinProp.valueOf(FSkinProp.class, bazaarItem.getIcon(qA));
+                    i = (SkinImage) GuiBase.getInterface().getSkinIcon(f);
+                } catch (final IllegalArgumentException e) {
+                    // Failed to parse FSkinProp
+                    try {
+                        i = (SkinImage) GuiBase.getInterface().getUnskinnedIcon(bazaarItem.getIcon(qA));
+                    } catch (final Exception e1) {
+                        // give up, icon unknown
+                        e1.printStackTrace();
+                        i = (SkinImage) GuiBase.getInterface().getSkinIcon(FSkinProp.ICO_UNKNOWN);
+                    }
                 }
 
                 ViewItem.this.lblIcon.setIcon(i);

@@ -1,6 +1,7 @@
 package forge.toolbox;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,17 +15,16 @@ import forge.assets.FSkinColor.Colors;
 import forge.card.CardRenderer;
 import forge.card.CardZoom;
 import forge.card.CardRenderer.CardStackPosition;
-import forge.card.CardZoom.ActivateHandler;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
-import forge.game.spellability.SpellAbility;
 import forge.item.PaperCard;
 import forge.screens.match.MatchController;
 import forge.screens.match.views.VAvatar;
 import forge.screens.match.views.VStack;
 import forge.util.Utils;
+import forge.view.CardView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
 
-public class FChoiceList<T> extends FList<T> implements ActivateHandler {
+public class FChoiceList<T> extends FList<T> {
     public static final FSkinColor ITEM_COLOR = FSkinColor.get(Colors.CLR_ZEBRA);
     public static final FSkinColor ALT_ITEM_COLOR = ITEM_COLOR.getContrastColor(-20);
     public static final FSkinColor SEL_COLOR = FSkinColor.get(Colors.CLR_ACTIVE);
@@ -35,19 +35,19 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
     private final CompactModeHandler compactModeHandler = new CompactModeHandler();
     private final List<Integer> selectedIndices = new ArrayList<Integer>();
 
-    public FChoiceList(Iterable<? extends T> items) {
+    public FChoiceList(Collection<? extends T> items) {
         this(items, null);
     }
-    protected FChoiceList(Iterable<? extends T> items, T typeItem) {
+    protected FChoiceList(Collection<? extends T> items, T typeItem) {
         this(items, 0, 1, typeItem);
-        if (getCount() > 0) {
+        if (items.size() > 0) {
             addSelectedIndex(0); //select first item by default
         }
     }
-    public FChoiceList(Iterable<? extends T> items, int minChoices0, int maxChoices0) {
+    public FChoiceList(Collection<? extends T> items, int minChoices0, int maxChoices0) {
         this(items, minChoices0, maxChoices0, null);
     }
-    protected FChoiceList(Iterable<? extends T> items, int minChoices0, int maxChoices0, T typeItem) {
+    protected FChoiceList(Collection<? extends T> items, int minChoices0, int maxChoices0, T typeItem) {
         super(items);
         minChoices = minChoices0;
         maxChoices = maxChoices0;
@@ -61,7 +61,7 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         else if (item instanceof CardView) {
             renderer = new CardItemRenderer();
         }
-        else if (item instanceof SpellAbility) {
+        else if (item instanceof SpellAbilityView) {
             renderer = new SpellAbilityItemRenderer();
         }
         else if (item instanceof PlayerView) {
@@ -96,7 +96,7 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
                     selectedIndices.add(index);
                     onSelectionChange();
                 }
-                if (renderer.tap(index, value, x, y, count)) {
+                if (renderer.tap(value, x, y, count)) {
                     prevTapIndex = index;
                     return true; //don't activate if renderer handles tap
                 }
@@ -109,7 +109,7 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
 
             @Override
             public boolean showMenu(Integer index, T value, FDisplayObject owner, float x, float y) {
-                return renderer.longPress(index, value, x, y);
+                return renderer.longPress(value, x, y);
             }
 
             @Override
@@ -207,7 +207,6 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
     public void setSelectedIndex(int index) {
         selectedIndices.clear();
         selectedIndices.add(index);
-        scrollIntoView(index);
         onSelectionChange();
     }
 
@@ -274,8 +273,8 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
     protected abstract class ItemRenderer {
         public abstract FSkinFont getDefaultFont();
         public abstract float getItemHeight();
-        public abstract boolean tap(Integer index, T value, float x, float y, int count);
-        public abstract boolean longPress(Integer index, T value, float x, float y);
+        public abstract boolean tap(T value, float x, float y, int count);
+        public abstract boolean longPress(T value, float x, float y);
         public abstract void drawValue(Graphics g, T value, FSkinFont font, FSkinColor foreColor, boolean pressed, float x, float y, float w, float h);
     }
     protected class DefaultItemRenderer extends ItemRenderer {
@@ -293,12 +292,12 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         }
 
         @Override
-        public boolean tap(Integer index, T value, float x, float y, int count) {
+        public boolean tap(T value, float x, float y, int count) {
             return false;
         }
 
         @Override
-        public boolean longPress(Integer index, T value, float x, float y) {
+        public boolean longPress(T value, float x, float y) {
             return false;
         }
 
@@ -320,13 +319,13 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         }
 
         @Override
-        public boolean tap(Integer index, T value, float x, float y, int count) {
-            return CardRenderer.cardListItemTap(items, index, FChoiceList.this, x, y, count, compactModeHandler.isCompactMode());
+        public boolean tap(T value, float x, float y, int count) {
+            return CardRenderer.cardListItemTap((PaperCard)value, x, y, count, compactModeHandler.isCompactMode());
         }
 
         @Override
-        public boolean longPress(Integer index, T value, float x, float y) {
-            CardZoom.show(items, index, FChoiceList.this);
+        public boolean longPress(T value, float x, float y) {
+            CardZoom.show((PaperCard)value);
             return true;
         }
 
@@ -348,13 +347,13 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         }
 
         @Override
-        public boolean tap(Integer index, T value, float x, float y, int count) {
-            return CardRenderer.cardListItemTap(items, index, FChoiceList.this, x, y, count, compactModeHandler.isCompactMode());
+        public boolean tap(T value, float x, float y, int count) {
+            return CardRenderer.cardListItemTap((CardView)value, x, y, count, compactModeHandler.isCompactMode());
         }
 
         @Override
-        public boolean longPress(Integer index, T value, float x, float y) {
-            CardZoom.show(items, index, FChoiceList.this);
+        public boolean longPress(T value, float x, float y) {
+            CardZoom.show((CardView)value);
             return true;
         }
 
@@ -378,24 +377,24 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         }
 
         @Override
-        public boolean tap(Integer index, T value, float x, float y, int count) {
+        public boolean tap(T value, float x, float y, int count) {
             if (x <= VStack.CARD_WIDTH + 2 * FList.PADDING) {
-                CardZoom.show(((SpellAbility)value).getView().getHostCard());
+                CardZoom.show(((SpellAbilityView)value).getHostCard());
                 return true;
             }
             return false;
         }
 
         @Override
-        public boolean longPress(Integer index, T value, float x, float y) {
-            CardZoom.show(((SpellAbility)value).getView().getHostCard());
+        public boolean longPress(T value, float x, float y) {
+            CardZoom.show(((SpellAbilityView)value).getHostCard());
             return true;
         }
 
         @Override
         public void drawValue(Graphics g, T value, FSkinFont font, FSkinColor foreColor, boolean pressed, float x, float y, float w, float h) {
-            SpellAbility spellAbility = (SpellAbility)value;
-            CardRenderer.drawCardWithOverlays(g, spellAbility.getView().getHostCard(), x, y, VStack.CARD_WIDTH, VStack.CARD_HEIGHT, CardStackPosition.Top);
+            SpellAbilityView spellAbility = (SpellAbilityView)value;
+            CardRenderer.drawCardWithOverlays(g, spellAbility.getHostCard(), x, y, VStack.CARD_WIDTH, VStack.CARD_HEIGHT, CardStackPosition.Top);
 
             float dx = VStack.CARD_WIDTH + FList.PADDING;
             x += dx;
@@ -415,12 +414,12 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
         }
 
         @Override
-        public boolean tap(Integer index, T value, float x, float y, int count) {
+        public boolean tap(T value, float x, float y, int count) {
             return false;
         }
 
         @Override
-        public boolean longPress(Integer index, T value, float x, float y) {
+        public boolean longPress(T value, float x, float y) {
             return false;
         }
 
@@ -432,18 +431,5 @@ public class FChoiceList<T> extends FList<T> implements ActivateHandler {
             w -= VAvatar.WIDTH;
             g.drawText(player.getName() + " (" + player.getLife() + ")", font, foreColor, x, y, w, h, false, HAlignment.LEFT, true);
         }
-    }
-
-    @Override
-    public String getActivateAction(int index) {
-        if (maxChoices > 0) {
-            return "select card";
-        }
-        return null;
-    }
-
-    @Override
-    public void activate(int index) {
-        setSelectedIndex(index);
     }
 }

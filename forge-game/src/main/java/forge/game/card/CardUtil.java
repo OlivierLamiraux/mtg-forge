@@ -22,27 +22,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import forge.ImageKeys;
-import forge.card.CardStateName;
-import forge.card.CardType;
+import forge.card.CardCharacteristicName;
 import forge.card.ColorSet;
 import forge.card.MagicColor;
 import forge.game.Game;
-import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.player.Player;
 import forge.game.spellability.AbilityManaPart;
 import forge.game.spellability.AbilitySub;
 import forge.game.spellability.SpellAbility;
-import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
-import forge.util.FCollection;
 
 public final class CardUtil {
     // disable instantiation
@@ -60,7 +54,7 @@ public final class CardUtil {
             "Transmute", "Replicate", "Recover", "Suspend", "Aura swap",
             "Fortify", "Transfigure", "Champion", "Evoke", "Prowl",
             "Reinforce", "Unearth", "Level up", "Miracle", "Overload",
-            "Scavenge", "Bestow", "Outlast", "Dash").build();
+            "Scavenge", "Bestow", "Outlast").build();
     /** List of keyword endings of keywords that could be modified by text changes. */
     public static final ImmutableList<String> modifiableKeywordEndings = ImmutableList.<String>builder().add(
             "walk", "cycling", "offering").build();
@@ -151,20 +145,21 @@ public final class CardUtil {
      * @param from  zone coming from
      * @param valid a isValid expression
      * @param src   a Card object
-     * @return a CardCollection that matches the given criteria
+     * @return a List<Card> that matches the given criteria
      */
-    public static CardCollection getThisTurnEntered(final ZoneType to, final ZoneType from, final String valid, final Card src) {
-        CardCollection res = new CardCollection();
+    public static List<Card> getThisTurnEntered(final ZoneType to, final ZoneType from, final String valid, final Card src) {
+        List<Card> res = new ArrayList<Card>();
         final Game game = src.getGame();
         if (to != ZoneType.Stack) {
             for (Player p : game.getPlayers()) {
                 res.addAll(p.getZone(to).getCardsAddedThisTurn(from));
             }
-        }
-        else {
+        } else {
             res.addAll(game.getStackZone().getCardsAddedThisTurn(from));
         }
+
         res = CardLists.getValidCards(res, valid, src.getController(), src);
+
         return res;
     }
 
@@ -175,37 +170,38 @@ public final class CardUtil {
      * @param from  zone coming from
      * @param valid a isValid expression
      * @param src   a Card object
-     * @return a CardCollection that matches the given criteria
+     * @return a List<Card> that matches the given criteria
      */
-    public static CardCollection getLastTurnEntered(final ZoneType to, final ZoneType from, final String valid, final Card src) {
-        CardCollection res = new CardCollection();
+    public static List<Card> getLastTurnEntered(final ZoneType to, final ZoneType from, final String valid, final Card src) {
+        List<Card> res = new ArrayList<Card>();
         final Game game = src.getGame();
         if (to != ZoneType.Stack) {
             for (Player p : game.getPlayers()) {
                 res.addAll(p.getZone(to).getCardsAddedLastTurn(from));
             }
-        }
-        else {
+        } else {
             res.addAll(game.getStackZone().getCardsAddedLastTurn(from));
         }
-        res = CardLists.getValidCards(res, valid, src.getController(), src);
-        return res;
-    }
-
-    public static CardCollection getThisTurnCast(final String valid, final Card src) {
-        CardCollection res = new CardCollection();
-        final Game game = src.getGame();
-        res.addAll(game.getStack().getSpellsCastThisTurn());
 
         res = CardLists.getValidCards(res, valid, src.getController(), src);
 
         return res;
     }
 
-    public static CardCollection getLastTurnCast(final String valid, final Card src) {
-        CardCollection res = new CardCollection();
+    public static List<Card> getThisTurnCast(final String valid, final Card src) {
+        List<Card> res = new ArrayList<Card>();
         final Game game = src.getGame();
-        res.addAll(game.getStack().getSpellsCastLastTurn());
+        res.addAll(game.getStack().getCardsCastThisTurn());
+
+        res = CardLists.getValidCards(res, valid, src.getController(), src);
+
+        return res;
+    }
+
+    public static List<Card> getLastTurnCast(final String valid, final Card src) {
+        List<Card> res = new ArrayList<Card>();
+        final Game game = src.getGame();
+        res.addAll(game.getStack().getCardsCastLastTurn());
 
         res = CardLists.getValidCards(res, valid, src.getController(), src);
 
@@ -217,38 +213,42 @@ public final class CardUtil {
      * @return a copy of C with LastKnownInfo stuff retained.
      */
     public static Card getLKICopy(final Card in) {
-        final Card newCopy = new Card(in.getId(), in.getPaperCard(), false, in.getGame());
-        newCopy.setSetCode(in.getSetCode());
+
+        final Card newCopy = new Card(in.getUniqueNumber(), in.getPaperCard());
+        newCopy.setCurSetCode(in.getCurSetCode());
         newCopy.setOwner(in.getOwner());
         newCopy.setController(in.getController(), 0);
-        newCopy.getCurrentState().copyFrom(in, in.getState(in.getCurrentStateName()));
+        newCopy.getCharacteristics().copyFrom(in.getState(in.getCurState()));
         if (in.isCloned()) {
-            newCopy.addAlternateState(CardStateName.Cloner, false);
+            newCopy.addAlternateState(CardCharacteristicName.Cloner);
         }
-        newCopy.setType(new CardType(in.getType()));
+        newCopy.setType(new ArrayList<String>(in.getType()));
         newCopy.setToken(in.isToken());
         newCopy.setTriggers(in.getTriggers(), false);
-        for (SpellAbility sa : in.getSpellAbilities()) {
+        for (SpellAbility sa : in.getManaAbility()) {
             newCopy.addSpellAbility(sa);
             sa.setHostCard(in);
         }
-
-        // lock in the current P/T without bonus from counters
-        newCopy.setBasePower(in.getCurrentPower() + in.getTempPowerBoost() + in.getSemiPermanentPowerBoost());
-        newCopy.setBaseToughness(in.getCurrentToughness() + in.getTempToughnessBoost() + in.getSemiPermanentToughnessBoost());
+        
+        // lock in the current P/T without boni from counters
+        newCopy.setBaseAttack(in.getCurrentPower() + in.getTempAttackBoost() + in.getSemiPermanentAttackBoost());
+        newCopy.setBaseDefense(in.getCurrentToughness() + in.getTempDefenseBoost() + in.getSemiPermanentDefenseBoost());
 
         newCopy.setCounters(in.getCounters());
         newCopy.setExtrinsicKeyword(in.getExtrinsicKeyword());
 
-        newCopy.setColor(in.determineColor().getColor());
+        // Determine the color for LKI copy, not just getColor
+        ArrayList<CardColor> currentColor = new ArrayList<CardColor>();
+        currentColor.add(new CardColor(in.determineColor().getColor()));
+        newCopy.setColor(currentColor);
         newCopy.setReceivedDamageFromThisTurn(in.getReceivedDamageFromThisTurn());
         newCopy.getDamageHistory().setCreatureGotBlockedThisTurn(in.getDamageHistory().getCreatureGotBlockedThisTurn());
         newCopy.setEnchanting(in.getEnchanting());
-        newCopy.setEnchantedBy(in.getEnchantedBy(false));
-        newCopy.setEquipping(in.getEquipping());
-        newCopy.setEquippedBy(in.getEquippedBy(false));
-        newCopy.setFortifying(in.getFortifying());
-        newCopy.setFortifiedBy(in.getFortifiedBy(false));
+        newCopy.setEnchantedBy(new ArrayList<Card> (in.getEnchantedBy()));
+        newCopy.setEquipping(new ArrayList<Card> (in.getEquipping()));
+        newCopy.setEquippedBy(new ArrayList<Card> (in.getEquippedBy()));
+        newCopy.setFortifying(new ArrayList<Card> (in.getFortifying()));
+        newCopy.setFortifiedBy(new ArrayList<Card> (in.getFortifiedBy()));
         newCopy.setClones(in.getClones());
         newCopy.setHaunting(in.getHaunting());
         for (final Card haunter : in.getHauntedBy()) {
@@ -257,15 +257,15 @@ public final class CardUtil {
         for (final Object o : in.getRemembered()) {
             newCopy.addRemembered(o);
         }
-        for (final Card o : in.getImprintedCards()) {
-            newCopy.addImprintedCard(o);
+        for (final Card o : in.getImprinted()) {
+            newCopy.addImprinted(o);
         }
 
         return newCopy;
     }
 
-    public static CardCollection getRadiance(final Card source, final Card origin, final String[] valid) {
-        final CardCollection res = new CardCollection();
+    public static List<Card> getRadiance(final Card source, final Card origin, final String[] valid) {
+        final List<Card> res = new ArrayList<Card>();
 
         final Game game = source.getGame();
         ColorSet cs = CardUtil.getColors(origin);
@@ -282,28 +282,29 @@ public final class CardUtil {
         return res;
     }
 
-    public static CardState getFaceDownCharacteristic(Card c) {
-        final CardType type = new CardType();
-        type.add("Creature");
+    public static CardCharacteristics getFaceDownCharacteristic() {
+        final ArrayList<String> types = new ArrayList<String>();
+        types.add("Creature");
 
-        final CardState ret = new CardState(c.getView().createAlternateState(CardStateName.FaceDown), c);
-        ret.setBasePower(2);
-        ret.setBaseToughness(2);
+        final CardCharacteristics ret = new CardCharacteristics();
+        ret.setBaseAttack(2);
+        ret.setBaseDefense(2);
 
         ret.setName("");
-        ret.setType(type);
+        ret.setType(types);
 
         ret.setImageKey(ImageKeys.getTokenKey(ImageKeys.MORPH_IMAGE));
+
         return ret;
     }
 
     // a nice entry point with minimum parameters
     public static Set<String> getReflectableManaColors(final SpellAbility sa) {
-        return getReflectableManaColors(sa, sa, new HashSet<String>(), new CardCollection());
+        return getReflectableManaColors(sa, sa, new HashSet<String>(), new ArrayList<Card>());
     }
     
     private static Set<String> getReflectableManaColors(final SpellAbility abMana, final SpellAbility sa,
-            Set<String> colors, final CardCollection parents) {
+            Set<String> colors, final List<Card> parents) {
         // Here's the problem with reflectable Mana. If more than one is out,
         // they need to Reflect each other,
         // so we basically need to have a recursive list that send the parents
@@ -329,7 +330,7 @@ public final class CardUtil {
             maxChoices++;
         }
 
-        CardCollection cards = null;
+        List<Card> cards = null;
 
         // Reuse AF_Defined in a slightly different way
         if (validCard.startsWith("Defined.")) {
@@ -378,9 +379,9 @@ public final class CardUtil {
                 colors.add(MagicColor.Constant.COLORLESS);
             }
         } else if (reflectProperty.equals("Produce")) {
-            final FCollection<SpellAbility> abilities = new FCollection<SpellAbility>();
+            final List<SpellAbility> abilities = new ArrayList<SpellAbility>();
             for (final Card c : cards) {
-                abilities.addAll(c.getManaAbilities());
+                abilities.addAll(c.getManaAbility());
             }
 
             final List<SpellAbility> reflectAbilities = new ArrayList<SpellAbility>();
@@ -418,9 +419,6 @@ public final class CardUtil {
     
     public static Set<String> canProduce(final int maxChoices, final AbilityManaPart ab,
             final Set<String> colors) {
-        if (ab == null) {
-            return colors;
-        }
         for (final String col : MagicColor.Constant.ONLY_COLORS) {
             final String s = MagicColor.toShortString(col);
             if (ab.canProduce(s)) {
@@ -433,56 +431,5 @@ public final class CardUtil {
         }
 
         return colors;
-    }
-
-    // these have been copied over from CardFactoryUtil as they need two extra
-    // parameters for target selection.
-    // however, due to the changes necessary for SA_Requirements this is much
-    // different than the original
-    public static List<Card> getValidCardsToTarget(TargetRestrictions tgt, SpellAbility ability) {
-        final Game game = ability.getActivatingPlayer().getGame();
-        final List<ZoneType> zone = tgt.getZone();
-
-        final boolean canTgtStack = zone.contains(ZoneType.Stack);
-        List<Card> validCards = CardLists.getValidCards(game.getCardsIn(zone), tgt.getValidTgts(), ability.getActivatingPlayer(), ability.getHostCard());
-        List<Card> choices = CardLists.getTargetableCards(validCards, ability);
-        if (canTgtStack) {
-            // Since getTargetableCards doesn't have additional checks if one of the Zones is stack
-            // Remove the activating card from targeting itself if its on the Stack
-            Card activatingCard = ability.getHostCard();
-            if (activatingCard.isInZone(ZoneType.Stack)) {
-                choices.remove(ability.getHostCard());
-            }
-        }
-        List<GameObject> targetedObjects = ability.getUniqueTargets();
-
-        // Remove cards already targeted
-        final List<Card> targeted = Lists.newArrayList(ability.getTargets().getTargetCards());
-        for (final Card c : targeted) {
-            if (choices.contains(c)) {
-                choices.remove(c);
-            }
-        }
-
-        // If all cards (including subability targets) must have the same controller
-        if (tgt.isSameController() && !targetedObjects.isEmpty()) {
-            final List<Card> list = new ArrayList<Card>();
-            for (final Object o : targetedObjects) {
-                if (o instanceof Card) {
-                    list.add((Card) o);
-                }
-            }
-            if (!list.isEmpty()) {
-                final Card card = list.get(0);
-                choices = CardLists.filter(choices, new Predicate<Card>() {
-                    @Override
-                    public boolean apply(final Card c) {
-                        return c.sharesControllerWith(card);
-                    }
-                });
-            }
-        }
-
-        return choices;
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.time.StopWatch;
 
+import forge.GuiBase;
 import forge.deck.Deck;
 import forge.deck.io.DeckSerializer;
 import forge.game.Game;
@@ -21,7 +22,7 @@ import forge.util.Lang;
 
 public class SimulateMatch {
     public static void simulate(String[] args) {
-        FModel.initialize(null);
+        FModel.initialize(GuiBase.getInterface(), null);
 
         System.out.println("Simulation mode");
         if(args.length < 3 ) {

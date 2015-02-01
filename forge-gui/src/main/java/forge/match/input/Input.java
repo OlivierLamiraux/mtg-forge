@@ -1,23 +1,22 @@
 package forge.match.input;
 
-import java.util.List;
-
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
+import forge.interfaces.IGuiBase;
 import forge.util.ITriggerEvent;
+import forge.view.PlayerView;
 
 public interface Input {
     PlayerView getOwner();
 
+    IGuiBase getGui();
+
     void showMessageInitial();
 
-    boolean selectCard(Card card, final List<Card> otherCardsToSelect, ITriggerEvent triggerEvent);
+    boolean selectCard(Card card, ITriggerEvent triggerEvent);
 
-    String getActivateAction(Card card);
-
-    boolean selectAbility(SpellAbility ab);
+    void selectAbility(SpellAbility ab);
 
     void selectPlayer(Player player, ITriggerEvent triggerEvent);
 

@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont.HAlignment;
 import forge.FThreads;
 import forge.Forge;
 import forge.Graphics;
+import forge.GuiBase;
 import forge.LobbyPlayer;
 import forge.assets.FSkin;
 import forge.assets.FSkinColor;
@@ -17,7 +18,6 @@ import forge.assets.FSkinImage;
 import forge.assets.FTextureRegionImage;
 import forge.deck.CardPool;
 import forge.deck.Deck;
-import forge.deck.DeckFormat;
 import forge.deck.DeckProxy;
 import forge.deck.DeckSection;
 import forge.deck.DeckType;
@@ -177,7 +177,7 @@ public class ConstructedScreen extends LaunchScreen {
                 playerPanels.get(6).initialize(FPref.CONSTRUCTED_P7_DECK_STATE, DeckType.COLOR_DECK);
                 playerPanels.get(7).initialize(FPref.CONSTRUCTED_P8_DECK_STATE, DeckType.COLOR_DECK);*/ //TODO: Support multiplayer and improve performance of loading this screen by using background thread
 
-                FThreads.invokeInEdtLater(new Runnable() {
+                FThreads.invokeInEdtLater(GuiBase.getInterface(), new Runnable() {
                     @Override
                     public void run() {
                         btnStart.setEnabled(true);
@@ -336,7 +336,7 @@ public class ConstructedScreen extends LaunchScreen {
                     Deck schemeDeck = playerPanel.lstSchemeDecks.getDeck();
                     CardPool schemePool = schemeDeck.get(DeckSection.Schemes);
                     if (checkLegality) {
-                        String errMsg = DeckFormat.getSchemeSectionConformanceProblem(schemePool);
+                        String errMsg = GameType.Archenemy.getDeckFormat().getSchemeSectionConformanceProblem(schemePool);
                         if (errMsg != null) {
                             FOptionPane.showErrorDialog(name + "'s deck " + errMsg, "Invalid Scheme Deck");
                             return false;
@@ -350,7 +350,7 @@ public class ConstructedScreen extends LaunchScreen {
                     Deck planarDeck = playerPanel.lstPlanarDecks.getDeck();
                     CardPool planePool = planarDeck.get(DeckSection.Planes);
                     if (checkLegality) {
-                        String errMsg = DeckFormat.getPlaneSectionConformanceProblem(planePool);
+                        String errMsg = GameType.Planechase.getDeckFormat().getPlaneSectionConformanceProblem(planePool);
                         if (null != errMsg) {
                             FOptionPane.showErrorDialog(name + "'s deck " + errMsg, "Invalid Planar Deck");
                             return false;

@@ -372,12 +372,6 @@ public enum VSubmenuQuestPrefs implements IVSubmenu<CSubmenuQuestPrefs> {
         pnlShop.add(new FLabel.Builder().text("Rare Singles").fontAlign(SwingConstants.RIGHT).build(), constraints2);
         pnlShop.add(new PrefInput(QPref.SHOP_SINGLES_RARE, QuestPreferencesErrType.SHOP), constraints1);
 
-        pnlShop.add(new FLabel.Builder().text("Card Sale Price Cap").fontAlign(SwingConstants.RIGHT).build(), constraints2);
-        pnlShop.add(new PrefInput(QPref.SHOP_MAX_SELLING_PRICE, QuestPreferencesErrType.SHOP), constraints1);
-
-        pnlShop.add(new FLabel.Builder().text("Wins to Uncap Sale Price").fontAlign(SwingConstants.RIGHT).build(), constraints2);
-        pnlShop.add(new PrefInput(QPref.SHOP_WINS_FOR_NO_SELL_LIMIT, QuestPreferencesErrType.SHOP), constraints1);
-
         pnlShop.add(new FLabel.Builder().text("Item Level Restriction").fontAlign(SwingConstants.RIGHT).build(), constraints2);
         pnlShop.add(new PrefInput(QPref.ITEM_LEVEL_RESTRICTION, QuestPreferencesErrType.SHOP), constraints1);
 		

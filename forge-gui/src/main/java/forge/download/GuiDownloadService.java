@@ -21,13 +21,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -37,10 +38,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.esotericsoftware.minlog.Log;
 
 import forge.FThreads;
-import forge.GuiBase;
 import forge.UiCommand;
 import forge.error.BugReporter;
 import forge.interfaces.IButton;
+import forge.interfaces.IGuiBase;
 import forge.interfaces.IProgressBar;
 import forge.interfaces.ITextField;
 import forge.util.FileUtil;
@@ -53,16 +54,17 @@ public abstract class GuiDownloadService implements Runnable {
     //Components passed from GUI component displaying download
     private ITextField txtAddress;
     private ITextField txtPort;
-    protected IProgressBar progressBar;
+    private IProgressBar progressBar;
     private IButton btnStart;
     private UiCommand cmdClose;
     private Runnable onUpdate;
+    private IGuiBase gui;
 
     private final UiCommand cmdStartDownload = new UiCommand() {
         @Override
         public void run() {
             //invalidate image cache so newly downloaded images will be loaded
-            GuiBase.getInterface().clearImageCache();
+            gui.clearImageCache();
             FThreads.invokeInBackgroundThread(GuiDownloadService.this);
             btnStart.setEnabled(false);
         }
@@ -73,7 +75,7 @@ public abstract class GuiDownloadService implements Runnable {
 
     // Progress variables
     private Map<String, String> files; // local path -> url
-    protected boolean cancel;
+    private boolean cancel;
     private final long[] times = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     private int tptr = 0;
     private int skipped = 0;
@@ -82,58 +84,36 @@ public abstract class GuiDownloadService implements Runnable {
     protected GuiDownloadService() {
     }
 
-    public void initialize(ITextField txtAddress0, ITextField txtPort0, IProgressBar progressBar0, IButton btnStart0, UiCommand cmdClose0, final Runnable onReadyToStart, Runnable onUpdate0) {
+    public void initialize(final IGuiBase gui, ITextField txtAddress0, ITextField txtPort0, IProgressBar progressBar0, IButton btnStart0, UiCommand cmdClose0, final Runnable onReadyToStart, Runnable onUpdate0) {
         txtAddress = txtAddress0;
         txtPort = txtPort0;
         progressBar = progressBar0;
         btnStart = btnStart0;
         cmdClose = cmdClose0;
         onUpdate = onUpdate0;
+        this.gui = gui;
 
-        String startOverrideDesc = getStartOverrideDesc();
-        if (startOverrideDesc == null) {
-            // Free up the EDT by assembling card list on a background thread
-            FThreads.invokeInBackgroundThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        files = getNeededFiles();
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    FThreads.invokeInEdtLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (onReadyToStart != null) {
-                                onReadyToStart.run();
-                            }
-                            readyToStart();
+        // Free up the EDT by assembling card list on a background thread
+        FThreads.invokeInBackgroundThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    files = getNeededFiles();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+                FThreads.invokeInEdtLater(gui, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (onReadyToStart != null) {
+                            onReadyToStart.run();
                         }
-                    });
-                }
-            });
-        }
-        else {
-            //handle special case of zip service
-            if (onReadyToStart != null) {
-                onReadyToStart.run();
+                        readyToStart();
+                    }
+                });
             }
-            progressBar.setDescription("Click \"Start\" to download and extract " + startOverrideDesc);
-            btnStart.setCommand(cmdStartDownload);
-            btnStart.setEnabled(true);
-
-            FThreads.invokeInEdtLater(new Runnable() {
-                @Override
-                public void run() {
-                    btnStart.requestFocusInWindow();
-                }
-            });
-        }
-    }
-
-    protected String getStartOverrideDesc() {
-        return null;
+        });
     }
 
     private void readyToStart() {
@@ -150,7 +130,7 @@ public abstract class GuiDownloadService implements Runnable {
         }
         btnStart.setEnabled(true);
 
-        FThreads.invokeInEdtLater(new Runnable() {
+        FThreads.invokeInEdtLater(gui, new Runnable() {
             @Override
             public void run() {
                 btnStart.requestFocusInWindow();
@@ -189,7 +169,7 @@ public abstract class GuiDownloadService implements Runnable {
     }
 
     private void update(final int count, final File dest) {
-        FThreads.invokeInEdtLater(new Runnable() {
+        FThreads.invokeInEdtLater(gui, new Runnable() {
             @Override
             public void run() {
                 if (onUpdate != null) {
@@ -221,7 +201,10 @@ public abstract class GuiDownloadService implements Runnable {
                 else {
                     sb.append(String.format("%d of %d items finished! Skipped " + skipped + " items. Please close!",
                             count, files.size()));
-                    finish();
+                    btnStart.setText("OK");
+                    btnStart.setCommand(cmdClose);
+                    btnStart.setEnabled(true);
+                    btnStart.requestFocusInWindow();
                 }
 
                 progressBar.setValue(count);
@@ -231,23 +214,27 @@ public abstract class GuiDownloadService implements Runnable {
         });
     }
 
-    protected void finish() {
-        btnStart.setText("OK");
-        btnStart.setCommand(cmdClose);
-        btnStart.setEnabled(true);
-        btnStart.requestFocusInWindow();
-    }
-
     @Override
-    public void run() {
+    public final void run() {
         final Random r = MyRandom.getRandom();
         
-        Proxy p = getProxy();
+        Proxy p = null;
+        if (type == 0) {
+            p = Proxy.NO_PROXY;
+        }
+        else {
+            try {
+                p = new Proxy(TYPES[type], new InetSocketAddress(txtAddress.getText(), Integer.parseInt(txtPort.getText())));
+            }
+            catch (final Exception ex) {
+                BugReporter.reportException(ex, gui,
+                        "Proxy connection could not be established!\nProxy address: %s\nProxy port: %s",
+                        txtAddress.getText(), txtPort.getText());
+                return;
+            }
+        }
 
-        int bufferLength;
         int iCard = 0;
-        byte[] buffer = new byte[1024];
-
         for (Entry<String, String> kv : files.entrySet()) {
             if (cancel) { break; }
 
@@ -255,7 +242,8 @@ public abstract class GuiDownloadService implements Runnable {
             final File fileDest = new File(kv.getKey());
             final File base = fileDest.getParentFile();
 
-            FileOutputStream fos = null;
+            ReadableByteChannel rbc = null;
+            FileOutputStream    fos = null;
             try {
                 // test for folder existence
                 if (!base.exists() && !base.mkdir()) { // create folder if not found
@@ -276,11 +264,9 @@ public abstract class GuiDownloadService implements Runnable {
                     continue;
                 }
 
+                rbc = Channels.newChannel(conn.getInputStream());
                 fos = new FileOutputStream(fileDest);
-                InputStream inputStream = conn.getInputStream();
-                while ((bufferLength = inputStream.read(buffer)) > 0) {
-                    fos.write(buffer, 0, bufferLength);
-                }
+                fos.getChannel().transferFrom(rbc, 0, 1 << 24);
             }
             catch (final ConnectException ce) {
                 System.out.println("Connection refused for url: " + url);
@@ -296,13 +282,11 @@ public abstract class GuiDownloadService implements Runnable {
                 Log.error("LQ Pictures", "Error downloading pictures", ex);
             }
             finally {
-                if (fos != null) {
-                    try {
-                        fos.close();
-                    }
-                    catch (IOException e) {
-                        System.out.println("error closing output stream");
-                    }
+                if (null != rbc) {
+                    try { rbc.close(); } catch (IOException e) { System.out.println("error closing input stream"); }
+                }
+                if (null != fos) {
+                    try { fos.close(); } catch (IOException e) { System.out.println("error closing output stream"); }
                 }
             }
 
@@ -315,23 +299,6 @@ public abstract class GuiDownloadService implements Runnable {
                 Log.error("GuiDownloader", "Sleep Error", e);
             }
         }
-    }
-
-    protected Proxy getProxy() {
-        if (type == 0) {
-            return Proxy.NO_PROXY;
-        }
-        else {
-            try {
-                return new Proxy(TYPES[type], new InetSocketAddress(txtAddress.getText(), Integer.parseInt(txtPort.getText())));
-            }
-            catch (final Exception ex) {
-                BugReporter.reportException(ex,
-                        "Proxy connection could not be established!\nProxy address: %s\nProxy port: %s",
-                        txtAddress.getText(), txtPort.getText());
-            }
-        }
-        return null;
     }
 
     public abstract String getTitle();

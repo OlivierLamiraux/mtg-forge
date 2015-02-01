@@ -40,7 +40,7 @@ import org.apache.commons.lang3.StringUtils;
  * @version $Id$
  */
 public class ManaCostBeingPaid {
-    private class ManaCostBeingPaidIterator implements IParserManaCost {
+    private class ManaCostBeingPaidIterator implements IParserManaCost, Iterator<ManaCostShard> {
         private Iterator<ManaCostShard> mch;
         private ManaCostShard nextShard = null;
         private int remainingShards = 0;
@@ -321,7 +321,7 @@ public class ManaCostBeingPaid {
             }
         };
 
-        return tryPayMana(colorMask, Iterables.filter(unpaidShards.keySet(), predCanBePaid), pool.getPossibleColorUses(colorMask)) != null;
+        return tryPayMana(colorMask, Iterables.filter(unpaidShards.keySet(), predCanBePaid), pool.getPossibleColorUses(colorMask));
     }
 
     /**
@@ -347,20 +347,10 @@ public class ManaCostBeingPaid {
 
         byte inColor = mana.getColor();
         byte outColor = pool.getPossibleColorUses(inColor);
-        return tryPayMana(inColor, Iterables.filter(unpaidShards.keySet(), predCanBePaid), outColor) != null;
-    }
-    
-    public final ManaCostShard payManaViaConvoke(final byte color) {
-        Predicate<ManaCostShard> predCanBePaid = new Predicate<ManaCostShard>() {
-            @Override
-            public boolean apply(ManaCostShard ms) {
-                return ms.canBePaidWithManaOfColor(color);
-            }
-        };
-        return tryPayMana(color, Iterables.filter(unpaidShards.keySet(), predCanBePaid), (byte)0xFF);
+        return tryPayMana(inColor, Iterables.filter(unpaidShards.keySet(), predCanBePaid), outColor);
     }
 
-    public ManaCostShard getShardToPayByPriority(Iterable<ManaCostShard> payableShards, byte possibleUses) {
+    private boolean tryPayMana(final byte colorMask, Iterable<ManaCostShard> payableShards, byte possibleUses) {
         Set<ManaCostShard> choice = EnumSet.noneOf(ManaCostShard.class);
         int priority = Integer.MIN_VALUE;
         for (ManaCostShard toPay : payableShards) {
@@ -375,17 +365,11 @@ public class ManaCostBeingPaid {
             }
         }
         if (choice.isEmpty()) {
-            return null;
+            return false;
         }
 
-       return Iterables.getFirst(choice, null);
-    }
+        ManaCostShard chosenShard = Iterables.getFirst(choice, null);
 
-    private ManaCostShard tryPayMana(final byte colorMask, Iterable<ManaCostShard> payableShards, byte possibleUses) {
-        ManaCostShard chosenShard = getShardToPayByPriority(payableShards, possibleUses);
-        if (chosenShard == null) {
-            return null;
-        }
         ShardCount sc = unpaidShards.get(chosenShard);
         if (sc != null && sc.xCount > 0) {
             //if there's any X part of the cost for the chosen shard, pay it off first and track what color was spent to pay X
@@ -407,10 +391,10 @@ public class ManaCostBeingPaid {
         }
 
         this.sunburstMap |= colorMask;
-        return chosenShard;
+        return true;
     }
 
-    private static int getPayPriority(final ManaCostShard bill, final byte paymentColor) {
+    private int getPayPriority(ManaCostShard bill, byte paymentColor) {
         if (bill == ManaCostShard.COLORLESS) {
             return 0;
         }
@@ -427,7 +411,7 @@ public class ManaCostBeingPaid {
         return 5;
     }
 
-    private static boolean canBePaidWith(final ManaCostShard shard, final Mana mana, final ManaPool pool) {
+    private boolean canBePaidWith(ManaCostShard shard, Mana mana, ManaPool pool) {
         if (shard.isSnow() && !mana.isSnow()) {
             return false;
         }
@@ -482,33 +466,33 @@ public class ManaCostBeingPaid {
 
         int nGeneric = getColorlessManaAmount();
         if (nGeneric > 0) {
-            if (nGeneric <= 20) {
+        	if (nGeneric <= 20) {
                 sb.append("{" + nGeneric + "}");
-            }
-            else { //if no mana symbol exists for colorless amount, use combination of symbols for each digit
-                String genericStr = String.valueOf(nGeneric);
-                for (int i = 0; i < genericStr.length(); i++) {
-                    sb.append("{" + genericStr.charAt(i) + "}");
-                }
-            }
+        	}
+        	else { //if no mana symbol exists for colorless amount, use combination of symbols for each digit
+        		String genericStr = String.valueOf(nGeneric);
+        		for (int i = 0; i < genericStr.length(); i++) {
+        			sb.append("{" + genericStr.charAt(i) + "}");
+        		}
+        	}
         }
 
-        // Sort the keys to get a deterministic ordering.
-        ArrayList<ManaCostShard> shards = new ArrayList<ManaCostShard>(unpaidShards.keySet());
-        Collections.sort(shards);
-        for (ManaCostShard shard : shards) {
-            if (shard == ManaCostShard.COLORLESS) {
+        for (Entry<ManaCostShard, ShardCount> s : unpaidShards.entrySet()) {
+            if (s.getKey() == ManaCostShard.COLORLESS) {
                 continue;
             }
-            
-            final String str = shard.toString();
-            final int count = unpaidShards.get(shard).totalCount;
-            for (int i = 0; i < count; i++) {
-                sb.append(str);
+            for (int i = 0; i < s.getValue().totalCount; i++) {
+                sb.append(s.getKey().toString());
             }
         }
 
-        return sb.length() == 0 ? "0"  : sb.toString();
+        final String str = sb.toString();
+
+        if (str.equals("")) {
+            return "0";
+        }
+
+        return str;
     }
 
     /** {@inheritDoc} */

@@ -4,7 +4,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
@@ -111,8 +110,8 @@ public class DigUntilEffect extends SpellAbilityEffect {
                 if (optional && !p.getController().confirmAction(sa, null, "Do you want to dig your library?")) {
                     continue;
                 }
-                CardCollection found = new CardCollection();
-                CardCollection revealed = new CardCollection();
+                List<Card> found = new ArrayList<Card>();
+                List<Card> revealed = new ArrayList<Card>();
 
                 final PlayerZone library = p.getZone(digSite);
 
@@ -147,7 +146,7 @@ public class DigUntilEffect extends SpellAbilityEffect {
                 if (foundDest != null) {
                     // Allow ordering of found cards
                     if ((foundDest.isKnown()) && found.size() >= 2) {
-                        found = (CardCollection)p.getController().orderMoveToZoneList(found, foundDest);
+                        found = p.getController().orderMoveToZoneList(found, foundDest);
                     }
 
                     final Iterator<Card> itr = found.iterator();
@@ -172,7 +171,7 @@ public class DigUntilEffect extends SpellAbilityEffect {
                 }
                 if (sa.hasParam("ImprintRevealed")) {
                     for (final Card c : revealed) {
-                        host.addImprintedCard(c);
+                        host.addImprinted(c);
                     }
                 }
                 if (sa.hasParam("RevealRandomOrder")) {
@@ -183,11 +182,11 @@ public class DigUntilEffect extends SpellAbilityEffect {
                 if (sa.hasParam("NoneFoundDestination") && found.size() < untilAmount) {
                  // Allow ordering the revealed cards
                     if ((noneFoundDest.isKnown()) && revealed.size() >= 2) {
-                        revealed = (CardCollection)p.getController().orderMoveToZoneList(revealed, noneFoundDest);
+                        revealed = p.getController().orderMoveToZoneList(revealed, noneFoundDest);
                     }
                     if (noneFoundDest == ZoneType.Library && !shuffle
                             && !sa.hasParam("RevealRandomOrder") && revealed.size() >= 2) {
-                        revealed = (CardCollection)p.getController().orderMoveToZoneList(revealed, noneFoundDest);
+                        revealed = p.getController().orderMoveToZoneList(revealed, noneFoundDest);
                     }
 
                     final Iterator<Card> itr = revealed.iterator();
@@ -198,11 +197,11 @@ public class DigUntilEffect extends SpellAbilityEffect {
                 } else {
                  // Allow ordering the rest of the revealed cards
                     if ((revealedDest.isKnown()) && revealed.size() >= 2) {
-                        revealed = (CardCollection)p.getController().orderMoveToZoneList(revealed, revealedDest);
+                        revealed = p.getController().orderMoveToZoneList(revealed, revealedDest);
                     }
                     if (revealedDest == ZoneType.Library && !shuffle
                             && !sa.hasParam("RevealRandomOrder") && revealed.size() >= 2) {
-                        revealed = (CardCollection)p.getController().orderMoveToZoneList(revealed, revealedDest);
+                        revealed = p.getController().orderMoveToZoneList(revealed, revealedDest);
                     }
 
                     final Iterator<Card> itr = revealed.iterator();

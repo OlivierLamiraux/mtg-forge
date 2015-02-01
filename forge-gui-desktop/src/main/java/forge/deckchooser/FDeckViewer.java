@@ -17,7 +17,6 @@ import net.miginfocom.swing.MigLayout;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
-import forge.game.card.CardView;
 import forge.gui.CardDetailPanel;
 import forge.gui.CardPicturePanel;
 import forge.item.IPaperCard;
@@ -29,7 +28,9 @@ import forge.itemmanager.ItemManagerModel;
 import forge.itemmanager.views.ImageView;
 import forge.toolbox.FButton;
 import forge.toolbox.FOptionPane;
+import forge.view.CardView;
 import forge.view.FDialog;
+import forge.view.ViewUtil;
 
 @SuppressWarnings("serial")
 public class FDeckViewer extends FDialog {
@@ -61,11 +62,11 @@ public class FDeckViewer extends FDialog {
                 return new ImageView<PaperCard>(this, model0) {
                     @Override
                     protected void showHoveredItem(PaperCard item) {
-                        final CardView card = CardView.getCardForUi(item);
+                        final CardView card = ViewUtil.getCardForUi(item);
                         if (card == null) { return; }
 
                         cardDetail.setCard(card);
-                        cardPicture.setCard(card.getCurrentState());
+                        cardPicture.setCard(card.getOriginal());
                     }
                 };
             }
@@ -77,11 +78,11 @@ public class FDeckViewer extends FDialog {
                 final IPaperCard paperCard = cardManager.getSelectedItem();
                 if (paperCard == null) { return; }
 
-                final CardView card = CardView.getCardForUi(paperCard);
+                final CardView card = ViewUtil.getCardForUi(paperCard);
                 if (card == null) { return; }
 
                 cardDetail.setCard(card);
-                cardPicture.setCard(card.getCurrentState());
+                cardPicture.setCard(card.getOriginal());
             }
         });
 

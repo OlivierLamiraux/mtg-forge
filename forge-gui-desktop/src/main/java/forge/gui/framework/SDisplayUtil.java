@@ -1,6 +1,7 @@
 package forge.gui.framework;
 
 import forge.FThreads;
+import forge.GuiBase;
 import forge.view.FFrame;
 
 import javax.swing.*;
@@ -23,7 +24,7 @@ public class SDisplayUtil {
 
     /** Flashes animation on input panel if play is currently waiting on input.
      * 
-     * @param tab0 &emsp; {@link java.GuiBase.getInterface().framework.IVDoc}
+     * @param tab0 &emsp; {@link java.gui.framework.IVDoc}
      */
     public static void remind(final IVDoc<? extends ICDoc> tab0) {
         showTab(tab0);
@@ -84,7 +85,7 @@ public class SDisplayUtil {
         timer1.scheduleAtFixedRate(tt, 0, delay);
     }
 
-    /** @param tab0 &emsp; {@link java.GuiBase.getInterface().framework.IVDoc} */
+    /** @param tab0 &emsp; {@link java.gui.framework.IVDoc} */
     public static void showTab(final IVDoc<? extends ICDoc> tab0) {
         
         Runnable showTabRoutine = new Runnable() {
@@ -101,7 +102,7 @@ public class SDisplayUtil {
                 }
             }
         };
-        FThreads.invokeInEdtLater(showTabRoutine);
+        FThreads.invokeInEdtLater(GuiBase.getInterface(), showTabRoutine);
     }
     
     public static GraphicsDevice getGraphicsDevice(Point point) {

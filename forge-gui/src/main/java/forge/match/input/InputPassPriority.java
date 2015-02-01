@@ -17,13 +17,11 @@
  */
 package forge.match.input;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.spellability.Ability;
 import forge.game.spellability.SpellAbility;
 import forge.model.FModel;
 import forge.player.GamePlayerUtil;
@@ -45,9 +43,9 @@ public class InputPassPriority extends InputSyncronizedBase {
     /** Constant <code>serialVersionUID=-581477682214137181L</code>. */
     private static final long serialVersionUID = -581477682214137181L;
     private final Player player;
-
-    private List<SpellAbility> chosenSa;
-
+    
+    private SpellAbility chosenSa;
+    
     public InputPassPriority(final PlayerControllerHuman controller, final Player human) {
         super(controller);
         player = human;
@@ -111,7 +109,7 @@ public class InputPassPriority extends InputSyncronizedBase {
                             if (FModel.getPreferences().getPrefBoolean(FPref.UI_MANABURN)) {
                                 message += " You will take mana burn damage equal to the amount of floating mana lost this way.";
                             }
-                            if (SOptionPane.showOptionDialog(message, "Mana Floating", SOptionPane.WARNING_ICON, new String[]{"OK", "Cancel"}) == 0) {
+                            if (SOptionPane.showOptionDialog(getGui(), message, "Mana Floating", SOptionPane.WARNING_ICON, new String[]{"OK", "Cancel"}) == 0) {
                                 runnable.run();
                             }
                         }
@@ -123,61 +121,26 @@ public class InputPassPriority extends InputSyncronizedBase {
         runnable.run(); //just pass priority immediately if no mana floating that would be lost
     }
 
-    public List<SpellAbility> getChosenSa() { return chosenSa; }
+    public SpellAbility getChosenSa() { return chosenSa; }
 
     @Override
-    protected boolean onCardSelected(final Card card, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    protected boolean onCardSelected(final Card card, final ITriggerEvent triggerEvent) {
         //remove unplayable unless triggerEvent specified, in which case unplayable may be shown as disabled options
     	List<SpellAbility> abilities = card.getAllPossibleAbilities(player, triggerEvent == null); 
     	if (abilities.isEmpty()) {
+            flashIncorrectAction();
             return false;
     	}
 
-        final SpellAbility ability = player.getController().getAbilityToPlay(abilities, triggerEvent);
-    	if (ability != null) {
-            chosenSa = new ArrayList<SpellAbility>();
-            chosenSa.add(ability);
-            if (otherCardsToSelect != null && ability.isManaAbility()) {
-                //if mana ability activated, activate same ability on other cards to select if possible
-                String abStr = ability.toUnsuppressedString();
-                for (Card c : otherCardsToSelect) {
-                    for (SpellAbility ab : c.getAllPossibleAbilities(player, true)) {
-                        if (ab.toUnsuppressedString().equals(abStr)) {
-                            chosenSa.add(ab);
-                            break;
-                        }
-                    }
-                }
-            }
-            stop();
-    	}
-        return true; //still return true if user cancelled selecting an ability to prevent selecting another card
+    	selectAbility(player.getController().getAbilityToPlay(abilities, triggerEvent));
+    	return true;
     }
-
+    
     @Override
-    public String getActivateAction(Card card) {
-        List<SpellAbility> abilities = card.getAllPossibleAbilities(player, true); 
-        if (abilities.isEmpty()) {
-            return null;
-        }
-        SpellAbility sa = abilities.get(0);
-        if (sa.isSpell()) {
-            return "cast spell";
-        }
-        if (sa == Ability.PLAY_LAND_SURROGATE) {
-            return "play land";
-        }
-        return "activate ability";
-    }
-
-    @Override
-    public boolean selectAbility(final SpellAbility ab) {
+    public void selectAbility(final SpellAbility ab) {
     	if (ab != null) {
-    	    chosenSa = new ArrayList<SpellAbility>();
-            chosenSa.add(ab);
+            chosenSa = ab;
             stop();
-            return true;
         }
-    	return false;
     }
 }

@@ -18,14 +18,11 @@
 package forge.game.card;
 
 import forge.ImageKeys;
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.card.CardRules;
 import forge.card.CardSplitType;
-import forge.card.CardType;
-import forge.card.CardType.CoreType;
 import forge.card.ICardFace;
 import forge.card.mana.ManaCost;
-import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
@@ -45,9 +42,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
 
 /**
  * <p>
@@ -80,11 +74,10 @@ public class CardFactory {
     public final static Card copyCard(final Card in, boolean assignNewId) {
         Card out;
         if (!(in.isToken() || in.getCopiedPermanent() != null)) {
-            out = assignNewId ? getCard(in.getPaperCard(), in.getOwner(), in.getGame()) 
-                              : getCard(in.getPaperCard(), in.getOwner(), in.getId(), in.getGame());
+            out = assignNewId ? getCard(in.getPaperCard(), in.getOwner()) 
+                              : getCard(in.getPaperCard(), in.getOwner(), in.getUniqueNumber());
         } else { // token
-            int id = assignNewId ? in.getGame().nextCardId() : in.getId();
-            out = new Card(id, in.getPaperCard(), in.getGame());
+            out = assignNewId ? new Card(in.getGame().nextCardId(), in.getPaperCard()) : new Card(in.getUniqueNumber(), in.getPaperCard());
             out = CardFactory.copyStats(in, in.getController());
             out.setToken(true);
 
@@ -94,27 +87,25 @@ public class CardFactory {
             }
         }
 
-        for (final CardStateName state : in.getStates()) {
-            CardFactory.copyState(in, state, out, state);
+        for (final CardCharacteristicName state : in.getStates()) {
+        	CardFactory.copyState(in, state, out, state);
         }
-        out.setState(in.getCurrentStateName(), true);
+        out.setState(in.getCurState());
 
-        // this's necessary for forge.game.GameAction.unattachCardLeavingBattlefield(Card)
+        // I'm not sure if we really should be copying enchant/equip stuff over.
         out.setEquipping(in.getEquipping());
-        out.setEquippedBy(in.getEquippedBy(false));
+        out.setEquippedBy(in.getEquippedBy());
         out.setFortifying(in.getFortifying());
-        out.setFortifiedBy(in.getFortifiedBy(false));
-        out.setEnchantedBy(in.getEnchantedBy(false));
+        out.setFortifiedBy(in.getFortifiedBy());
+        out.setEnchantedBy(in.getEnchantedBy());
         out.setEnchanting(in.getEnchanting());
-
-
         out.setClones(in.getClones());
         out.setZone(in.getZone());
         for (final Object o : in.getRemembered()) {
             out.addRemembered(o);
         }
-        for (final Card o : in.getImprintedCards()) {
-            out.addImprintedCard(o);
+        for (final Card o : in.getImprinted()) {
+            out.addImprinted(o);
         }
         out.setCommander(in.isCommander());
         /*
@@ -157,13 +148,13 @@ public class CardFactory {
             String tmp = "";
             final String newColor = sourceSA.getParam("CopyIsColor");
             if (newColor.equals("ChosenColor")) {
-                tmp = CardUtil.getShortColorsString(source.getChosenColors());
+                tmp = CardUtil.getShortColorsString(source.getChosenColor());
             } else {
                 tmp = CardUtil.getShortColorsString(new ArrayList<String>(Arrays.asList(newColor.split(","))));
             }
             final String finalColors = tmp;
 
-            c.addColor(finalColors, !sourceSA.hasParam("OverwriteColors"), c.getTimestamp());
+            c.addColor(finalColors, !sourceSA.hasParam("OverwriteColors"), true);
         }
         
         c.clearControllers();
@@ -171,14 +162,16 @@ public class CardFactory {
         c.setCopiedSpell(true);
 
         final SpellAbility copySA;
-        if (sa instanceof AbilityActivated) {
+        if(sa instanceof AbilityActivated)
+        {
             copySA = ((AbilityActivated)sa).getCopy();
             copySA.setHostCard(original);
         }
         else if (sa.isTrigger()) {
             copySA = getCopiedTriggeredAbility(sa);
         }
-        else {
+        else
+        {
             copySA = sa.copy();
             copySA.setHostCard(c);
             SpellAbility parentSA = copySA;
@@ -193,7 +186,7 @@ public class CardFactory {
                 subSA = copySubSA.getSubAbility();
             }
         }
-        c.getCurrentState().setNonManaAbilities(copySA);
+        c.getCharacteristics().setSpellAbility(copySA);
         copySA.setCopied(true);
         //remove all costs
         if (!copySA.isTrigger()) {
@@ -218,18 +211,31 @@ public class CardFactory {
         return copySA;
     }
 
-    public final static Card getCard(final IPaperCard cp, final Player owner, final Game game) {
-        return getCard(cp, owner, owner == null ? -1 : owner.getGame().nextCardId(), game);
+    /**
+     * <p>
+     * getCard.
+     * </p>
+     * 
+     * @param cardName
+     *            a {@link java.lang.String} object.
+     * @param owner
+     *            a {@link forge.game.player.Player} object.
+     * @return a {@link forge.game.card.Card} instance, owned by owner; or the special
+     *         blankCard
+     */
+    
+    public final static Card getCard(final IPaperCard cp, final Player owner) {
+        return getCard(cp, owner, owner == null ? 0 : owner.getGame().nextCardId());
     }
-    public final static Card getCard(final IPaperCard cp, final Player owner, final int cardId, final Game game) {
+    public final static Card getCard(final IPaperCard cp, final Player owner, final int cardId) {
         //System.out.println(cardName);
         CardRules cardRules = cp.getRules();
-        final Card c = readCard(cardRules, cp, cardId, game);
+        final Card c = readCard(cardRules, cp, cardId);
         c.setRules(cardRules);
         c.setOwner(owner);
         buildAbilities(c);
 
-        c.setSetCode(cp.getEdition());
+        c.setCurSetCode(cp.getEdition());
         c.setRarity(cp.getRarity());
 
         // Would like to move this away from in-game entities
@@ -240,25 +246,25 @@ public class CardFactory {
 
         if (c.hasAlternateState()) {
             if (c.isFlipCard()) {
-                c.setState(CardStateName.Flipped, false);
+                c.setState(CardCharacteristicName.Flipped);
                 c.setImageKey(ImageKeys.getImageKey(cp, true));
             }
             else if (c.isDoubleFaced() && cp instanceof PaperCard) {
-                c.setState(CardStateName.Transformed, false);
+                c.setState(CardCharacteristicName.Transformed);
                 c.setImageKey(ImageKeys.getImageKey(cp, true));
             }
             else if (c.isSplitCard()) {
-                c.setState(CardStateName.LeftSplit, false);
+                c.setState(CardCharacteristicName.LeftSplit);
                 c.setImageKey(originalPicture);
-                c.setSetCode(cp.getEdition());
+                c.setCurSetCode(cp.getEdition());
                 c.setRarity(cp.getRarity());
-                c.setState(CardStateName.RightSplit, false);
+                c.setState(CardCharacteristicName.RightSplit);
                 c.setImageKey(originalPicture);
             }
 
-            c.setSetCode(cp.getEdition());
+            c.setCurSetCode(cp.getEdition());
             c.setRarity(cp.getRarity());
-            c.setState(CardStateName.Original, false);
+            c.setState(CardCharacteristicName.Original);
         }
         
         return c;
@@ -276,46 +282,39 @@ public class CardFactory {
 
         CardFactoryUtil.parseKeywords(card, cardName);
 
-        for (final CardStateName state : card.getStates()) {
-            if (card.isDoubleFaced() && state == CardStateName.FaceDown) {
+        for (final CardCharacteristicName state : card.getStates()) {
+            if (card.isDoubleFaced() && state == CardCharacteristicName.FaceDown) {
                 continue; // Ignore FaceDown for DFC since they have none.
             }
-            card.setState(state, false);
+            card.setState(state);
             CardFactoryUtil.addAbilityFactoryAbilities(card);
             for (String stAb : card.getStaticAbilityStrings()) {
                 final StaticAbility s = card.addStaticAbility(stAb);
                 s.setIntrinsic(true);
             }
 
-            if (state == CardStateName.LeftSplit || state == CardStateName.RightSplit) {
-                for (final SpellAbility sa : card.getSpellAbilities()) {
-                    if (state == CardStateName.LeftSplit) {
-                        sa.setLeftSplit();
-                    } else {
-                        sa.setRightSplit();
-                    }
-                }
-                final CardState original = card.getState(CardStateName.Original);
-                original.addNonManaAbilities(card.getCurrentState().getNonManaAbilities());
-                original.addIntrinsicKeywords(card.getCurrentState().getIntrinsicKeywords()); // Copy 'Fuse' to original side
-                original.getSVars().putAll(card.getCurrentState().getSVars()); // Unfortunately need to copy these to (Effect looks for sVars on execute)
+            if (state == CardCharacteristicName.LeftSplit || state == CardCharacteristicName.RightSplit)
+            {
+                CardCharacteristics original = card.getState(CardCharacteristicName.Original);
+                original.getSpellAbility().addAll(card.getCharacteristics().getSpellAbility());
+                original.getIntrinsicKeyword().addAll(card.getIntrinsicKeyword()); // Copy 'Fuse' to original side
+                original.getSVars().putAll(card.getCharacteristics().getSVars()); // Unfortunately need to copy these to (Effect looks for sVars on execute)
             }
         }
 
-        card.setState(CardStateName.Original, false);
+        card.setState(CardCharacteristicName.Original);
 
         // ******************************************************************
         // ************** Link to different CardFactories *******************
 
         if (card.isPlaneswalker()) {
             buildPlaneswalkerAbilities(card);
-        }
-        else if (card.isPlane()) {
+        } else if (card.isType("Plane")) {
             buildPlaneAbilities(card);
         }
-        CardFactoryUtil.setupKeywordedAbilities(card); // Should happen AFTER setting left/right split abilities to set Fuse ability to both sides
-        card.getView().updateState(card);
-    }
+
+        CardFactoryUtil.setupKeywordedAbilities(card);
+    } // getCard2
 
     private static void buildPlaneAbilities(Card card) {
         StringBuilder triggerSB = new StringBuilder();
@@ -356,29 +355,30 @@ public class CardFactory {
         card.setSVar("DamagePWY", "Count$YourLifeTotal");
     }
 
-    private static Card readCard(final CardRules rules, final IPaperCard paperCard, int cardId, Game game) {
-        final Card card = new Card(cardId, paperCard, game);
+    private static Card readCard(final CardRules rules, final IPaperCard paperCard, int cardId) {
+
+        final Card card = new Card(cardId, paperCard);
 
         // 1. The states we may have:
         CardSplitType st = rules.getSplitType();
-        if (st == CardSplitType.Split) {
-            card.addAlternateState(CardStateName.LeftSplit, false);
-            card.setState(CardStateName.LeftSplit, false);
+        if ( st ==  CardSplitType.Split) {
+            card.addAlternateState(CardCharacteristicName.LeftSplit);
+            card.setState(CardCharacteristicName.LeftSplit);
         } 
 
         readCardFace(card, rules.getMainPart());
 
-        if (st != CardSplitType.None) {
-            card.addAlternateState(st.getChangedStateName(), false);
-            card.setState(st.getChangedStateName(), false);
+        if ( st != CardSplitType.None) {
+            card.addAlternateState(st.getChangedStateName());
+            card.setState(st.getChangedStateName());
             readCardFace(card, rules.getOtherPart());
         }
         
         if (card.isInAlternateState()) {
-            card.setState(CardStateName.Original, false);
+            card.setState(CardCharacteristicName.Original);
         }
 
-        if (st == CardSplitType.Split) {
+        if ( st == CardSplitType.Split ) {
             card.setName(rules.getName());
 
             // Combined mana cost
@@ -386,47 +386,61 @@ public class CardFactory {
             card.setManaCost(combinedManaCost);
 
             // Combined card color
-            final byte combinedColor = (byte) (rules.getMainPart().getColor().getColor() | rules.getOtherPart().getColor().getColor());
-            card.setColor(combinedColor);
-            card.setType(new CardType(rules.getType()));
+            int combinedColor = rules.getMainPart().getColor().getColor() | rules.getOtherPart().getColor().getColor();
+            CardColor combinedCardColor = new CardColor((byte)combinedColor);
+            ArrayList<CardColor> combinedCardColorArr = new ArrayList<CardColor>();
+            combinedCardColorArr.add(combinedCardColor);
+            card.setColor(combinedCardColorArr);
+
+            // Super and 'middle' types should use enums.
+            List<String> coreTypes = rules.getType().getTypesBeforeDash();
+            coreTypes.addAll(rules.getType().getSubTypes());
+            card.setType(coreTypes);
 
             // Combined text based on Oracle text - might not be necessary, temporarily disabled.
             //String combinedText = String.format("%s: %s\n%s: %s", rules.getMainPart().getName(), rules.getMainPart().getOracleText(), rules.getOtherPart().getName(), rules.getOtherPart().getOracleText());
             //card.setText(combinedText);
         }
+
         return card;
     }
 
     private static void readCardFace(Card c, ICardFace face) {
-        for (String a : face.getAbilities())                 c.addIntrinsicAbility(a);
-        for (String k : face.getKeywords())                  c.addIntrinsicKeyword(k);
-        for (String r : face.getReplacements())              c.addReplacementEffect(ReplacementHandler.parseReplacement(r, c, true));
-        for (String s : face.getStaticAbilities())           c.addStaticAbilityString(s);
-        for (String t : face.getTriggers())                  c.addTrigger(TriggerHandler.parseTrigger(t, c, true));
-        for (Entry<String, String> v : face.getVariables())  c.setSVar(v.getKey(), v.getValue());
+        for(String a : face.getAbilities())                 c.addIntrinsicAbility(a);
+        for(String k : face.getKeywords())                  c.addIntrinsicKeyword(k);
+        for(String r : face.getReplacements())              c.addReplacementEffect(ReplacementHandler.parseReplacement(r, c, true));
+        for(String s : face.getStaticAbilities())           c.addStaticAbilityString(s);
+        for(String t : face.getTriggers())                  c.addTrigger(TriggerHandler.parseTrigger(t, c, true));
+        for(Entry<String, String> v : face.getVariables())  c.setSVar(v.getKey(), v.getValue());
 
         c.setName(face.getName());
         c.setManaCost(face.getManaCost());
         c.setText(face.getNonAbilityText());
-        if (face.getInitialLoyalty() > 0) c.setBaseLoyalty(face.getInitialLoyalty());
+        if( face.getInitialLoyalty() > 0 ) c.setBaseLoyalty(face.getInitialLoyalty());
 
-        c.setOracleText(face.getOracleText());
+        c.getCharacteristics().setOracleText(face.getOracleText().replace("\\n", "\r\n"));
 
         // Super and 'middle' types should use enums.
-        c.setType(new CardType(face.getType()));
+        List<String> coreTypes = face.getType().getTypesBeforeDash();
+        coreTypes.addAll(face.getType().getSubTypes());
+        c.setType(coreTypes);
 
-        c.setColor(face.getColor().getColor());
+        // What a perverted color code we have!
+        CardColor col1 = new CardColor(face.getColor().getColor());
+        ArrayList<CardColor> ccc = new ArrayList<CardColor>();
+        ccc.add(col1);
+        c.setColor(ccc);
 
-        if (face.getIntPower() >= 0) {
-            c.setBasePower(face.getIntPower());
-            c.setBasePowerString(face.getPower());
+        if ( face.getIntPower() >= 0 ) {
+            c.setBaseAttack(face.getIntPower());
+            c.setBaseAttackString(face.getPower());
         }
-        if (face.getIntToughness() >= 0) {
-            c.setBaseToughness(face.getIntToughness());
-            c.setBaseToughnessString(face.getToughness());
+        if ( face.getIntToughness() >= 0 ) {
+            c.setBaseDefense(face.getIntToughness());
+            c.setBaseDefenseString(face.getToughness());
         }
     }
-
+    
     /**
      * Create a copy of a card, including its copiable characteristics (but not
      * abilities).
@@ -436,9 +450,9 @@ public class CardFactory {
      */
     public static Card copyCopiableCharacteristics(final Card from, final Player newOwner) {
         int id = newOwner == null ? 0 : newOwner.getGame().nextCardId();
-        final Card c = new Card(id, from.getPaperCard(), from.getGame());
+        final Card c = new Card(id, from.getPaperCard());
         c.setOwner(newOwner);
-        c.setSetCode(from.getSetCode());
+        c.setCurSetCode(from.getCurSetCode());
         
         copyCopiableCharacteristics(from, c);
         return c;
@@ -455,22 +469,22 @@ public class CardFactory {
     	final boolean toIsFaceDown = to.isFaceDown();
     	if (toIsFaceDown) {
     		// If to is face down, copy to its front side
-    		to.setState(CardStateName.Original, false);
+    		to.setState(CardCharacteristicName.Original);
     		copyCopiableCharacteristics(from, to);
-    		to.setState(CardStateName.FaceDown, false);
+    		to.setState(CardCharacteristicName.FaceDown);
     		return;
     	}
 
     	final boolean fromIsFlipCard = from.isFlipCard();
     	if (fromIsFlipCard) {
-    		if (to.getCurrentStateName().equals(CardStateName.Flipped)) {
-    			copyState(from, CardStateName.Original, to, CardStateName.Original);
+    		if (to.getCurState().equals(CardCharacteristicName.Flipped)) {
+    			copyState(from, CardCharacteristicName.Original, to, CardCharacteristicName.Original);
     		} else {
-    			copyState(from, CardStateName.Original, to, to.getCurrentStateName());
+    			copyState(from, CardCharacteristicName.Original, to, to.getCurState());
     		}
-    		copyState(from, CardStateName.Flipped, to, CardStateName.Flipped);
+    		copyState(from, CardCharacteristicName.Flipped, to, CardCharacteristicName.Flipped);
     	} else {
-    		copyState(from, from.getCurrentStateName(), to, to.getCurrentStateName());
+    		copyState(from, from.getCurState(), to, to.getCurState());
     	}
     }
     
@@ -485,18 +499,18 @@ public class CardFactory {
     	final boolean toIsFaceDown = to.isFaceDown();
     	if (toIsFaceDown) {
     		// If to is face down, copy to its front side
-    		to.setState(CardStateName.Original, false);
+    		to.setState(CardCharacteristicName.Original);
     		copyCopiableAbilities(from, to);
-    		to.setState(CardStateName.FaceDown, false);
+    		to.setState(CardCharacteristicName.FaceDown);
     		return;
     	}
 
     	final boolean fromIsFlipCard = from.isFlipCard();
     	if (fromIsFlipCard) {
-    		copyAbilities(from, CardStateName.Original, to, to.getCurrentStateName());
-    		copyAbilities(from, CardStateName.Flipped, to, CardStateName.Flipped);
+    		copyAbilities(from, CardCharacteristicName.Original, to, to.getCurState());
+    		copyAbilities(from, CardCharacteristicName.Flipped, to, CardCharacteristicName.Flipped);
     	} else {
-    		copyAbilities(from, from.getCurrentStateName(), to, to.getCurrentStateName());
+    		copyAbilities(from, from.getCurState(), to, to.getCurState());
     	}
     }
 
@@ -519,16 +533,16 @@ public class CardFactory {
      */
     public static Card copyStats(final Card in, final Player newOwner) {
         int id = newOwner == null ? 0 : newOwner.getGame().nextCardId();
-        final Card c = new Card(id, in.getPaperCard(), in.getGame());
+        final Card c = new Card(id, in.getPaperCard());
     
         c.setOwner(newOwner);
-        c.setSetCode(in.getSetCode());
+        c.setCurSetCode(in.getCurSetCode());
     
-        for (final CardStateName state : in.getStates()) {
+        for (final CardCharacteristicName state : in.getStates()) {
             CardFactory.copyState(in, state, c, state);
         }
     
-        c.setState(in.getCurrentStateName(), false);
+        c.setState(in.getCurState());
         c.setRules(in.getRules());
     
         return c;
@@ -541,26 +555,26 @@ public class CardFactory {
      * @param from
      *            the {@link Card} to copy from.
      * @param fromState
-     *            the {@link CardStateName} of {@code from} to copy from.
+     *            the {@link CardCharacteristicName} of {@code from} to copy from.
      * @param to
      *            the {@link Card} to copy to.
      * @param toState
-     *            the {@link CardStateName} of {@code to} to copy to.
+     *            the {@link CardCharacteristicName} of {@code to} to copy to.
      */
-    public static void copyState(final Card from, final CardStateName fromState, final Card to, final CardStateName toState) {
+    public static void copyState(final Card from, final CardCharacteristicName fromState, final Card to, final CardCharacteristicName toState) {
         // copy characteristics not associated with a state
         to.setBaseLoyalty(from.getBaseLoyalty());
-        to.setBasePowerString(from.getBasePowerString());
-        to.setBaseToughnessString(from.getBaseToughnessString());
+        to.setBaseAttackString(from.getBaseAttackString());
+        to.setBaseDefenseString(from.getBaseDefenseString());
         to.setText(from.getSpellText());
-
+    
         // get CardCharacteristics for desired state
         if (!to.getStates().contains(toState)) {
-        	to.addAlternateState(toState, true);
+        	to.addAlternateState(toState);
         }
-    	final CardState toCharacteristics = to.getState(toState),
+    	final CardCharacteristics toCharacteristics = to.getState(toState),
     			fromCharacteristics = from.getState(fromState);
-        toCharacteristics.copyFrom(from, fromCharacteristics);
+        toCharacteristics.copyFrom(fromCharacteristics);
     }
     
     /**
@@ -568,18 +582,18 @@ public class CardFactory {
      * effects) from one card to another.
      * 
      * @param from the {@link Card} to copy from.
-     * @param fromState the {@link CardStateName} of {@code from} to copy from.
+     * @param fromState the {@link CardCharacteristicName} of {@code from} to copy from.
      * @param to the {@link Card} to copy to.
-     * @param toState the {@link CardStateName} of {@code to} to copy to.
+     * @param toState the {@link CardCharacteristicName} of {@code to} to copy to.
      */
-    private static void copyAbilities(final Card from, final CardStateName fromState, final Card to, final CardStateName toState) {
-        final CardState fromCharacteristics = from.getState(fromState);
-        final CardStateName oldToState = to.getCurrentStateName();
+    private static void copyAbilities(final Card from, final CardCharacteristicName fromState, final Card to, final CardCharacteristicName toState) {
+        final CardCharacteristics fromCharacteristics = from.getState(fromState);
+        final CardCharacteristicName oldToState = to.getCurState();
         if (!to.getStates().contains(toState)) {
-        	to.addAlternateState(toState, false);
+        	to.addAlternateState(toState);
         }
 
-        to.setState(toState, false);
+        to.setState(toState);
         // handle triggers and replacement effect through Card class interface
         to.setTriggers(fromCharacteristics.getTriggers(), true);
         to.setReplacementEffects(fromCharacteristics.getReplacementEffects());
@@ -589,7 +603,7 @@ public class CardFactory {
         	to.addStaticAbility(staticAbility);
         }
         // reset state
-        to.setState(oldToState, false);
+        to.setState(oldToState);
     }
 
     public static void copySpellAbility(SpellAbility from, SpellAbility to) {
@@ -610,117 +624,32 @@ public class CardFactory {
             to.setSVar(sVar, from.getSVar(sVar));
         }
     }
-    
-    public static class TokenInfo {
-        final String name;
-        final String imageName;
-        final String manaCost;
-        final String[] types;
-        final String[] intrinsicKeywords;
-        final int basePower;
-        final int baseToughness;
 
-        public TokenInfo(String name, String imageName, String manaCost, String[] types,
-                String[] intrinsicKeywords, int basePower, int baseToughness) {
-            this.name = name;
-            this.imageName = imageName;
-            this.manaCost = manaCost;
-            this.types = types;
-            this.intrinsicKeywords = intrinsicKeywords;
-            this.basePower = basePower;
-            this.baseToughness = baseToughness;
-        }
-
-        public TokenInfo(Card c) {
-            this.name = c.getName();
-            this.imageName = ImageKeys.getTokenImageName(c.getImageKey());
-            this.manaCost = c.getManaCost().toString();
-            this.types = getCardTypes(c);
-            this.intrinsicKeywords   = c.getKeywords().toArray(new String[0]);
-            this.basePower = c.getBasePower();
-            this.baseToughness = c.getBaseToughness();
-        }
-
-        private static String[] getCardTypes(Card c) {
-            ArrayList<String> relevantTypes = new ArrayList<String>();
-            for (CoreType t : c.getType().getCoreTypes()) {
-                relevantTypes.add(t.name());
-            }
-            Iterables.addAll(relevantTypes, c.getType().getSubtypes());
-            return  relevantTypes.toArray(new String[relevantTypes.size()]);
-        }
-
-        private Card toCard(Game game) {
-            final Card c = new Card(game.nextCardId(), game);
-            c.setName(name);
-            c.setImageKey(ImageKeys.getTokenKey(imageName));
-
-            // TODO - most tokens mana cost is 0, this needs to be fixed
-            // c.setManaCost(manaCost);
-            c.setColor(manaCost);
-            c.setToken(true);
-
-            for (final String t : types) {
-                c.addType(t);
-            }
-
-            c.setBasePower(basePower);
-            c.setBaseToughness(baseToughness);
-            return c;
-        }
-
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(name).append(',');
-            sb.append("P:").append(basePower).append(',');
-            sb.append("T:").append(baseToughness).append(',');
-            sb.append("Cost:").append(manaCost).append(',');
-            sb.append("Types:").append(Joiner.on('-').join(types)).append(',');
-            sb.append("Keywords:").append(Joiner.on('-').join(intrinsicKeywords)).append(',');
-            sb.append("Image:").append(imageName);
-            return sb.toString();
-        }
-
-        public static TokenInfo fromString(String str) {
-           final String[] tokenInfo = str.split(",");
-           int power = 0;
-           int toughness = 0;
-           String manaCost = "0";
-           String[] types = null;
-           String[] keywords = null;
-           String imageName = null;
-           for (String info : tokenInfo) {
-               int index = info.indexOf(':');
-               if (index == -1) {
-                   continue;
-               }
-               String remainder = info.substring(index + 1);
-               if (info.startsWith("P:")) {
-                   power = Integer.parseInt(remainder);
-               } else if (info.startsWith("T:")) {
-                   toughness = Integer.parseInt(remainder);
-               } else if (info.startsWith("Cost:")) {
-                   manaCost = remainder;
-               } else if (info.startsWith("Types:")) {
-                   types = remainder.split("-");
-               } else if (info.startsWith("Keywords:")) {
-                   keywords = remainder.split("-");
-               } else if (info.startsWith("Image:")) {
-                   imageName = remainder;
-               }
-           }
-           return new TokenInfo(tokenInfo[0], imageName, manaCost, types, keywords, power, toughness);
-        }
-    }
-
-    public static List<Card> makeToken(final TokenInfo tokenInfo, final Player controller) {
+    public static List<Card> makeToken(final String name, final String imageName, final Player controller,
+            final String manaCost, final String[] types, final int baseAttack, final int baseDefense,
+            final String[] intrinsicKeywords) {
         final List<Card> list = new ArrayList<Card>();
-        final Card c = tokenInfo.toCard(controller.getGame());
+        final Card c = new Card(controller.getGame().nextCardId());
+        c.setName(name);
+        c.setImageKey(ImageKeys.getTokenKey(imageName));
+    
+        // TODO - most tokens mana cost is 0, this needs to be fixed
+        // c.setManaCost(manaCost);
+        c.addColor(manaCost);
+        c.setToken(true);
+    
+        for (final String t : types) {
+            c.addType(t);
+        }
+    
+        c.setBaseAttack(baseAttack);
+        c.setBaseDefense(baseDefense);
+    
         final int multiplier = controller.getTokenDoublersMagnitude();
         for (int i = 0; i < multiplier; i++) {
             Card temp = copyStats(c, controller);
-
-            for (final String kw : tokenInfo.intrinsicKeywords) {
+    
+            for (final String kw : intrinsicKeywords) {
                 temp.addIntrinsicKeyword(kw);
             }
             temp.setOwner(controller);
@@ -731,7 +660,6 @@ public class CardFactory {
         }
         return list;
     }
-
     /**
      * Copy triggered ability
      * 
@@ -760,7 +688,7 @@ public class CardFactory {
         t.setTriggeringObjects(trig);
         trig.setTriggerRemembered(t.getTriggerRemembered());
         if (t.getStoredTriggeredObjects() != null) {
-            trig.setTriggeringObjects(t.getStoredTriggeredObjects());
+            trig.setAllTriggeringObjects(t.getStoredTriggeredObjects());
         }
 
         trig.setActivatingPlayer(sa.getActivatingPlayer());

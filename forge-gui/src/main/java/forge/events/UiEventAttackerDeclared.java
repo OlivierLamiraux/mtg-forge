@@ -1,10 +1,14 @@
 package forge.events;
 
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
+import forge.view.CardView;
+import forge.view.GameEntityView;
 
-
+/** 
+ * TODO: Write javadoc for this type.
+ *
+ */
 public class UiEventAttackerDeclared extends UiEvent {
+
     public final CardView attacker; 
     public final GameEntityView defender;
     

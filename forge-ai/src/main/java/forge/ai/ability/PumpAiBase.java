@@ -11,7 +11,6 @@ import forge.ai.SpellAbilityAi;
 import forge.card.MagicColor;
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardFactory;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
@@ -139,7 +138,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                 return false;
             }
         } else if (keyword.endsWith("CARDNAME can't be regenerated.")) {
-            if (card.getShieldCount() > 0) {
+            if (!card.getShield().isEmpty()) {
                 return true;
             }
             if (card.hasKeyword("If CARDNAME would be destroyed, regenerate it.") && combat != null
@@ -236,7 +235,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                     || newPower <= 0
                     || card.hasKeyword("CARDNAME can attack as though it had haste.")
                     || ph.getPhase().isAfter(PhaseType.COMBAT_DECLARE_ATTACKERS)
-                    || !ComputerUtilCombat.canAttackNextTurn(card)) {
+                    || !ComputerUtil.canAttackNextTurn(card)) {
                 return false;
             }
         } else if (keyword.endsWith("Indestructible")) {
@@ -362,8 +361,8 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                     || !ph.getPhase().equals(PhaseType.COMBAT_DECLARE_ATTACKERS)) {
                 return false;
             }
-            int canBlockNum = 1 + card.getAmountOfKeyword("CARDNAME can block an additional creature.") +
-                    card.getAmountOfKeyword("CARDNAME can block an additional ninety-nine creatures.") * 99;
+            int canBlockNum = 1 + card.getKeywordAmount("CARDNAME can block an additional creature.") +
+                    card.getKeywordAmount("CARDNAME can block an additional ninety-nine creatures.") * 99;
             int possibleBlockNum = 0;
             for (Card attacker : game.getCombat().getAttackers()) {
                 if (CombatUtil.canBlock(attacker, card)) {
@@ -381,7 +380,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                 return false;
             }
         } else if (keyword.equals("Persist")) {
-            if (card.getBaseToughness() <= 1 || card.hasKeyword("Undying")) {
+            if (card.getBaseDefense() <= 1 || card.hasKeyword("Undying")) {
                 return false;
             }
         } else if (keyword.equals("Islandwalk")) {
@@ -436,7 +435,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
             return false;
         }
 
-        if (c.getNetToughness() + defense <= 0) {
+        if ((c.getNetDefense() + defense) <= 0) {
             return false;
         }
 
@@ -487,7 +486,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                 if (CardLists.filter(oppCreatures, CardPredicates.possibleBlockers(pumped)).isEmpty()) {
                     threat *= 2;
                 }
-                if (c.getNetPower() == 0 && c == sa.getHostCard() && attack > 0 ) {
+                if (c.getNetAttack() == 0 && c == sa.getHostCard() && attack > 0 ) {
                     threat *= 4;    //over-value self +attack for 0 power creatures which may be pumped further after attacking 
                 }
                 chance += threat;
@@ -631,8 +630,9 @@ public abstract class PumpAiBase extends SpellAbilityAi {
      * 
      * @return a {@link forge.CardList} object.
      */
-    protected CardCollection getPumpCreatures(final Player ai, final SpellAbility sa, final int defense, final int attack, final List<String> keywords) {
-        CardCollection list = ai.getCreaturesInPlay();
+    protected List<Card> getPumpCreatures(final Player ai, final SpellAbility sa, final int defense, final int attack, final List<String> keywords) {
+
+        List<Card> list = ai.getCreaturesInPlay();
         list = CardLists.filter(list, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
@@ -655,9 +655,8 @@ public abstract class PumpAiBase extends SpellAbilityAi {
      *            a int.
      * @return a {@link forge.CardList} object.
      */
-    protected CardCollection getCurseCreatures(final Player ai, final SpellAbility sa, final int defense, final int attack, final List<String> keywords) {
-        CardCollection list = new CardCollection();
-        list.addAll(ai.getOpponent().getCardsIn(ZoneType.Battlefield));
+    protected List<Card> getCurseCreatures(final Player ai, final SpellAbility sa, final int defense, final int attack, final List<String> keywords) {
+        List<Card> list = ai.getOpponent().getCreaturesInPlay();
         final Game game = ai.getGame();
         final Combat combat = game.getCombat();
         list = CardLists.getTargetableCards(list, sa);
@@ -670,7 +669,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
             list = CardLists.filter(list, new Predicate<Card>() {
                 @Override
                 public boolean apply(final Card c) {
-                    if (c.getNetToughness() <= -defense) {
+                    if (c.getNetDefense() <= -defense) {
                         return true; // can kill indestructible creatures
                     }
                     return ((ComputerUtilCombat.getDamageToKill(c) <= -defense) && !c.hasKeyword("Indestructible"));
@@ -683,9 +682,9 @@ public abstract class PumpAiBase extends SpellAbilityAi {
             if (isMyTurn) {
                 if (game.getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_BEGIN)) {
                     // TODO: Curse creatures that will block AI's creatures, if AI is going to attack.
-                    list = new CardCollection();
+                    list = new ArrayList<Card>();
                 } else {
-                    list = new CardCollection();
+                    list = new ArrayList<Card>();
                 }
             } else {
                 // Human active, only curse attacking creatures
@@ -696,23 +695,23 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                             if (combat == null || !combat.isAttacking(c)) {
                                 return false;
                             }
-                            if (c.getNetPower() > 0 && ai.getLife() < 5) {
+                            if (c.getNetAttack() > 0 && ai.getLife() < 5) {
                                 return true;
                             }
                             //Don't waste a -7/-0 spell on a 1/1 creature
-                            if (c.getNetPower() + attack > -2 || c.getNetPower() > 3) {
+                            if (c.getNetAttack() + attack > -2 || c.getNetAttack() > 3) {
                                 return true;
                             }
                             return false;
                         }
                     });
                 } else {
-                    list = new CardCollection();
+                    list = new ArrayList<Card>();
                 }
             }
         } // -X/0 end
         else {
-            final boolean addsKeywords = !keywords.isEmpty();
+            final boolean addsKeywords = keywords.size() > 0;
             if (addsKeywords) {
                 list = CardLists.filter(list, new Predicate<Card>() {
                     @Override
@@ -722,7 +721,7 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                 });
             } else if (sa.hasParam("NumAtt") || sa.hasParam("NumDef")) { 
                 // X is zero
-                list = new CardCollection();
+                list = new ArrayList<Card>();
             }
         }
 
@@ -754,9 +753,8 @@ public abstract class PumpAiBase extends SpellAbilityAi {
                 kws.add(kw);
             }
         }
-        pumped.addNewPT(c.getCurrentPower(), c.getCurrentToughness(), timestamp);
-        pumped.addTempPowerBoost(c.getTempPowerBoost() + a);
-        pumped.addTempToughnessBoost(c.getTempToughnessBoost() + d);
+        pumped.addTempAttackBoost(c.getTempAttackBoost() + a);
+        pumped.addTempDefenseBoost(c.getTempDefenseBoost() + d);
         pumped.addChangedCardKeywords(kws, new ArrayList<String>(), false, timestamp);
         Set<CounterType> types = c.getCounters().keySet();
         for(CounterType ct : types) {
@@ -766,9 +764,9 @@ public abstract class PumpAiBase extends SpellAbilityAi {
         if (c.isTapped()) {
             pumped.setTapped(true);
         }
-        final List<String> copiedKeywords = pumped.getKeywords();
+        final List<String> copiedKeywords = pumped.getKeyword();
         List<String> toCopy = new ArrayList<String>();
-        for (String kw : c.getKeywords()) {
+        for (String kw : c.getKeyword()) {
             if (!copiedKeywords.contains(kw)) {
                 if (kw.startsWith("HIDDEN")) {
                     pumped.addHiddenExtrinsicKeyword(kw);
@@ -779,7 +777,9 @@ public abstract class PumpAiBase extends SpellAbilityAi {
         }
         final long timestamp2 = c.getGame().getNextTimestamp(); //is this necessary or can the timestamp be re-used?
         pumped.addChangedCardKeywords(toCopy, new ArrayList<String>(), false, timestamp2);
-        ComputerUtilCard.applyStaticContPT(ai.getGame(), pumped, new CardCollection(c));
+        List<Card> exclude = new ArrayList<Card>();
+        exclude.add(c);
+        ComputerUtilCard.applyStaticContPT(ai.getGame(), pumped, exclude);
         return pumped;
     }
 }

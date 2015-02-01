@@ -17,11 +17,15 @@
  */
 package forge.game.zone;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.player.Player;
 import forge.game.staticability.StaticAbility;
+import forge.game.trigger.ZCTrigger;
+
+import java.util.List;
 
 /**
  * <p>
@@ -29,7 +33,6 @@ import forge.game.staticability.StaticAbility;
  * </p>
  * 
  * @author Forge
-
  * @version $Id$
  */
 public class PlayerZoneBattlefield extends PlayerZone {
@@ -52,67 +55,67 @@ public class PlayerZoneBattlefield extends PlayerZone {
 
         super.add(c, position);
 
-        if (trigger) {
-            // ETBTapped static abilities
-            for (final Card ca : game.getCardsIn(ZoneType.listValueOf("Battlefield,Command"))) {
-                for (final StaticAbility stAb : ca.getStaticAbilities()) {
-                    if (stAb.applyAbility("ETBTapped", c)) {
-                        // it enters the battlefield this way, and should
-                        // not fire triggers
-                        c.setTapped(true);
+        if (this.trigger) {
+            if (c.hasKeyword("Hideaway")) {
+                // it enters the battlefield this way, and should not fire
+                // triggers
+                c.setTapped(true);
+            } else {
+                // ETBTapped static abilities
+                for (final Card ca : game.getCardsIn(ZoneType.listValueOf("Battlefield,Command"))) {
+                    for (final StaticAbility stAb : ca.getStaticAbilities()) {
+                        if (stAb.applyAbility("ETBTapped", c)) {
+                            // it enters the battlefield this way, and should
+                            // not fire triggers
+                            c.setTapped(true);
+                        }
                     }
                 }
             }
         }
 
-        if (trigger) {
+        if (this.trigger) {
             c.setSickness(true); // summoning sickness
-            c.runComesIntoPlayCommands();
+            c.executeTrigger(ZCTrigger.ENTERFIELD);
+            
         }
-    }
+
+    } // end add()
 
     /** {@inheritDoc} */
     @Override
     public final void remove(final Card c) {
         super.remove(c);
 
-        if (leavesTrigger) {
-            c.runLeavesPlayCommands();
+        if (this.leavesTrigger) {
+            c.executeTrigger(ZCTrigger.LEAVEFIELD);
         }
+
     }
+
 
     public final void setTriggers(final boolean b) {
-        trigger = b;
-        leavesTrigger = b;
+        this.trigger = b;
+        this.leavesTrigger = b;
     }
 
+    private static Predicate<Card> isNotPhased = new Predicate<Card>() {
+        @Override
+        public boolean apply(Card crd) {
+            return !crd.isPhasedOut();
+        }
+    };
+
+
     @Override
-    public final CardCollectionView getCards(final boolean filter) {
+    public final List<Card> getCards(final boolean filter) {
         // Battlefield filters out Phased Out cards by default. Needs to call
         // getCards(false) to get Phased Out cards
 
-        CardCollectionView cards = super.getCards(false);
         if (!filter) {
-            return cards;
+            return super.getCards(false);
         }
+        return Lists.newArrayList(Iterables.filter(roCardList, isNotPhased));
 
-        boolean hasFilteredCard = false;
-        for (Card c : cards) {
-            if (c.isPhasedOut()) {
-                hasFilteredCard = true;
-                break;
-            }
-        }
-
-        if (hasFilteredCard) {
-            CardCollection filteredCollection = new CardCollection();
-            for (Card c : cards) {
-                if (!c.isPhasedOut()) {
-                    filteredCollection.add(c);
-                }
-            }
-            cards = filteredCollection;
-        }
-        return cards;
     }
 }

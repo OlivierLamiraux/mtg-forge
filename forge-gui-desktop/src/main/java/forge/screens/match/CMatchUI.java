@@ -35,20 +35,14 @@ import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.tuple.Pair;
 
 import forge.FThreads;
+import forge.GuiBase;
 import forge.ImageCache;
 import forge.LobbyPlayer;
 import forge.Singletons;
 import forge.UiCommand;
-import forge.game.Game;
-import forge.game.GameEntityView;
-import forge.game.GameView;
 import forge.game.Match;
-import forge.game.card.CardView;
-import forge.game.combat.CombatView;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
-import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.gui.FNetOverlay;
 import forge.gui.GuiChoose;
@@ -66,12 +60,12 @@ import forge.match.IMatchController;
 import forge.match.MatchUtil;
 import forge.menus.IMenuProvider;
 import forge.model.FModel;
+import forge.player.LobbyPlayerHuman;
 import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.screens.match.controllers.CAntes;
 import forge.screens.match.controllers.CCombat;
 import forge.screens.match.controllers.CDetail;
-import forge.screens.match.controllers.CLog;
 import forge.screens.match.controllers.CPicture;
 import forge.screens.match.controllers.CPrompt;
 import forge.screens.match.controllers.CStack;
@@ -89,8 +83,15 @@ import forge.toolbox.FSkin.SkinImage;
 import forge.toolbox.special.PhaseIndicator;
 import forge.toolbox.special.PhaseLabel;
 import forge.util.ITriggerEvent;
+import forge.view.CardView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
+import forge.view.ViewUtil;
 import forge.view.arcane.CardPanel;
-import forge.view.arcane.FloatingCardArea;
+import forge.view.arcane.PlayArea;
 
 /**
  * Constructs instance of match UI controller, used as a single point of
@@ -109,11 +110,11 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     private boolean showOverlay = true;
 
     private IVDoc<? extends ICDoc> selectedDocBeforeCombat;
-    public final Map<String, String> avatarImages = new HashMap<String, String>();
-  
-    private SkinImage getPlayerAvatar(final PlayerView p, final int defaultIndex) {
-         if (avatarImages.containsKey(p.getLobbyPlayerName())) {
-            return ImageCache.getIcon(avatarImages.get(p.getLobbyPlayerName()));
+    public final Map<LobbyPlayer, String> avatarImages = new HashMap<LobbyPlayer, String>();
+
+    private SkinImage getPlayerAvatar(final LobbyPlayer p, final int defaultIndex) {
+         if (avatarImages.containsKey(p)) {
+            return ImageCache.getIcon(avatarImages.get(p));
         }
 
         int avatarIdx = p.getAvatarIndex();
@@ -125,6 +126,9 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
         view.getLblAvatar().getResizeTimer().start();
     }
 
+    /**
+     * Instantiates at a match.
+     */
     public void initMatch(final List<PlayerView> sortedPlayers0, final boolean allHands0) {
         sortedPlayers = sortedPlayers0;
         allHands = allHands0;
@@ -146,7 +150,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
             commands.add(c);
 
             //setAvatar(f, new ImageIcon(FSkin.getAvatars().get()));
-            setAvatar(f, getPlayerAvatar(p, Integer.parseInt(indices[i > 2 ? 1 : 0])));
+            setAvatar(f, getPlayerAvatar(p.getLobbyPlayer(), Integer.parseInt(indices[i > 2 ? 1 : 0])));
             f.getLayoutControl().initialize();
             c.getLayoutControl().initialize();
             i++;
@@ -166,7 +170,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
 
         int i = 0;
         for (final PlayerView p : sortedPlayers) {
-            if (allHands || !p.isAI() || CardView.mayViewAny(p.getHand(), p)) {
+            if (allHands || p.getLobbyPlayer() instanceof LobbyPlayerHuman || ViewUtil.mayViewAny(p.getHandCards())) {
                 VHand newHand = new VHand(EDocID.Hands[i], p);
                 newHand.getLayoutControl().initialize();
                 hands.add(newHand);
@@ -181,12 +185,15 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
      * Resets all phase buttons in all fields to "inactive", so highlight won't
      * be drawn on them. "Enabled" state remains the same.
      */
+    // This method is in the top-level controller because it affects ALL fields
+    // (not just one).
     public void resetAllPhaseButtons() {
         for (final VField v : view.getFieldViews()) {
             v.getPhaseIndicator().resetPhaseButtons();
         }
     }
 
+    /** @param s0 &emsp; {@link java.lang.String} */
     public void showMessage(final String s0) {
         CPrompt.SINGLETON_INSTANCE.setMessage(s0);
     }
@@ -227,7 +234,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     }
 
     public void setCard(final CardView c, final boolean isInAltState) {
-        FThreads.assertExecutedByEdt(true);
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         CDetail.SINGLETON_INSTANCE.showCard(c, isInAltState);
         CPicture.SINGLETON_INSTANCE.showCard(c, isInAltState);
     }
@@ -241,9 +248,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
         return sortedPlayers.indexOf(player);
     }
 
-    @Override
-    public void showCombat() {
-        CombatView combat = MatchUtil.getGameView().getCombat();
+    public void showCombat(final CombatView combat) {
         if (combat != null && combat.getNumAttackers() > 0 && MatchUtil.getGameView().peekStack() == null) {
             if (selectedDocBeforeCombat == null) {
                 IVDoc<? extends ICDoc> combatDoc = EDocID.REPORT_COMBAT.getDoc();
@@ -272,31 +277,23 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
             PlayerView owner = kv.getKey();
             ZoneType zt = kv.getValue();
 
-            switch (zt) {
-            case Battlefield:
-                getFieldViewFor(owner).getTabletop().setupPlayZone();
-                break;
-            case Hand:
+            if (zt == ZoneType.Command) {
+                getCommandFor(owner).getTabletop().setupPlayZone();
+            } else if (zt == ZoneType.Hand) {
                 VHand vHand = getHandFor(owner);
-                if (vHand != null) {
+                if (null != vHand) {
                     vHand.getLayoutControl().updateHand();
                 }
                 getFieldViewFor(owner).getDetailsPanel().updateZones();
-                FloatingCardArea.refresh(owner, zt);
-                break;
-            case Command:
-                getCommandFor(owner).getTabletop().setupPlayZone();
-                break;
-            case Ante:
+            } else if (zt == ZoneType.Battlefield) {
+                getFieldViewFor(owner).getTabletop().setupPlayZone();
+            } else if (zt == ZoneType.Ante) {
                 CAntes.SINGLETON_INSTANCE.update();
-                break;
-            default:
+            } else {
                 final VField vf = getFieldViewFor(owner);
                 if (vf != null) {
                     vf.getDetailsPanel().updateZones();
                 }
-                FloatingCardArea.refresh(owner, zt);
-                break;
             }
         }
     }
@@ -317,57 +314,51 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     }
 
     public void updateSingleCard(final CardView c) {
-        ZoneType zone = c.getZone();
-        if (zone == null) { return; }
-
-        switch (zone) {
-        case Battlefield:
-            VField battlefield = getFieldViewFor(c.getController());
-            if (battlefield != null) {
-                battlefield.getTabletop().updateCard(c, false);
-            }
-            break;
-        case Hand:
-            final VHand hand = getHandFor(c.getController());
-            if (hand != null) {
-                CardPanel cp = hand.getHandArea().getCardPanel(c.getId());
-                if (cp != null) {
-                    cp.repaintOverlays();
-                }
-            }
-            break;
-        case Command:
-            VCommand command = getCommandFor(c.getController());
-            if (command != null) {
-                command.getTabletop().updateCard(c, false);
-            }
-            break;
-        default:
-            break;
+        if (ZoneType.Battlefield.equals(c.getZone())) {
+            final PlayArea pa = getFieldViewFor(c.getController()).getTabletop();
+            pa.updateCard(c, false);
         }
     }
 
     public void refreshCardDetails(final Iterable<CardView> cards) {
         for (final CardView c : cards) {
-            updateSingleCard(c);
+            if (ZoneType.Battlefield.equals(c.getZone())) {
+                PlayArea pa = getFieldViewFor(c.getController()).getTabletop();
+                CardPanel pnl = pa.getCardPanel(c.getId());
+                if (pnl != null) {
+                    pnl.updatePTOverlay();
+                }
+            }
         }
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.menubar.IMenuProvider#getMenus()
+     */
     @Override
     public List<JMenu> getMenus() {
         return new CMatchUIMenus().getMenus();
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#getCommandOnSelect()
+     */
     @Override
     public UiCommand getCommandOnSelect() {
         return null;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#initialize()
+     */
     @Override
     public void initialize() {
         Singletons.getControl().getForgeMenu().setProvider(this);
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.framework.ICDoc#update()
+     */
     @Override
     public void update() { }
 
@@ -421,7 +412,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     public void focusButton(final IButton button) {
         // ensure we don't steal focus from an overlay
         if (!SOverlayUtils.overlayHasFocus()) {
-            FThreads.invokeInEdtLater(new Runnable() {
+            FThreads.invokeInEdtLater(GuiBase.getInterface(), new Runnable() {
                 @Override
                 public void run() {
                     ((FButton)button).requestFocusInWindow();
@@ -437,7 +428,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
 
     @Override
     public void updatePhase() {
-        GameView gameView = MatchUtil.getGameView();
+        LocalGameView gameView = MatchUtil.getGameView();
         final PlayerView p = gameView.getPlayerTurn();
         final PhaseType ph = gameView.getPhase();
         final CMatchUI matchUi = CMatchUI.SINGLETON_INSTANCE;
@@ -479,7 +470,6 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
 
     @Override
     public void finishGame() {
-        FloatingCardArea.closeAll(); //ensure floating card areas cleared and closed after the game
         new ViewWinLose(MatchUtil.getGameView());
         if (showOverlay) {
             SOverlayUtils.showOverlay();
@@ -497,25 +487,26 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     }
 
     @Override
-    public SpellAbility getAbilityToPlay(List<SpellAbility> abilities, ITriggerEvent triggerEvent) {
+    public int getAbilityToPlay(List<SpellAbilityView> abilities, ITriggerEvent triggerEvent) {
         if (triggerEvent == null) {
             if (abilities.isEmpty()) {
-                return null;
+                return -1;
             }
             if (abilities.size() == 1) {
-                return abilities.get(0);
+                return abilities.get(0).getId();
             }
-            return GuiChoose.oneOrNone("Choose ability to play", abilities);
+            final SpellAbilityView choice = GuiChoose.oneOrNone("Choose ability to play", abilities);
+            return choice == null ? -1 : choice.getId();
         }
 
         if (abilities.isEmpty()) {
-            return null;
+            return -1;
         }
-        if (abilities.size() == 1 && !abilities.get(0).promptIfOnlyPossibleAbility()) {
+        if (abilities.size() == 1 && !abilities.get(0).isPromptIfOnlyPossibleAbility()) {
             if (abilities.get(0).canPlay()) {
-                return abilities.get(0); //only return ability if it's playable, otherwise return null
+                return abilities.get(0).getId(); //only return ability if it's playable, otherwise return null
             }
-            return null;
+            return -1;
         }
 
         //show menu if mouse was trigger for ability
@@ -524,7 +515,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
         boolean enabled;
         boolean hasEnabled = false;
         int shortcut = KeyEvent.VK_1; //use number keys as shortcuts for abilities 1-9
-        for (final SpellAbility ab : abilities) {
+        for (final SpellAbilityView ab : abilities) {
             enabled = ab.canPlay();
             if (enabled) {
                 hasEnabled = true;
@@ -554,7 +545,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
             menu.show(mouseEvent.getComponent(), mouseEvent.getX(), mouseEvent.getY());
         }
 
-        return null; //delay ability until choice made
+        return -1; //delay ability until choice made
     }
 
     @Override
@@ -595,7 +586,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
             final List<CardView> blockers, final int damage,
             final GameEntityView defender, final boolean overrideOrder) {
         final Object[] result = { null }; // how else can I extract a value from EDT thread?
-        FThreads.invokeInEdtAndWait(new Runnable() {
+        FThreads.invokeInEdtAndWait(GuiBase.getInterface(), new Runnable() {
             @Override
             public void run() {
                 VAssignDamage v = new VAssignDamage(attacker, blockers, damage, defender, overrideOrder);
@@ -613,7 +604,7 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     public void startNewMatch(final Match match) {
         SOverlayUtils.startGameOverlay();
         SOverlayUtils.showOverlay();
-        FThreads.invokeInEdtLater(new Runnable() {
+        FThreads.invokeInEdtLater(GuiBase.getInterface(), new Runnable() {
             @Override
             public void run() {
                 MatchUtil.startGame(match);
@@ -623,12 +614,9 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
 
     @Override
     public void openView(List<Player> sortedPlayers) {
-        Game game = MatchUtil.getGame();
-        game.getGameLog().addObserver(CLog.SINGLETON_INSTANCE);
-
         List<PlayerView> sortedPlayerViews = new ArrayList<PlayerView>();
         for (Player p : sortedPlayers) {
-            sortedPlayerViews.add(PlayerView.get(p));
+            sortedPlayerViews.add(MatchUtil.getGameView().getPlayerView(p, false));
         }
         CMatchUI.SINGLETON_INSTANCE.initMatch(sortedPlayerViews, MatchUtil.getHumanCount() != 1);
 
@@ -652,7 +640,8 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     }
 
     /**
-     * TODO: Needs to be reworked for efficiency with rest of prefs saves in codebase.
+     * TODO: Needs to be reworked for efficiency with rest of prefs saves in
+     * codebase.
      */
     public void writeMatchPreferences() {
         final ForgePreferences prefs = FModel.getPreferences();
@@ -692,7 +681,8 @@ public enum CMatchUI implements ICDoc, IMenuProvider, IMatchController {
     }
 
     /**
-     * TODO: Needs to be reworked for efficiency with rest of prefs saves in codebase.
+     * TODO: Needs to be reworked for efficiency with rest of prefs saves in
+     * codebase.
      */
     private void actuateMatchPreferences() {
         final ForgePreferences prefs = FModel.getPreferences();

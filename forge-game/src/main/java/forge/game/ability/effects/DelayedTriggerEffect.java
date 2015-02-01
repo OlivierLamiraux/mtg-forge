@@ -64,7 +64,7 @@ public class DelayedTriggerEffect extends SpellAbilityEffect {
         if (sa.hasParam("RememberNumber")) {
             for (final Object o : sa.getHostCard().getRemembered()) {
                 if (o instanceof Integer) {
-                    delTrig.addRemembered(o);
+                    delTrig.addRemembered((Integer) o);
                 }
             }
         }
@@ -78,8 +78,6 @@ public class DelayedTriggerEffect extends SpellAbilityEffect {
         if (mapParams.containsKey("DelayedTriggerDefinedPlayer")) { // on sb's next turn
             Player p = Iterables.getFirst(AbilityUtils.getDefinedPlayers(sa.getHostCard(), mapParams.get("DelayedTriggerDefinedPlayer"), sa), null);
             trigHandler.registerPlayerDefinedDelayedTrigger(p, delTrig);
-        } else if (mapParams.containsKey("ThisTurn")) {
-            trigHandler.registerThisTurnDelayedTrigger(delTrig);
         } else {
             trigHandler.registerDelayedTrigger(delTrig);
         }

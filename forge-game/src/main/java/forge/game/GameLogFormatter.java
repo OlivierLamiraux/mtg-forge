@@ -12,7 +12,6 @@ import forge.game.zone.ZoneType;
 import forge.util.Lang;
 import forge.util.maps.MapOfLists;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
@@ -33,33 +32,21 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
         return generateSummary(ev.history);
     }
 
-    @Override
-    public GameLogEntry visit(GameEventScry ev) {
-        String scryOutcome = "";
-        String toTop = String.format("%s to the top of the library", Lang.nounWithAmount(ev.toTop, "card"));
-        String toBottom = String.format("%s to the bottom of the library", Lang.nounWithAmount(ev.toBottom, "card"));
 
-        if (ev.toTop > 0 && ev.toBottom > 0) {
-            scryOutcome = String.format("%s scried %s and %s.", ev.player, toTop, toBottom);
-        } else if (ev.toBottom == 0) {
-            scryOutcome = String.format("%s scried %s.", ev.player, toTop);
-        } else {
-            scryOutcome = String.format("%s scried %s.", ev.player, toBottom);
-        }
-
-        return new GameLogEntry(GameLogEntryType.STACK_RESOLVE, scryOutcome);
-    }
-    
+    /* (non-Javadoc)
+     * @see forge.game.event.IGameEventVisitor.Base#visit(forge.game.event.GameEventSpellResolved)
+     */
     @Override
     public GameLogEntry visit(GameEventSpellResolved ev) {
         String messageForLog = ev.hasFizzled ? ev.spell.getHostCard().getName() + " ability fizzles." : ev.spell.getStackDescription();
         return new GameLogEntry(GameLogEntryType.STACK_RESOLVE, messageForLog);
     }
 
+
     @Override
     public GameLogEntry visit(GameEventSpellAbilityCast event) {
         String who = event.sa.getActivatingPlayer().getName();
-        String action = event.sa.isSpell() ? " cast " : event.sa.isTrigger() ? " triggered " : " activated ";
+        String action = event.sa.isSpell() ? " cast " : " activated ";
         String what = event.sa.getStackDescription().startsWith("Morph ") ? "Morph" : event.sa.getHostCard().toString();
 
         StringBuilder sb = new StringBuilder();
@@ -67,12 +54,7 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
 
         if (event.sa.getTargetRestrictions() != null) {
             sb.append(" targeting ");
-
-            ArrayList<TargetChoices> targets = event.sa.getAllTargetChoices();
-            // Include the TargetChoices from the stack instance, since the real target choices
-            // are on that object at this point (see SpellAbilityStackInstance constructor).
-            targets.add(event.si.getTargetChoices());
-            for (TargetChoices ch : targets) {
+            for (TargetChoices ch : event.sa.getAllTargetChoices()) {
                 if (null != ch) {
                     sb.append(ch.getTargetedString());
                 }
@@ -83,14 +65,15 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
         return new GameLogEntry(GameLogEntryType.STACK_ADD, sb.toString());
     }
 
-    private static GameLogEntry generateSummary(final List<GameOutcome> gamesPlayed) {
-        final GameOutcome outcome1 = gamesPlayed.get(0);
-        final List<Player> players = outcome1.getPlayers();
+    private GameLogEntry generateSummary(List<GameOutcome> gamesPlayed) {
+
+        GameOutcome outcome1 = gamesPlayed.get(0);
+        List<Player> players = outcome1.getPlayers();
 
         final int[] wins = new int[players.size()];
 
         // Calculate total games each player has won.
-        for (final GameOutcome game : gamesPlayed) {
+        for (GameOutcome game : gamesPlayed) {
             int i = 0;
             for (Player p : game.getPlayers()) {
                 if (p.getOutcome().hasWon()) {
@@ -100,26 +83,28 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
             }
         }
 
-        final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < wins.length; i++) {
-            final Player player = players.get(i);
-            final String playerName = player.getName();
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < wins.length; i++) {
+            Player player = players.get(i);
+            String playerName = player.getName();
             sb.append(playerName).append(": ").append(wins[i]).append(" ");
         }
+
         return new GameLogEntry(GameLogEntryType.MATCH_RESULTS, sb.toString());
     }
 
     @Override
-    public GameLogEntry visit(final GameEventPlayerControl event) {
-        final LobbyPlayer newController = event.newController;
-        final Player p = event.player;
+    public GameLogEntry visit(GameEventPlayerControl event) {
+        // TODO Auto-generated method stub
+        LobbyPlayer newController = event.newController;
+        Player p = event.player;
 
         final String message;
-        if (newController == null) {
+        if( newController == null )
             message = p.getName() + " has restored control over themself";
-        } else {
+        else
             message =  String.format("%s is controlled by %s", p.getName(), newController.getName());
-        }
+
         return new GameLogEntry(GameLogEntryType.PLAYER_CONROL, message);
     }
 
@@ -129,18 +114,14 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
         return new GameLogEntry(GameLogEntryType.PHASE, ev.phaseDesc + Lang.getPossesive(p.getName()) + " " + ev.phase.nameForUi);
     }
 
+
     @Override
     public GameLogEntry visit(GameEventCardDamaged event) {
         String additionalLog = "";
-        if (event.type == DamageType.Deathtouch) {
-            additionalLog = "(Deathtouch)";
-        }
-        if (event.type == DamageType.M1M1Counters) {
-            additionalLog = "(As -1/-1 Counters)";
-        }
-        if (event.type == DamageType.LoyaltyLoss) {
-            additionalLog = "(Removing " + Lang.nounWithAmount(event.amount, "loyalty counter") + ")";
-        }
+        if( event.type == DamageType.Deathtouch ) additionalLog = "(Deathtouch)";
+        if( event.type == DamageType.M1M1Counters ) additionalLog = "(As -1/-1 Counters)";
+        if( event.type == DamageType.LoyaltyLoss ) additionalLog = "(Removing " + Lang.nounWithAmount(event.amount, "loyalty counter") + ")";
+
         String message = String.format("%s deals %d damage %s to %s.", event.source, event.amount, additionalLog, event.card);
         return new GameLogEntry(GameLogEntryType.DAMAGE, message);
     }
@@ -156,14 +137,14 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
 
     @Override
     public GameLogEntry visit(GameEventTurnBegan event) {
-        String message = String.format("Turn %d (%s)", event.turnNumber, event.turnOwner);
+        String message = String.format( "Turn %d (%s)", event.turnNumber, event.turnOwner);
         return new GameLogEntry(GameLogEntryType.TURN, message);
     }
 
     @Override
     public GameLogEntry visit(GameEventPlayerDamaged ev) {
         String extra = ev.infect ? " (as poison counters)" : "";
-        String message = String.format("%s deals %d %s damage to %s%s.", ev.source, ev.amount, ev.combat ? "combat" : "non-combat", ev.target, extra);
+        String message = String.format("%s deals %d %s damage to %s%s.", ev.source, ev.amount, ev.combat ? "combat" : "non-combat", ev.target, extra );
         return new GameLogEntry(GameLogEntryType.DAMAGE, message);
     }
 
@@ -182,17 +163,18 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
 
         // Not a big fan of the triple nested loop here
         for (GameEntity k : ev.attackersMap.keySet()) {
+
             Collection<Card> attackers = ev.attackersMap.get(k);
             if (attackers == null || attackers.isEmpty()) {
                 continue;
             }
-            if (sb.length() > 0) sb.append("\n");
+            if ( sb.length() > 0 ) sb.append("\n");
             sb.append(ev.player + " assigned " + Lang.joinHomogenous(attackers));
             sb.append(" to attack " + k + ".");
         }
-        if (sb.length() == 0) {
+        if ( sb.length() == 0 )
             sb.append(ev.player + " didn't attack this turn.");
-        }
+
         return new GameLogEntry(GameLogEntryType.COMBAT, sb.toString());
     }
 
@@ -212,20 +194,17 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
             if (attackers == null || attackers.isEmpty()) {
                 continue;
             }
-            if (sb.length() > 0) {
-                sb.append("\n");
-            }
+            if ( sb.length() > 0 ) sb.append("\n");
 
             String controllerName = defender instanceof Card ? ((Card)defender).getController().getName() : defender.getName();
             boolean firstAttacker = true;
             for (final Entry<Card, Collection<Card>> att : attackers.entrySet()) {
-                if (!firstAttacker) sb.append("\n");
+                if ( !firstAttacker ) sb.append("\n");
 
                 blockers = att.getValue();
-                if (blockers.isEmpty()) {
+                if ( blockers.isEmpty() ) {
                     sb.append(controllerName + " didn't block ");
-                }
-                else {
+                } else {
                     sb.append(controllerName + " assigned " + Lang.joinHomogenous(blockers) + " to block ");
                 }
 
@@ -239,15 +218,16 @@ public class GameLogFormatter extends IGameEventVisitor.Base<GameLogEntry> {
 
     @Override
     public GameLogEntry visit(GameEventMulligan ev) {
-        String message = String.format("%s has mulliganed down to %d cards.", ev.player, ev.player.getZone(ZoneType.Hand).size());
+        String message = String.format( "%s has mulliganed down to %d cards.", ev.player, ev.player.getZone(ZoneType.Hand).size());
         return new GameLogEntry(GameLogEntryType.MULLIGAN, message);
     }
+
 
     @Subscribe
     public void recieve(GameEvent ev) {
         GameLogEntry le = ev.visit(this);
-        if (le != null) {
+        if ( le != null )
             log.add(le);
-        }
     }
+
 } // end class GameLog

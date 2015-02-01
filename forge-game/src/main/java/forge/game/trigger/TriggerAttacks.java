@@ -94,8 +94,7 @@ public class TriggerAttacks extends Trigger {
         }
 
         if (this.mapParams.containsKey("DefendingPlayerPoisoned")) {
-            Player defendingPlayer = (Player) runParams2.get("DefendingPlayer");
-        	if (defendingPlayer.getPoisonCounters() == 0) {
+        	if (((Player) runParams2.get("Attacked")).getPoisonCounters() == 0) {
         		return false;
         	}
         }
@@ -108,6 +107,7 @@ public class TriggerAttacks extends Trigger {
     public final void setTriggeringObjects(final SpellAbility sa) {
         sa.setTriggeringObject("Attacker", this.getRunParams().get("Attacker"));
         sa.setTriggeringObject("Defender", this.getRunParams().get("Attacked"));
-        sa.setTriggeringObject("DefendingPlayer", this.getRunParams().get("DefendingPlayer"));
+        final Player defendingPlayer = ((Card) this.getRunParams().get("Attacker")).getGame().getCombat().getDefenderPlayerByAttacker((Card) this.getRunParams().get("Attacker"));
+        sa.setTriggeringObject("DefendingPlayer", defendingPlayer);
     }
 }

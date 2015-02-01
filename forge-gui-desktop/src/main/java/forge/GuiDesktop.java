@@ -23,12 +23,9 @@ import forge.assets.FSkinProp;
 import forge.assets.ISkinImage;
 import forge.control.GuiTimer;
 import forge.deck.CardPool;
-import forge.download.GuiDownloadService;
-import forge.download.GuiDownloader;
 import forge.error.BugReportDialog;
 import forge.game.GameEntity;
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
+import forge.game.GameObject;
 import forge.game.player.DelayedReveal;
 import forge.game.player.IHasIcon;
 import forge.gui.BoxedProductCardListViewer;
@@ -52,10 +49,10 @@ import forge.toolbox.FOptionPane;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinImage;
 import forge.util.BuildInfo;
-import forge.util.Callback;
-import forge.util.FCollectionView;
 import forge.util.FileUtil;
 import forge.util.gui.SGuiChoose;
+import forge.view.CardView;
+import forge.view.GameEntityView;
 
 public class GuiDesktop implements IGuiBase {
     @Override
@@ -120,11 +117,6 @@ public class GuiDesktop implements IGuiBase {
     }
 
     @Override
-    public ISkinImage getCardArt(PaperCard card) {
-        return null; //TODO
-    }
-
-    @Override
     public ISkinImage createLayeredImage(FSkinProp background, String overlayFilename, float opacity) {
         BufferedImage image = new BufferedImage(background.getWidth(), background.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
@@ -156,7 +148,7 @@ public class GuiDesktop implements IGuiBase {
     @Override
     public int showCardOptionDialog(final CardView card, String message, String title, FSkinProp skinIcon, String[] options, int defaultOption) {
         if (card != null) {
-            FThreads.invokeInEdtAndWait(new Runnable() {
+            FThreads.invokeInEdtAndWait(GuiBase.getInterface(), new Runnable() {
                 @Override
                 public void run() {
                     GuiBase.getInterface().setCard(card);
@@ -173,21 +165,21 @@ public class GuiDesktop implements IGuiBase {
 
     @Override
     public <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices, final T selected, final Function<T, String> display) {
-        /*if ((choices != null && !choices.isEmpty() && choices.iterator().next() instanceof GameObject) || selected instanceof GameObject) {
+        if ((choices != null && !choices.isEmpty() && choices.iterator().next() instanceof GameObject) || selected instanceof GameObject) {
             System.err.println("Warning: GameObject passed to GUI! Printing stack trace.");
             Thread.dumpStack();
-        }*/
+        }
         return GuiChoose.getChoices(message, min, max, choices, selected, display);
     }
 
     @Override
     public <T> List<T> order(final String title, final String top, final int remainingObjectsMin, final int remainingObjectsMax,
             final List<T> sourceChoices, final List<T> destChoices, final CardView referenceCard, final boolean sideboardingMode) {
-        /*if ((sourceChoices != null && !sourceChoices.isEmpty() && sourceChoices.iterator().next() instanceof GameObject)
+        if ((sourceChoices != null && !sourceChoices.isEmpty() && sourceChoices.iterator().next() instanceof GameObject)
                 || (destChoices != null && !destChoices.isEmpty() && destChoices.iterator().next() instanceof GameObject)) {
             System.err.println("Warning: GameObject passed to GUI! Printing stack trace.");
             Thread.dumpStack();
-        }*/
+        }
         return GuiChoose.order(title, top, remainingObjectsMin, remainingObjectsMax, sourceChoices, destChoices, referenceCard, sideboardingMode);
     }
 
@@ -197,16 +189,16 @@ public class GuiDesktop implements IGuiBase {
     }
 
     @Override
-    public GameEntityView chooseSingleEntityForEffect(String title, FCollectionView<? extends GameEntity> optionList, DelayedReveal delayedReveal, boolean isOptional, PlayerControllerHuman controller) {
+    public GameEntityView chooseSingleEntityForEffect(String title, Collection<? extends GameEntity> optionList, DelayedReveal delayedReveal, boolean isOptional, PlayerControllerHuman controller) {
         if (delayedReveal != null) {
             delayedReveal.reveal(controller); //TODO: Merge this into search dialog
         }
         controller.tempShow(optionList);
-        List<GameEntityView> gameEntityViews = GameEntityView.getEntityCollection(optionList);
+        List<GameEntityView> gameEntityViews = controller.getGameView().getGameEntityViews(optionList, false);
         if (isOptional) {
-            return SGuiChoose.oneOrNone(title, gameEntityViews);
+            return SGuiChoose.oneOrNone(this, title, gameEntityViews);
         }
-        return SGuiChoose.one(title, gameEntityViews);
+        return SGuiChoose.one(this, title, gameEntityViews);
     }
 
     @Override
@@ -262,11 +254,6 @@ public class GuiDesktop implements IGuiBase {
     }
 
     @Override
-    public void download(GuiDownloadService service, Callback<Boolean> callback) {
-        new GuiDownloader(service, callback);
-    }
-
-    @Override
     public void copyToClipboard(String text) {
         StringSelection ss = new StringSelection(text);
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
@@ -312,6 +299,6 @@ public class GuiDesktop implements IGuiBase {
 
     @Override
     public void setPlayerAvatar(LobbyPlayer player, IHasIcon ihi) {
-        CMatchUI.SINGLETON_INSTANCE.avatarImages.put(player.getName(), ihi.getIconImageKey());
+        CMatchUI.SINGLETON_INSTANCE.avatarImages.put(player, ihi.getIconImageKey());
     }
 }

@@ -19,8 +19,6 @@ import forge.game.zone.ZoneType;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
 public class EffectEffect extends SpellAbilityEffect {
 
     @Override
@@ -52,7 +50,6 @@ public class EffectEffect extends SpellAbilityEffect {
         String effectRemembered = null;
         String effectImprinted = null;
         Player ownerEff = null;
-        boolean imprintOnHost = false;
 
         if (sa.hasParam("Abilities")) {
             effectAbilities = sa.getParam("Abilities").split(",");
@@ -86,6 +83,7 @@ public class EffectEffect extends SpellAbilityEffect {
             effectImprinted = sa.getParam("ImprintCards");
         }
 
+        // Effect eff = new Effect();
         String name = sa.getParam("Name");
         if (name == null) {
             name = sa.getHostCard().getName() + "'s Effect";
@@ -97,32 +95,24 @@ public class EffectEffect extends SpellAbilityEffect {
         }
 
         if (sa.hasParam("EffectOwner")) {
-            final List<Player> effectOwner = AbilityUtils.getDefinedPlayers(sa.getHostCard(), sa.getParam("EffectOwner"), sa);
+            List<Player> effectOwner = AbilityUtils.getDefinedPlayers(sa.getHostCard(), sa.getParam("EffectOwner"), sa);
             ownerEff = effectOwner.get(0);
         }
 
-        if (sa.hasParam("ImprintOnHost")) {
-            imprintOnHost = true;
-        }
-
         final Player controller = sa.hasParam("EffectOwner") ? ownerEff : sa.getActivatingPlayer();
-        final Card eff = new Card(game.nextCardId(), game);
+        final Card eff = new Card(controller.getGame().nextCardId());
         eff.setName(name);
         eff.addType("Effect"); // Or Emblem
         eff.setToken(true); // Set token to true, so when leaving play it gets nuked
         eff.setOwner(controller);
         eff.setImageKey(sa.hasParam("Image") ? ImageKeys.getTokenKey(sa.getParam("Image")) : hostCard.getImageKey());
-        eff.setColor(hostCard.determineColor().getColor());
+        eff.setColor(hostCard.getColor());
         eff.setImmutable(true);
         eff.setEffectSource(hostCard);
 
-        // Grant SVars first in order to give references to granted abilities
-        if (effectSVars != null) {
-            for (final String s : effectSVars) {
-                final String actualSVar = hostCard.getSVar(s);
-                eff.setSVar(s, actualSVar);
-            }
-        }
+        // Effects should be Orange or something probably
+
+        final Card e = eff;
 
         // Abilities, triggers and SVars work the same as they do for Token
         // Grant abilities
@@ -166,6 +156,14 @@ public class EffectEffect extends SpellAbilityEffect {
             }
         }
 
+        // Grant SVars
+        if (effectSVars != null) {
+            for (final String s : effectSVars) {
+                final String actualSVar = hostCard.getSVar(s);
+                eff.setSVar(s, actualSVar);
+            }
+        }
+
         // Grant Keywords
         if (effectKeywords != null) {
             for (final String s : effectKeywords) {
@@ -186,13 +184,13 @@ public class EffectEffect extends SpellAbilityEffect {
         // Set Imprinted
         if (effectImprinted != null) {
             for (final Card c : AbilityUtils.getDefinedCards(hostCard, effectImprinted, sa)) {
-                eff.addImprintedCard(c);
+                eff.addImprinted(c);
             }
         }
 
         // Set Chosen Color(s)
-        if (hostCard.hasChosenColor()) {
-            eff.setChosenColors(Lists.newArrayList(hostCard.getChosenColors()));
+        if (!hostCard.getChosenColor().isEmpty()) {
+            eff.setChosenColor(hostCard.getChosenColor());
         }
 
         // Set Chosen name
@@ -213,7 +211,7 @@ public class EffectEffect extends SpellAbilityEffect {
 
                 @Override
                 public void run() {
-                    game.getAction().exile(eff);
+                    game.getAction().exile(e);
                 }
             };
 
@@ -235,17 +233,13 @@ public class EffectEffect extends SpellAbilityEffect {
             }
         }
 
-        if (imprintOnHost) {
-            hostCard.addImprintedCard(eff);
-        }
-
         // TODO: Add targeting to the effect so it knows who it's dealing with
         game.getTriggerHandler().suppressMode(TriggerType.ChangesZone);
-        game.getAction().moveTo(ZoneType.Command, eff);
+        Card cmdEffect = game.getAction().moveTo(ZoneType.Command, eff);
         game.getTriggerHandler().clearSuppression(TriggerType.ChangesZone);
-        //if (effectTriggers != null) {
-        //    game.getTriggerHandler().registerActiveTrigger(cmdEffect, false);
-        //}
+        if (effectTriggers != null) {
+            game.getTriggerHandler().registerActiveTrigger(cmdEffect, false);
+        }
     }
 
 }

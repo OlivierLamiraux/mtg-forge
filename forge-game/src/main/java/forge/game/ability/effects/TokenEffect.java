@@ -17,12 +17,6 @@
  */
 package forge.game.ability.effects;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
 
 import forge.game.Game;
@@ -39,10 +33,12 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerHandler;
-import forge.game.trigger.TriggerType;
 import forge.item.PaperToken;
-import forge.util.FCollectionView;
 import forge.util.MyRandom;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class TokenEffect extends SpellAbilityEffect {
 
@@ -174,7 +170,7 @@ public class TokenEffect extends SpellAbilityEffect {
         for (int i = 0; i < substitutedColors.length; i++) {
             if (substitutedColors[i].equals("ChosenColor")) {
                 // this currently only supports 1 chosen color
-                substitutedColors[i] = host.getChosenColor();
+                substitutedColors[i] = host.getChosenColor().get(0);
             }
         }
         String colorDesc = "";
@@ -226,11 +222,10 @@ public class TokenEffect extends SpellAbilityEffect {
         final boolean imprint = sa.hasParam("ImprintTokens");
         for (final Player controller : AbilityUtils.getDefinedPlayers(host, this.tokenOwner, sa)) {
             for (int i = 0; i < finalAmount; i++) {
-                final String imageName = imageNames.get(MyRandom.getRandom().nextInt(imageNames.size()));
-                final CardFactory.TokenInfo tokenInfo = new CardFactory.TokenInfo(substitutedName, imageName,
-                        cost, substitutedTypes, this.tokenKeywords, finalPower, finalToughness);
-                final List<Card> tokens = CardFactory.makeToken(tokenInfo, controller);
-                for (Card tok : tokens) {
+                final List<Card> tokens = CardFactory.makeToken(substitutedName,
+                		imageNames.get(MyRandom.getRandom().nextInt(imageNames.size())),
+                        controller, cost, substitutedTypes, finalPower, finalToughness, this.tokenKeywords);
+                for(Card tok : tokens) {
                     if (this.tokenTapped) {
                         tok.setTapped(true);
                     }
@@ -255,7 +250,7 @@ public class TokenEffect extends SpellAbilityEffect {
                             final SpellAbility grantedAbility = AbilityFactory.getAbility(actualAbility, c);
                             c.addSpellAbility(grantedAbility);
                             // added ability to intrinsic list so copies and clones work
-                            c.getCurrentState().addUnparsedAbility(actualAbility);
+                            c.getUnparsedAbilities().add(actualAbility);
                         }
                     }
                 }
@@ -307,28 +302,22 @@ public class TokenEffect extends SpellAbilityEffect {
                 final Game game = controller.getGame();
                 for (final Card c : tokens) {
                     if (this.tokenAttacking && game.getPhaseHandler().inCombat()) {
-                        final Combat combat = game.getPhaseHandler().getCombat();
-                        final FCollectionView<GameEntity> defs = combat.getDefenders();
+                        Combat combat = game.getPhaseHandler().getCombat();
+                        final List<GameEntity> defs = combat.getDefenders();
                         final GameEntity defender = c.getController().getController().chooseSingleEntityForEffect(defs, sa, "Choose which defender to attack with " + c, false);
                         combat.addAttacker(c, defender);
                         combatChanged = true;
                     }
                     if (this.tokenBlocking != null && game.getPhaseHandler().inCombat()) {
-                        final Combat combat = game.getPhaseHandler().getCombat();
+                        Combat combat = game.getPhaseHandler().getCombat();
                         final Card attacker = Iterables.getFirst(AbilityUtils.getDefinedCards(host, this.tokenBlocking, sa), null);
                         if (attacker != null) {
-                            final boolean wasBlocked = combat.isBlocked(attacker);
-                            combat.addBlocker(attacker, c);
-                            combat.orderAttackersForDamageAssignment(c);
-
-                            // Run triggers for new blocker and add it to damage assignment order
-                            if (!wasBlocked) {
-                                combat.setBlocked(attacker, true);
-                                combat.addBlockerToDamageAssignmentOrder(attacker, c);
-                                game.getTriggerHandler().runTrigger(TriggerType.AttackerBlocked, new Builder<String, Object>().put("Attacker", attacker).put("Blockers", Collections.singleton(c)).put("NumBlockers", 1).build(), true);
+                            if (combat.isBlocked(attacker)) {
+                                combat.addBlocker(attacker, c);
+                                combat.orderAttackersForDamageAssignment(c);
+                            } else {
+                                // TODO Flash Foliage: set blocked; attackerBlocked trigger; damage 
                             }
-                            game.getTriggerHandler().runTrigger(TriggerType.AttackerBlockedByCreature, new Builder<String, Object>().put("Attacker", attacker).put("Blocker", c).build(), true);
-
                             combatChanged = true;
                         }
                     }
@@ -336,7 +325,7 @@ public class TokenEffect extends SpellAbilityEffect {
                         game.getCardState(sa.getHostCard()).addRemembered(c);
                     }
                     if (imprint) {
-                        game.getCardState(sa.getHostCard()).addImprintedCard(c);
+                        game.getCardState(sa.getHostCard()).addImprinted(c);
                     }
                     if (sa.hasParam("RememberSource")) {
                         game.getCardState(c).addRemembered(host);
@@ -345,13 +334,14 @@ public class TokenEffect extends SpellAbilityEffect {
                         final Card token = game.getCardState(c);
                         final String remembered = sa.getParam("TokenRemembered");
                         for (final Object o : AbilityUtils.getDefinedObjects(host, remembered, sa)) {
-                            token.addRemembered(o);
+                            if (!token.getRemembered().contains(o)) {
+                                token.addRemembered(o);
+                            }
                         }
                     }
                 }
 
                 if (combatChanged) {
-                    game.updateCombatForView();
                     game.fireEvent(new GameEventCombatChanged());
                 }
             }

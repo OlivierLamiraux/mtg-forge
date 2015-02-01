@@ -4,12 +4,13 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.List;
 
 public class DestroyAllEffect extends SpellAbilityEffect {
 
@@ -56,7 +57,7 @@ public class DestroyAllEffect extends SpellAbilityEffect {
             valid = valid.replace("X", Integer.toString(AbilityUtils.calculateAmount(card, "X", sa)));
         }
 
-        CardCollectionView list = game.getCardsIn(ZoneType.Battlefield);
+        List<Card> list = game.getCardsIn(ZoneType.Battlefield);
 
         if (targetPlayer != null) {
             list = CardLists.filterControlledBy(list, targetPlayer);

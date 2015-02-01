@@ -1,5 +1,6 @@
 package forge.match.input;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -7,19 +8,17 @@ import forge.game.GameEntity;
 import forge.game.card.Card;
 import forge.game.player.Player;
 import forge.player.PlayerControllerHuman;
-import forge.util.FCollection;
-import forge.util.FCollectionView;
 import forge.util.ITriggerEvent;
 
 public class InputSelectEntitiesFromList<T extends GameEntity> extends InputSelectManyBase<T> {
     private static final long serialVersionUID = -6609493252672573139L;
 
-    private final FCollectionView<T> validChoices;
-    protected final FCollection<T> selected = new FCollection<T>();
+    private final Collection<T> validChoices;
+    protected final List<T> selected = new ArrayList<T>();
 
-    public InputSelectEntitiesFromList(final PlayerControllerHuman controller, final int min, final int max, final FCollectionView<T> validChoices0) {
-        super(controller, Math.min(min, validChoices0.size()), Math.min(max, validChoices0.size()));
-        validChoices = validChoices0;
+    public InputSelectEntitiesFromList(final PlayerControllerHuman controller, final int min, final int max, final Collection<T> validChoices) {
+        super(controller, Math.min(min, validChoices.size()), Math.min(max, validChoices.size()));
+        this.validChoices = validChoices;
 
         if (min > validChoices.size()) {
             System.out.println(String.format("Trying to choose at least %d cards from a list with only %d cards!", min, validChoices.size()));
@@ -27,23 +26,12 @@ public class InputSelectEntitiesFromList<T extends GameEntity> extends InputSele
     }
 
     @Override
-    protected boolean onCardSelected(final Card c, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    protected boolean onCardSelected(final Card c, final ITriggerEvent triggerEvent) {
         if (!selectEntity(c)) {
             return false;
         }
         refresh();
         return true;
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        if (validChoices.contains(card)) {
-            if (selected.contains(card)) {
-                return "unselect card";
-            }
-            return "select card";
-        }
-        return null;
     }
 
     @Override
@@ -56,7 +44,7 @@ public class InputSelectEntitiesFromList<T extends GameEntity> extends InputSele
 
     public final Collection<T> getSelected() {
         return selected;
-    }
+    }    
 
     @SuppressWarnings("unchecked")
     protected boolean selectEntity(GameEntity c) {
@@ -66,10 +54,10 @@ public class InputSelectEntitiesFromList<T extends GameEntity> extends InputSele
 
         boolean entityWasSelected = selected.contains(c);
         if (entityWasSelected) {
-            selected.remove(c);
+            this.selected.remove(c);
         }
         else {
-            selected.add((T)c);
+            this.selected.add((T)c);
         }
         onSelectStateChanged(c, !entityWasSelected);
 

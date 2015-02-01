@@ -18,6 +18,7 @@
 package forge.toolbox;
 
 import forge.FThreads;
+import forge.GuiBase;
 import forge.Singletons;
 import forge.assets.FSkinProp;
 import forge.assets.ISkinImage;
@@ -1035,7 +1036,7 @@ public class FSkin {
     public static void loadLight(final String skinName, final boolean onInit) {
         if (onInit) {
             // No need for this method to be loaded while on the EDT.
-            FThreads.assertExecutedByEdt(false);
+            FThreads.assertExecutedByEdt(GuiBase.getInterface(), false);
 
             if (allSkins == null) { //initialize
                 allSkins = new ArrayList<String>();
@@ -1107,14 +1108,14 @@ public class FSkin {
     public static void loadFull(final boolean onInit) {
         if (onInit) {
             // No need for this method to be loaded while on the EDT.
-            FThreads.assertExecutedByEdt(false);
+            FThreads.assertExecutedByEdt(GuiBase.getInterface(), false);
 
             // Preferred skin name must be called via loadLight() method,
             // which does some cleanup and init work.
             if (preferredName.isEmpty()) { loadLight("default", onInit); }
         }
 
-        FView.SINGLETON_INSTANCE.setSplashProgessBarMessage("Processing image sprites: ", 7);
+        FView.SINGLETON_INSTANCE.setSplashProgessBarMessage("Processing image sprites: ", 6);
 
         // Grab and test various sprite files.
         final String defaultDir = ForgeConstants.DEFAULT_SKINS_DIR;
@@ -1786,8 +1787,6 @@ public class FSkin {
     public static class SkinnedDialog extends JDialog implements ISkinnedComponent<JDialog> {
         private static final long serialVersionUID = -1086360770925335844L;
 
-        private SkinBorder border;
-
         private WindowSkin<JDialog> skin;
         public WindowSkin<JDialog> getSkin() {
             if (skin == null) { skin = new WindowSkin<JDialog>(); }
@@ -1812,15 +1811,9 @@ public class FSkin {
         public void setIconImage(SkinImage skinImage) { getSkin().setIconImage(this, skinImage); }
         @Override public void setIconImage(Image image) { getSkin().resetIconImage(); super.setIconImage(image); }
 
-        //relay border to root pane
-        public void setBorder(SkinBorder skinBorder) { getRootPane().setBorder(skinBorder != null ? skinBorder.createBorder() : null); this.border = skinBorder; }
-        public void setBorder(Border border) { getRootPane().setBorder(border); this.border = null; }
-
         @Override
         public void paint(Graphics g) {
-            if (getSkin().update(this)) {
-                if (this.border != null) { setBorder(this.border); }
-            }
+            getSkin().update(this);
             super.paint(g);
         }
     }
@@ -2480,41 +2473,6 @@ public class FSkin {
 
         public SkinnedTextField() { super(); }
         public SkinnedTextField(String text) { super(text); }
-
-        public void setForeground(SkinColor skinColor) { getSkin().setForeground(this, skinColor); }
-        @Override public void setForeground(Color color) { getSkin().resetForeground(); super.setForeground(color); }
-
-        public void setBackground(SkinColor skinColor) { getSkin().setBackground(this, skinColor); }
-        @Override public void setBackground(Color color) { getSkin().resetBackground(); super.setBackground(color); }
-
-        public void setFont(SkinFont skinFont) { getSkin().setFont(this, skinFont); }
-        @Override public void setFont(Font font) { getSkin().resetFont(); super.setFont(font); }
-
-        public void setCursor(SkinCursor skinCursor) { getSkin().setCursor(this, skinCursor); }
-        @Override public void setCursor(Cursor cursor) { getSkin().resetCursor(); super.setCursor(cursor); }
-
-        public void setBorder(SkinBorder skinBorder) { getSkin().setBorder(this, skinBorder); }
-        @Override public void setBorder(Border border) { getSkin().resetBorder(); super.setBorder(border); }
-
-        public void setCaretColor(SkinColor skinColor) { getSkin().setCaretColor(this, skinColor); }
-        @Override public void setCaretColor(Color color) { getSkin().resetCaretColor(); super.setCaretColor(color); }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            getSkin().update(this);
-            super.paintComponent(g);
-        }
-    }
-    public static class SkinnedPasswordField extends JPasswordField implements ISkinnedComponent<JTextField> {
-        private static final long serialVersionUID = 1557674285031452868L;
-
-        private JTextComponentSkin<JTextField> skin;
-        public JTextComponentSkin<JTextField> getSkin() {
-            if (skin == null) { skin = new JTextComponentSkin<JTextField>(); }
-            return skin;
-        }
-
-        public SkinnedPasswordField() { super(); }
 
         public void setForeground(SkinColor skinColor) { getSkin().setForeground(this, skinColor); }
         @Override public void setForeground(Color color) { getSkin().resetForeground(); super.setForeground(color); }

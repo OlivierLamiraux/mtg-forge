@@ -17,6 +17,7 @@ import forge.toolbox.FList.CompactModeHandler;
 
 /** 
  * ItemManager for cards
+ *
  */
 public class CardManager extends ItemManager<PaperCard> {
     public CardManager(boolean wantUnique0) {
@@ -59,13 +60,13 @@ public class CardManager extends ItemManager<PaperCard> {
             }
 
             @Override
-            public boolean tap(Integer index, Entry<PaperCard, Integer> value, float x, float y, int count) {
-                return CardRenderer.cardListItemTap(model.getOrderedList(), index, CardManager.this, x, y, count, compactModeHandler.isCompactMode());
+            public boolean tap(Entry<PaperCard, Integer> value, float x, float y, int count) {
+                return CardRenderer.cardListItemTap(value.getKey(), x, y, count, compactModeHandler.isCompactMode());
             }
 
             @Override
-            public boolean longPress(Integer index, Entry<PaperCard, Integer> value, float x, float y) {
-                CardZoom.show(model.getOrderedList(), index, CardManager.this);
+            public boolean longPress(Entry<PaperCard, Integer> value, float x, float y) {
+                CardZoom.show(value.getKey());
                 return true;
             }
         };

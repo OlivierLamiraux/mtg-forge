@@ -3,11 +3,10 @@ package forge.ai.ability;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
-import forge.ai.ComputerUtilCombat;
+import forge.ai.ComputerUtil;
 import forge.ai.SpellAbilityAi;
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates.Presets;
 import forge.game.combat.CombatUtil;
@@ -22,6 +21,10 @@ import java.util.List;
 import java.util.Random;
 
 public class TapAllAi extends SpellAbilityAi {
+
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellAiLogic#canPlayAI(forge.game.player.Player, java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     protected boolean canPlayAI(final Player ai, SpellAbility sa) {
         // If tapping all creatures do it either during declare attackers of AIs
@@ -41,7 +44,7 @@ public class TapAllAi extends SpellAbilityAi {
             valid = sa.getParam("ValidCards");
         }
 
-        CardCollectionView validTappables = game.getCardsIn(ZoneType.Battlefield);
+        List<Card> validTappables = game.getCardsIn(ZoneType.Battlefield);
 
         if (sa.usesTargeting()) {
             sa.resetTargets();
@@ -82,7 +85,7 @@ public class TapAllAi extends SpellAbilityAi {
             final boolean any = Iterables.any(validTappables, new Predicate<Card>() {
                 @Override
                 public boolean apply(final Card c) {
-                    return CombatUtil.canAttack(c) && ComputerUtilCombat.canAttackNextTurn(c);
+                    return CombatUtil.canAttack(c) && ComputerUtil.canAttackNextTurn(c);
                 }
             });
             if(!any) {
@@ -92,9 +95,20 @@ public class TapAllAi extends SpellAbilityAi {
         return true;
     }
 
-    private CardCollectionView getTapAllTargets(final String valid, final Card source) {
+    /**
+     * <p>
+     * getTapAllTargets.
+     * </p>
+     * 
+     * @param valid
+     *            a {@link java.lang.String} object.
+     * @param source
+     *            a {@link forge.game.card.Card} object.
+     * @return a {@link forge.CardList} object.
+     */
+    private List<Card> getTapAllTargets(final String valid, final Card source) {
         final Game game = source.getGame();
-        CardCollectionView tmpList = game.getCardsIn(ZoneType.Battlefield);
+        List<Card> tmpList = game.getCardsIn(ZoneType.Battlefield);
         tmpList = CardLists.getValidCards(tmpList, valid, source.getController(), source);
         tmpList = CardLists.filter(tmpList, Presets.UNTAPPED);
         return tmpList;
@@ -109,7 +123,7 @@ public class TapAllAi extends SpellAbilityAi {
             valid = sa.getParam("ValidCards");
         }
 
-        CardCollectionView validTappables = getTapAllTargets(valid, source);
+        List<Card> validTappables = getTapAllTargets(valid, source);
 
         final TargetRestrictions tgt = sa.getTargetRestrictions();
 
@@ -146,6 +160,7 @@ public class TapAllAi extends SpellAbilityAi {
                 return rr;
             }
         }
+
         return false;
     }
 }

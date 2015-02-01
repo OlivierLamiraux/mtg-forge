@@ -1,7 +1,6 @@
 package forge.sound;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.Random;
 
 import forge.properties.ForgeConstants;
@@ -22,13 +21,7 @@ public enum MusicPlaylist {
     public String getRandomFilename() {
         if (filenames == null) {
             try {
-                FilenameFilter filter = new FilenameFilter(){
-                    @Override
-                    public boolean accept(File file, String name) {
-                        return name.endsWith(".mp3") || name.endsWith(".wav");
-                    }
-                };
-                filenames = new File(ForgeConstants.MUSIC_DIR + subDir).list(filter);
+                filenames = new File(ForgeConstants.MUSIC_DIR + subDir).list();
             }
             catch (Exception e) {
                 e.printStackTrace();

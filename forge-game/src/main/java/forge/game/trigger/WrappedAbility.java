@@ -5,7 +5,6 @@ import forge.game.Game;
 import forge.game.GameObject;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.cost.Cost;
 import forge.game.player.Player;
 import forge.game.spellability.*;
@@ -23,7 +22,7 @@ import com.google.common.collect.Lists;
 // possible corner cases.
 // (The trigger can have a hardcoded OverridingAbility which can make
 // use of any of the methods)
-public class WrappedAbility extends Ability {
+public class WrappedAbility extends Ability implements ISpellAbility {
 
     private final SpellAbility sa;
     private final Trigger regtrig;
@@ -31,9 +30,9 @@ public class WrappedAbility extends Ability {
 
     boolean mandatory = false;
 
-    public WrappedAbility(final Trigger regtrig0, final SpellAbility sa0, final Player decider0) {
-        super(regtrig0.getHostCard(), ManaCost.ZERO, sa0.getView());
-        regtrig = regtrig0;
+    public WrappedAbility(final Trigger regTrig, final SpellAbility sa0, final Player decider0) {
+        super(regTrig.getHostCard(), ManaCost.ZERO);
+        regtrig = regTrig;
         sa = sa0;
         decider = decider0;
     }
@@ -41,6 +40,7 @@ public class WrappedAbility extends Ability {
     public SpellAbility getWrappedAbility() { 
         return sa;
     }
+
 
     @Override
     public boolean isWrapper() {
@@ -79,17 +79,17 @@ public class WrappedAbility extends Ability {
     }
 
     @Override
-    public void setPaidHash(final HashMap<String, CardCollection> hash) {
+    public void setPaidHash(final HashMap<String, List<Card>> hash) {
         sa.setPaidHash(hash);
     }
 
     @Override
-    public HashMap<String, CardCollection> getPaidHash() {
+    public HashMap<String, List<Card>> getPaidHash() {
         return sa.getPaidHash();
     }
 
     @Override
-    public CardCollection getPaidList(final String str) {
+    public List<Card> getPaidList(final String str) {
         return sa.getPaidList(str);
     }
 
@@ -109,8 +109,8 @@ public class WrappedAbility extends Ability {
     }
 
     @Override
-    public void setTriggeringObjects(final HashMap<String, Object> triggeredObjects) {
-        sa.setTriggeringObjects(triggeredObjects);
+    public void setAllTriggeringObjects(final HashMap<String, Object> triggeredObjects) {
+        sa.setAllTriggeringObjects(triggeredObjects);
     }
 
     @Override
@@ -181,11 +181,6 @@ public class WrappedAbility extends Ability {
     @Override
     public Card getHostCard() {
         return sa.getHostCard();
-    }
-
-    @Override
-    public SpellAbilityView getView() {
-        return sa.getView();
     }
 
     @Override
@@ -315,11 +310,6 @@ public class WrappedAbility extends Ability {
     }
 
     @Override
-    public void setTargets(TargetChoices targets) {
-        sa.setTargets(targets);
-    }
-
-    @Override
     public void setTargetCard(final Card card) {
         sa.setTargetCard(card);
     }
@@ -407,7 +397,7 @@ public class WrappedAbility extends Ability {
                 }
             }
         }
-        // TODO: CardCollection
+        // TODO: List<Card>
         
         getActivatingPlayer().getController().playSpellAbilityNoStack(sa, false);
 

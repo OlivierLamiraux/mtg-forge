@@ -23,17 +23,23 @@ import forge.game.GameLogEntryType;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
+import forge.game.io.GameStateDeserializer;
+import forge.game.io.GameStateSerializer;
+import forge.game.io.IGameStateObject;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.util.FileSection;
-import forge.util.Visitor;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
-public class ReplacementHandler {
+/**
+ * TODO: Write javadoc for this type.
+ * 
+ */
+public class ReplacementHandler implements IGameStateObject {
     private final Game game;
     /**
      * ReplacementHandler.
@@ -227,8 +233,8 @@ public class ReplacementHandler {
             // Replaced mana type
             final Card repHost = replacementEffect.getHostCard();
             String repType = repHost.getSVar(mapParams.get("ManaReplacement"));
-            if (repType.contains("Chosen") && repHost.hasChosenColor()) {
-                repType = repType.replace("Chosen", MagicColor.toShortString(repHost.getChosenColor()));
+            if (repType.contains("Chosen") && !repHost.getChosenColor().isEmpty()) {
+                repType = repType.replace("Chosen", MagicColor.toShortString(repHost.getChosenColor().get(0)));
             }
             manaAb.getManaPart().setManaReplaceType(repType);
             manaAb.getManaPart().produceMana(rep, player1, manaAb);
@@ -279,26 +285,35 @@ public class ReplacementHandler {
         return ret;
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     */
     public void cleanUpTemporaryReplacements() {
-        game.forEachCardInGame(new Visitor<Card>() {
-            @Override
-            public void visit(Card c) {
-                for (int i = 0; i < c.getReplacementEffects().size(); i++) {
-                    ReplacementEffect rep = c.getReplacementEffects().get(i);
-                    if (rep.isTemporary()) {
-                        c.removeReplacementEffect(rep);
-                        i--;
-                    }
+         final List<Card> absolutelyAllCards = game.getCardsInGame();
+         for (final Card c : absolutelyAllCards) {
+             for (int i = 0; i < c.getReplacementEffects().size(); i++) {
+                if (c.getReplacementEffects().get(i).isTemporary()) {
+                     c.getReplacementEffects().remove(i);
+                     i--;
                 }
-            }
-        });
-        game.forEachCardInGame(new Visitor<Card>() {
-            @Override
-            public void visit(Card c) {
-                for (int i = 0; i < c.getReplacementEffects().size(); i++) {
-                    c.getReplacementEffects().get(i).setTemporarilySuppressed(false);
-                }
-            }
-        });
+             }
+        }
+        for (final Card c : absolutelyAllCards) {
+             for (int i = 0; i < c.getReplacementEffects().size(); i++) {
+                 c.getReplacementEffects().get(i).setTemporarilySuppressed(false);
+             }
+        }
+    }
+
+    @Override
+    public void loadState(GameStateDeserializer gsd) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void saveState(GameStateSerializer gss) {
+        // TODO Auto-generated method stub
+        
     }
 }

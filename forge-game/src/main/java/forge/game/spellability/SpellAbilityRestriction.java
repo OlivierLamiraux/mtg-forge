@@ -20,7 +20,6 @@ package forge.game.spellability;
 import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.phase.PhaseType;
@@ -30,6 +29,7 @@ import forge.game.zone.ZoneType;
 import forge.util.Expressions;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -121,10 +121,6 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             this.setOpponentOnly(true);
         }
 
-        if (params.containsKey("EnchantedControllerActivator")) {
-            this.setEnchantedControllerOnly(true);
-        }
-
         if (params.containsKey("OwnerOnly")) {
             this.setOwnerOnly(true);
         }
@@ -200,8 +196,9 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             return true;
         }
 
-        final Player activator = sa.getActivatingPlayer();
-        final Zone cardZone = activator.getGame().getZoneOf(c);
+        Player activator = sa.getActivatingPlayer();
+
+        Zone cardZone = activator.getGame().getZoneOf(c);
         if (cardZone == null || !cardZone.is(this.getZone())) {
             // If Card is not in the default activating zone, do some additional checks
             // Not a Spell, or on Battlefield, return false
@@ -209,13 +206,10 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
                     || !this.getZone().equals(ZoneType.Hand)) {
                 return false;
             }
-            if (cardZone.is(ZoneType.Stack)) {
-                return false;
-            }
-            if (c.mayPlay(activator) != null) {
+            if (c.hasKeyword("May be played") && activator.equals(c.getController())) {
                 return true;
             }
-            if (c.hasKeyword("May be played") && activator.equals(c.getController())) {
+            if (c.hasKeyword("May be played by your opponent") && !activator.equals(c.getController())) {
                 return true;
             }
             return false;
@@ -283,19 +277,14 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             return activator.equals(c.getOwner());
         }
 
-        if (activator.equals(c.getController()) && !this.isOpponentOnly() && !isEnchantedControllerOnly()) {
+        if (activator.equals(c.getController()) && !this.isOpponentOnly()) {
             return true;
         }
 
         if (activator.isOpponentOf(c.getController()) && this.isOpponentOnly()) {
             return true;
         }
-        
-        if (c.getEnchantingCard() != null && activator.equals(c.getEnchantingCard().getController()) && this.isEnchantedControllerOnly()) {
-        	return true;
-        }
-
-        if (sa.isSpell() && c.mayPlay(activator) != null) {
+        if (sa.isSpell() && activator.isOpponentOf(c.getController()) && c.hasKeyword("May be played by your opponent")) {
             return true;
         }
         
@@ -303,6 +292,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
     }
     
     public final boolean checkOtherRestrictions(final Card c, final SpellAbility sa, final Player activator) {
+
         final Game game = activator.getGame();
 
         if (this.getCardsInHand() != -1) {
@@ -312,7 +302,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
         }
 
         if (this.getColorToCheck() != null) {
-            if (!sa.getHostCard().hasChosenColor(this.getColorToCheck())) {
+            if (!sa.getHostCard().getChosenColor().contains(this.getColorToCheck())) {
                 return false;
             }
         }
@@ -345,7 +335,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             }
         }
         if (this.getIsPresent() != null) {
-            CardCollectionView list = game.getCardsIn(this.getPresentZone());
+            List<Card> list = game.getCardsIn(this.getPresentZone());
 
             list = CardLists.getValidCards(list, this.getIsPresent().split(","), activator, c);
 
@@ -386,7 +376,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
                     && !activator.canCastSorcery()) {
                 return false;
             }
-            final int limits = c.getAmountOfKeyword("May activate CARDNAME's loyalty abilities once");
+            final int limits = c.getKeywordAmount("May activate CARDNAME's loyalty abilities once");
             int numActivates = 0;
             for (final SpellAbility pwAbs : c.getAllSpellAbilities()) {
                 // check all abilities on card that have their planeswalker
@@ -408,6 +398,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             if (!Expressions.compare(svarValue, this.getsVarOperator(), operandValue)) {
                 return false;
             }
+
         }
 
         if (this.getsVarToCheck() != null) {
@@ -417,6 +408,7 @@ public class SpellAbilityRestriction extends SpellAbilityVariables {
             if (!Expressions.compare(svarValue, this.getsVarOperator(), operandValue)) {
                 return false;
             }
+
         }
     	return true;
     }

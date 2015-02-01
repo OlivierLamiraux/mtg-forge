@@ -18,14 +18,12 @@
 package forge.deck;
 
 import com.google.common.collect.Lists;
-
 import forge.StaticData;
 import forge.card.CardDb;
 import forge.item.PaperCard;
 import forge.util.ItemPool;
 import forge.util.ItemPoolSorter;
 import forge.util.MyRandom;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
@@ -35,7 +33,10 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
+/**
+ * Deck section.
+ * 
+ */
 public class CardPool extends ItemPool<PaperCard> {
 
     public CardPool() {
@@ -192,4 +193,6 @@ public class CardPool extends ItemPool<PaperCard> {
         }
         return sb.toString();
     }
+
+ 
 }

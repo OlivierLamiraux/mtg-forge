@@ -290,15 +290,11 @@ public enum CSubmenuQuestDraft implements ICDoc {
         if (achievements != null) {
 
             final CardBlock block = GuiChoose.oneOrNone("Choose Draft Format", QuestEventDraft.getAvailableBlocks(FModel.getQuest()));
-
-            if (block != null) {
-
-                achievements.spendDraftToken(block);
-
-                update();
-                VSubmenuQuestDraft.SINGLETON_INSTANCE.populate();
-
-            }
+            
+            achievements.spendDraftToken(block);
+            
+            update();
+            VSubmenuQuestDraft.SINGLETON_INSTANCE.populate();
             
         }
         
@@ -333,7 +329,7 @@ public enum CSubmenuQuestDraft implements ICDoc {
             view.setMode(Mode.TOURNAMENT_ACTIVE);
         }
         
-        QuestDraftUtils.update();
+        QuestDraftUtils.update(GuiBase.getInterface());
         
         switch (view.getMode()) {
         
@@ -517,7 +513,7 @@ public enum CSubmenuQuestDraft implements ICDoc {
         
         drafting = true;
 
-		BoosterDraft draft = draftEvent.enter();
+		BoosterDraft draft = draftEvent.enter(GuiBase.getInterface());
         
         final CEditorQuestDraftingProcess draftController = new CEditorQuestDraftingProcess();
         draftController.showGui(draft);
@@ -557,7 +553,7 @@ public enum CSubmenuQuestDraft implements ICDoc {
             return;
         }
         
-        QuestDraftUtils.startNextMatch();
+        QuestDraftUtils.startNextMatch(GuiBase.getInterface());
         
     }
 

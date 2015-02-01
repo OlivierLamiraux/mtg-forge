@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import forge.game.Game;
 import forge.match.MatchUtil;
-import forge.player.PlayerControllerHuman;
+import forge.view.IGameView;
 
 /**
  * <p>
@@ -36,11 +36,9 @@ import forge.player.PlayerControllerHuman;
 public class InputQueue extends Observable {
     private final BlockingDeque<InputSynchronized> inputStack = new LinkedBlockingDeque<InputSynchronized>();
     private final InputLockUI inputLock;
-    private final Game game;
 
     public InputQueue(final Game game, final InputProxy inputProxy) {
         inputLock = new InputLockUI(game, this);
-        this.game = game;
         addObserver(inputProxy);
     }
 
@@ -62,9 +60,16 @@ public class InputQueue extends Observable {
         updateObservers();
     }
 
-    public final Input getActualInput(final PlayerControllerHuman controller) {
+    /**
+     * <p>
+     * updateInput.
+     * </p>
+     * 
+     * @return a {@link forge.gui.input.InputBase} object.
+     */
+    public final Input getActualInput(final IGameView gameView) {
         Input topMost = inputStack.peek(); // incoming input to Control
-        if (topMost != null && !controller.getGame().isGameOver()) {
+        if (topMost != null && !gameView.isGameOver()) {
             return topMost;
         }
         return inputLock;
@@ -77,9 +82,10 @@ public class InputQueue extends Observable {
 
     public void setInput(final InputSynchronized input) {
         if (MatchUtil.getHumanCount() > 1) { //update current player if needed
-            MatchUtil.setCurrentPlayer(game.getPlayer(input.getOwner()));
+            MatchUtil.setCurrentPlayer(MatchUtil.players.getKey(input.getOwner().getId()));
         }
         inputStack.push(input);
+        inputLock.setGui(input.getGui());
         InputBase.waitForOtherPlayer();
         syncPoint();
         updateObservers();
@@ -91,6 +97,9 @@ public class InputQueue extends Observable {
         }
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     */
     public void onGameOver(boolean releaseAllInputs) {
         for (InputSynchronized inp : inputStack) {
             inp.relaseLatchWhenGameIsOver();
@@ -99,4 +108,4 @@ public class InputQueue extends Observable {
             }
         }
     }
-}
+} // InputControl

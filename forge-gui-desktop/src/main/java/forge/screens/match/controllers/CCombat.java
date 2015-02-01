@@ -5,15 +5,14 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.Iterables;
 
 import forge.UiCommand;
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
-import forge.game.combat.CombatView;
-import forge.game.player.PlayerView;
 import forge.gui.framework.ICDoc;
 import forge.screens.match.views.VCombat;
-import forge.util.FCollection;
 import forge.util.Lang;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.PlayerView;
 
 /** 
  * Controls the combat panel in the match UI.
@@ -71,7 +70,7 @@ public enum CCombat implements ICDoc {
     private static String getCombatDescription(final CombatView localCombat, final GameEntityView defender) {
         final StringBuilder display = new StringBuilder();
 
-        Iterable<FCollection<CardView>> bands = localCombat.getAttackingBandsOf(defender);
+        Iterable<Iterable<CardView>> bands = localCombat.getAttackingBandsOf(defender);
         if (bands == null || Iterables.isEmpty(bands)) {
             return StringUtils.EMPTY;
         }
@@ -87,8 +86,8 @@ public enum CCombat implements ICDoc {
 
         // Associate Bands, Attackers Blockers
         boolean previousBand = false;
-        for (final FCollection<CardView> band : bands) {
-            final int bandSize = band.size();
+        for (final Iterable<CardView> band : bands) {
+            final int bandSize = Iterables.size(band);
             if (bandSize == 0) {
                 continue;
             }
@@ -98,8 +97,8 @@ public enum CCombat implements ICDoc {
                 display.append("\n");
             }
 
-            final FCollection<CardView> blockers = localCombat.getBlockers(band); 
-            final boolean blocked = blockers != null && !blockers.isEmpty();
+            final Iterable<CardView> blockers = localCombat.getBlockers(band); 
+            final boolean blocked = (blockers != null);
             final boolean isBand = bandSize > 1;
             if (isBand) {
                 // Only print Band data if it's actually a band
@@ -117,20 +116,18 @@ public enum CCombat implements ICDoc {
                 if (blocked) {
                     // if single creature is blocked, but no longer has blockers, tell the user!
                     display.append("     (blocked)\n");
-                }
-                else {
+                } else {
                     display.append("     >>>\n");
                 }
             }
 
-            if (blocked) {
+            if (blockers != null) {
                 for (final CardView blocker : blockers) {
                     display.append("     < ")
                            .append(combatantToString(blocker))
                            .append("\n");
                 }
             }
-
             previousBand = isBand;
         }
 
@@ -148,17 +145,13 @@ public enum CCombat implements ICDoc {
      */
     private static String combatantToString(final CardView c) {
         final StringBuilder sb = new StringBuilder();
-        final CardStateView state = c.getCurrentState();
+        final CardStateView state = c.getOriginal();
 
         final String name = state.getName();
 
         sb.append("( ").append(state.getPower()).append(" / ").append(state.getToughness()).append(" ) ... ");
-        if (c.isFaceDown()) {
-            sb.append("Morph");
-        }  else {
-            sb.append(name);
-        }
-        sb.append(" [").append(state.getDisplayId()).append("] ");
+        sb.append(name);
+        sb.append(" [").append(c.getId()).append("] ");
 
         return sb.toString();
     }

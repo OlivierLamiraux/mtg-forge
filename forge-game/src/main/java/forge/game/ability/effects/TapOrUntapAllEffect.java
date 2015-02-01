@@ -4,18 +4,19 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.player.PlayerController;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
-import forge.util.FCollection;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
-
+/** 
+ * TODO: Write javadoc for this type.
+ *
+ */
 public class TapOrUntapAllEffect extends SpellAbilityEffect {
 
     @Override
@@ -37,11 +38,12 @@ public class TapOrUntapAllEffect extends SpellAbilityEffect {
 
     @Override
     public void resolve(SpellAbility sa) {
-        CardCollectionView validCards = getTargetCards(sa);
+        List<Card> validCards = getTargetCards(sa);
         final Player activator = sa.getActivatingPlayer();
         final Game game = activator.getGame();
 
-        FCollection<Player> targetedPlayers = getTargetPlayers(sa);
+        
+        List<Player> targetedPlayers = getTargetPlayers(sa);
 
         if (sa.hasParam("ValidCards")) {
             validCards = game.getCardsIn(ZoneType.Battlefield);

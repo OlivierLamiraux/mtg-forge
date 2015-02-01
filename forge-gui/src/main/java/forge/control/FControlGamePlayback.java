@@ -7,9 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.eventbus.Subscribe;
 
 import forge.FThreads;
-import forge.GuiBase;
 import forge.game.Game;
-import forge.game.card.CardView;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventBlockersDeclared;
 import forge.game.event.GameEventGameFinished;
@@ -20,10 +18,10 @@ import forge.game.event.GameEventSpellAbilityCast;
 import forge.game.event.GameEventSpellResolved;
 import forge.game.event.GameEventTurnPhase;
 import forge.game.event.IGameEventVisitor;
-import forge.game.player.PlayerView;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
 import forge.match.input.InputPlaybackControl;
-import forge.player.PlayerControllerHuman;
+import forge.view.LocalGameView;
 
 public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
     private InputPlaybackControl inputPlayback;
@@ -31,9 +29,11 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
 
     private final CyclicBarrier gameThreadPauser = new CyclicBarrier(2);
 
-    private final PlayerControllerHuman humanController;
-    public FControlGamePlayback(final PlayerControllerHuman humanController0) {
-        humanController = humanController0;
+    private final IGuiBase gui;
+    private final LocalGameView gameView;
+    public FControlGamePlayback(final IGuiBase gui, final LocalGameView gameView) {
+        this.gui = gui;
+        this.gameView = gameView;
     }
 
     private Game game;
@@ -42,9 +42,9 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
         return game;
     }
 
-    public void setGame(Game game0) {
-        game = game0;
-        inputPlayback = new InputPlaybackControl(game, this);
+    public void setGame(Game game) {
+        this.game = game;
+        this.inputPlayback = new InputPlaybackControl(gui, game, this);
     }
 
     @Subscribe
@@ -77,7 +77,8 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
      */
     @Override
     public Void visit(GameEventTurnPhase ev) {
-        boolean isUiToStop = MatchUtil.getController().stopAtPhase(PlayerView.get(ev.playerTurn), ev.phase);
+        boolean isUiToStop = MatchUtil.getController().stopAtPhase(
+                gameView.getPlayerView(ev.playerTurn, true), ev.phase);
 
         switch(ev.phase) {
             case COMBAT_END:
@@ -102,13 +103,13 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
      */
     @Override
     public Void visit(GameEventGameFinished event) {
-        humanController.getInputQueue().removeInput(inputPlayback);
+        gameView.getInputQueue().removeInput(inputPlayback);
         return null;
     }
 
     @Override
     public Void visit(GameEventGameStarted event) {
-        humanController.getInputQueue().setInput(inputPlayback);
+        gameView.getInputQueue().setInput(inputPlayback);
         return null;
     }
 
@@ -120,10 +121,10 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
 
     @Override
     public Void visit(final GameEventSpellResolved event) {
-        FThreads.invokeInEdtNowOrLater(new Runnable() {
+        FThreads.invokeInEdtNowOrLater(gui, new Runnable() {
             @Override
             public void run() {
-                GuiBase.getInterface().setCard(CardView.get(event.spell.getHostCard()));
+                gui.setCard(gameView.getCardView(event.spell.getHostCard(), true));
             }
         });
         pauseForEvent(resolveDelay);
@@ -135,10 +136,10 @@ public class FControlGamePlayback extends IGameEventVisitor.Base<Void> {
      */
     @Override
     public Void visit(final GameEventSpellAbilityCast event) {
-        FThreads.invokeInEdtNowOrLater(new Runnable() {
+        FThreads.invokeInEdtNowOrLater(gui, new Runnable() {
             @Override
             public void run() {
-                GuiBase.getInterface().setCard(CardView.get(event.sa.getHostCard()));
+                gui.setCard(gameView.getCardView(event.sa.getHostCard(), true));
             }
         });
         pauseForEvent(castDelay);

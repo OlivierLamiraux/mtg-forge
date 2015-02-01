@@ -21,17 +21,13 @@ import forge.assets.FSkinProp;
 import forge.assets.FTextureImage;
 import forge.assets.ISkinImage;
 import forge.assets.ImageCache;
-import forge.card.CardRenderer;
 import forge.card.GameEntityPicker;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.FDeckViewer;
 import forge.deck.FSideboardDialog;
-import forge.download.GuiDownloadService;
 import forge.error.BugReportDialog;
 import forge.game.GameEntity;
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
 import forge.game.player.DelayedReveal;
 import forge.game.player.IHasIcon;
 import forge.interfaces.IGuiBase;
@@ -41,21 +37,20 @@ import forge.player.PlayerControllerHuman;
 import forge.properties.ForgeConstants;
 import forge.screens.match.MatchController;
 import forge.screens.quest.QuestMenu;
-import forge.screens.settings.GuiDownloader;
 import forge.sound.AudioClip;
 import forge.sound.AudioMusic;
 import forge.sound.IAudioClip;
 import forge.sound.IAudioMusic;
 import forge.toolbox.FOptionPane;
 import forge.toolbox.GuiChoose;
-import forge.util.Callback;
-import forge.util.FCollectionView;
 import forge.util.FileUtil;
 import forge.util.MessageUtil;
 import forge.util.ThreadUtil;
 import forge.util.WaitCallback;
 import forge.util.WaitRunnable;
 import forge.util.gui.SGuiChoose;
+import forge.view.CardView;
+import forge.view.GameEntityView;
 
 public class GuiMobile implements IGuiBase {
     private final String assetsDir;
@@ -117,17 +112,12 @@ public class GuiMobile implements IGuiBase {
 
     @Override
     public ISkinImage getUnskinnedIcon(String path) {
-        if (isGuiThread()) {
+        if (FThreads.isGuiThread(this)) {
             return new FTextureImage(new Texture(Gdx.files.absolute(path)));
         }
 
         //use a delay load image to avoid an error if called from background thread
         return new FDelayLoadImage(path);
-    }
-
-    @Override
-    public ISkinImage getCardArt(PaperCard card) {
-        return CardRenderer.getCardArt(card);
     }
 
     @Override
@@ -146,8 +136,6 @@ public class GuiMobile implements IGuiBase {
                     }
                     catch (Exception e) {}
                 }
-
-                Gdx.graphics.requestRendering(); //ensure image appears right away
             }
         };
     }
@@ -225,19 +213,19 @@ public class GuiMobile implements IGuiBase {
     }
 
     @Override
-    public GameEntityView chooseSingleEntityForEffect(final String title, final FCollectionView<? extends GameEntity> optionList, final DelayedReveal delayedReveal, final boolean isOptional, final PlayerControllerHuman controller) {
+    public GameEntityView chooseSingleEntityForEffect(final String title, final Collection<? extends GameEntity> optionList, final DelayedReveal delayedReveal, final boolean isOptional, final PlayerControllerHuman controller) {
         controller.tempShow(optionList);
-        final List<GameEntityView> choiceList = GameEntityView.getEntityCollection(optionList);
+        final List<GameEntityView> choiceList = controller.getGameView().getGameEntityViews(optionList, false);
 
         if (delayedReveal == null || Iterables.isEmpty(delayedReveal.getCards())) {
             if (isOptional) {
-                return SGuiChoose.oneOrNone(title, choiceList);
+                return SGuiChoose.oneOrNone(this, title, choiceList);
             }
-            return SGuiChoose.one(title, choiceList);
+            return SGuiChoose.one(this, title, choiceList);
         }
 
         controller.tempShow(delayedReveal.getCards());
-        final List<CardView> revealList = CardView.getCollection(delayedReveal.getCards());
+        final List<CardView> revealList = controller.getGameView().getCardViews(delayedReveal.getCards(), false);
         final String revealListCaption = StringUtils.capitalize(MessageUtil.formatMessage("{player's} " + delayedReveal.getZone().name(), controller.getPlayer(), delayedReveal.getOwner()));
         final FImage revealListImage = MatchController.getView().getPlayerPanels().values().iterator().next().getZoneTab(delayedReveal.getZone()).getIcon();
 
@@ -292,11 +280,6 @@ public class GuiMobile implements IGuiBase {
     @Override
     public File getSaveFile(File defaultFile) {
         return defaultFile; //TODO: Show dialog
-    }
-
-    @Override
-    public void download(GuiDownloadService service, Callback<Boolean> callback) {
-        new GuiDownloader(service, callback);
     }
 
     @Override

@@ -15,16 +15,15 @@ public abstract class FGestureAdapter extends InputAdapter {
     public abstract boolean longPress(float x, float y);
     public abstract boolean release(float x, float y);
     public abstract boolean tap(float x, float y, int count);
-    public abstract boolean flick(float x, float y);
     public abstract boolean fling(float velocityX, float velocityY);
     public abstract boolean pan(float x, float y, float deltaX, float deltaY, boolean moreVertical);
     public abstract boolean panStop(float x, float y);
     public abstract boolean zoom(float x, float y, float amount);
 
     private float tapSquareSize, longPressDelay, lastTapX, lastTapY, tapSquareCenterX, tapSquareCenterY;
-    private long tapCountInterval, flingDelay, lastTapTime;
+    private long tapCountInterval, flingDelay, lastTapTime, gestureStartTime;
     private int tapCount, lastTapButton, lastTapPointer;
-    private boolean inTapSquare, pressed, longPressed, longPressHandled, pinching, panning, disablePanning;
+    private boolean inTapSquare, pressed, longPressed, longPressHandled, pinching, panning;
 
     private final VelocityTracker tracker = new VelocityTracker();
     private final Vector2 pointer1 = new Vector2();
@@ -80,33 +79,36 @@ public abstract class FGestureAdapter extends InputAdapter {
 
         if (pointer == 0) {
             pointer1.set(x, y);
-            if (!Gdx.input.isTouched(1)) {
-                // handle single finger press
-                tracker.start(x, y, Gdx.input.getCurrentEventTime());
+            gestureStartTime = Gdx.input.getCurrentEventTime();
+            tracker.start(x, y, gestureStartTime);
+            if (Gdx.input.isTouched(1)) {
+                // Start pinch.
+                inTapSquare = false;
+                pinching = true;
+                prevPointer1.set(pointer1);
+                prevPointer2.set(pointer2);
+                focalPoint.set(Utils.getMidpoint(pointer1, pointer2));
+                endPress(x, y);
+            }
+            else {
+                // Normal touch down.
                 inTapSquare = true;
-                panning = false;
                 pinching = false;
                 tapSquareCenterX = x;
                 tapSquareCenterY = y;
                 startPress();
-                return true;
             }
         }
         else {
+            // Start pinch.
             pointer2.set(x, y);
-            if (!Gdx.input.isTouched(0)) {
-                return true;
-            }
+            inTapSquare = false;
+            pinching = true;
+            prevPointer1.set(pointer1);
+            prevPointer2.set(pointer2);
+            focalPoint.set(Utils.getMidpoint(pointer1, pointer2));
+            endPress(pointer1.x, pointer1.y);
         }
-
-        // start pinch if two fingers down
-        inTapSquare = false;
-        panning = false;
-        pinching = true;
-        prevPointer1.set(pointer1);
-        prevPointer2.set(pointer2);
-        focalPoint.set(Utils.getMidpoint(pointer1, pointer2));
-        endPress(pointer1.x, pointer1.y);
         return true;
     }
 
@@ -131,10 +133,6 @@ public abstract class FGestureAdapter extends InputAdapter {
             return zoom(focalPoint.x, focalPoint.y, pointer1.dst(pointer2) - prevPointer1.dst(prevPointer2));
         }
 
-        if (disablePanning) {
-            return false; //avoid updating tracker or panning if second finger just came up but first hasn't yet
-        }
-
         // update tracker
         tracker.update(x, y, Gdx.input.getCurrentEventTime());
 
@@ -150,6 +148,7 @@ public abstract class FGestureAdapter extends InputAdapter {
             boolean moreVertical = Math.abs(tracker.startY - y) > Math.abs(tracker.startX - x);
             return pan(x, y, tracker.deltaX, tracker.deltaY, moreVertical);
         }
+
         return false;
     }
 
@@ -192,35 +191,38 @@ public abstract class FGestureAdapter extends InputAdapter {
             lastTapY = y;
             lastTapButton = button;
             lastTapPointer = pointer;
+            gestureStartTime = 0;
             if (wasPressed) {
                 return tap(x, y, tapCount);
             }
             return false;
         }
 
-        if (pinching) { //don't pan after finishing a pinch
+        if (pinching) {
+            // handle pinch end
             pinching = false;
-            disablePanning = true; //disable panning until after you release both fingers, otherwise unintentional fling can result
+            panning = true;
+            // we are in pan mode again, reset velocity tracker
+            if (pointer == 0) {
+                // first pointer has lifted off, set up panning to use the second pointer...
+                tracker.start(pointer2.x, pointer2.y, Gdx.input.getCurrentEventTime());
+            }
+            else {
+                // second pointer has lifted off, set up panning to use the first pointer...
+                tracker.start(pointer1.x, pointer1.y, Gdx.input.getCurrentEventTime());
+            }
             return false;
         }
-
-        disablePanning = false; //once both fingers come off, allow panning again
 
         boolean handled = false;
         if (wasPanning) { // handle no longer panning
             handled = panStop(x, y);
 
+            gestureStartTime = 0;
             long time = Gdx.input.getCurrentEventTime();
-            if (time - tracker.lastTime < flingDelay) { // handle flick/fling if needed
+            if (time - tracker.lastTime < flingDelay) { // handle fling if needed
                 tracker.update(x, y, time);
-                float velocityX = tracker.getVelocityX();
-                float velocityY = tracker.getVelocityY();
-                if (velocityY < 0 && Math.abs(velocityY) > Math.abs(velocityX)) {
-                    if (flick(tracker.startX, tracker.startY)) { //flick is a special case for flinging towards the top of the screen
-                        return true;
-                    }
-                }
-                handled = fling(velocityX, velocityY) || handled;
+                handled = fling(tracker.getVelocityX(), tracker.getVelocityY()) || handled;
             }
         }
         return handled;

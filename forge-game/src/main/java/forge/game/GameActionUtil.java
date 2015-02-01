@@ -27,9 +27,7 @@ import forge.game.ability.AbilityFactory.AbilityRecordType;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
-import forge.game.card.CardPlayOption;
 import forge.game.card.CardPredicates;
 import forge.game.cost.Cost;
 import forge.game.mana.ManaCostBeingPaid;
@@ -54,16 +52,7 @@ import java.util.Map;
  * @version $Id$
  */
 public final class GameActionUtil {
-    // Cache these instead of generating them on the fly, to avoid excessive allocations every time
-    // static abilities are checked.
-    private static final String[] BASIC_LAND_ABILITIES = new String[MagicColor.WUBRG.length];
-    static {
-        for (int i = 0; i < MagicColor.WUBRG.length; i++ ) {
-            String color = MagicColor.toShortString(MagicColor.WUBRG[i]);
-            BASIC_LAND_ABILITIES[i] = "AB$ Mana | Cost$ T | Produced$ " + color +
-                    " | SpellDescription$ Add {" + color + "} to your mana pool.";
-        }
-    }
+
 
     private GameActionUtil() {
         throw new AssertionError();
@@ -88,7 +77,7 @@ public final class GameActionUtil {
             return;
         }
 
-        for (final String key : c.getKeywords()) {
+        for (final String key : c.getKeyword()) {
             if (!key.startsWith("Poisonous ")) continue;
             final String[] k = key.split(" ", 2);
             final int poison = Integer.parseInt(k[1]);
@@ -127,11 +116,12 @@ public final class GameActionUtil {
     public static void grantBasicLandsManaAbilities(List<Card> lands) {
         // remove all abilities granted by this Command
         for (final Card land : lands) {
-            List<SpellAbility> origManaAbs = Lists.newArrayList(land.getManaAbilities());
+            List<SpellAbility> origManaAbs = Lists.newArrayList(land.getManaAbility());
+            List<SpellAbility> manaAbs = land.getCharacteristics().getManaAbility();
             // will get comodification exception without a different list
             for (final SpellAbility sa : origManaAbs) {
                 if (sa.isBasicLandAbility()) {
-                    land.getCurrentState().removeManaAbility(sa);
+                    manaAbs.remove(sa);
                 }
             }
         }
@@ -139,12 +129,13 @@ public final class GameActionUtil {
         // add all appropriate mana abilities based on current types
         for (int i = 0; i < MagicColor.WUBRG.length; i++ ) {
             String landType = MagicColor.Constant.BASIC_LANDS.get(i);
-            String abString = BASIC_LAND_ABILITIES[i];
+            String color = MagicColor.toShortString(MagicColor.WUBRG[i]);
+            String abString = "AB$ Mana | Cost$ T | Produced$ " + color + " | SpellDescription$ Add {" + color + "} to your mana pool.";
             for (final Card land : lands) {
-                if (land.getType().hasSubtype(landType)) {
+                if (land.isType(landType)) {
                     final SpellAbility sa = AbilityFactory.getAbility(abString, land);
                     sa.setBasicLandAbility(true);
-                    land.getCurrentState().addManaAbility(sa);
+                    land.getCharacteristics().getManaAbility().add(sa);
                 }
             }
         }
@@ -152,38 +143,21 @@ public final class GameActionUtil {
 
     /**
      * <p>
-     * Find the alternative costs to a {@link SpellAbility}.
+     * getAlternativeCosts.
      * </p>
      * 
      * @param sa
-     *            a {@link SpellAbility}.
-     * @param activator
-     *            the {@link Player} for which to calculate available
-     * @return a {@link List} of {@link SpellAbility} objects, each representing
-     *         a possible alternative cost the provided activator can use to pay
-     *         the provided {@link SpellAbility}.
+     *            a SpellAbility.
+     * @return an ArrayList<SpellAbility>.
+     * get alternative costs as additional spell abilities
      */
-    public static final List<SpellAbility> getAlternativeCosts(final SpellAbility sa, final Player activator) {
-        final List<SpellAbility> alternatives = new ArrayList<SpellAbility>();
+    public static final ArrayList<SpellAbility> getAlternativeCosts(SpellAbility sa) {
+        ArrayList<SpellAbility> alternatives = new ArrayList<SpellAbility>();
+        Card source = sa.getHostCard();
         if (!sa.isBasicSpell()) {
             return alternatives;
         }
-
-        final Card source = sa.getHostCard();
-        final CardPlayOption playOption = source.mayPlay(activator);
-        if (sa.isSpell() && playOption != null && playOption.isWithoutManaCost()) {
-            final SpellAbility newSA = sa.copy();
-            final SpellAbilityRestriction sar = new SpellAbilityRestriction();
-            sar.setVariables(sa.getRestrictions());
-            sar.setZone(null);
-            newSA.setRestrictions(sar);
-            newSA.setBasicSpell(false);
-            newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
-            newSA.setDescription(sa.getDescription() + " (without paying its mana cost)");
-            alternatives.add(newSA);
-        }
-
-        for (final String keyword : source.getKeywords()) {
+        for (final String keyword : source.getKeyword()) {
             if (sa.isSpell() && keyword.startsWith("Flashback")) {
                 final SpellAbility flashback = sa.copy();
                 flashback.setFlashBackAbility(true);
@@ -203,6 +177,18 @@ public final class GameActionUtil {
                 SpellAbilityRestriction sar = new SpellAbilityRestriction();
                 sar.setVariables(sa.getRestrictions());
                 sar.setZone(null);
+                newSA.setRestrictions(sar);
+                newSA.setBasicSpell(false);
+                newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
+                newSA.setDescription(sa.getDescription() + " (without paying its mana cost)");
+                alternatives.add(newSA);
+            }
+            if (sa.isSpell() && keyword.equals("May be played by your opponent without paying its mana cost")) {
+                final SpellAbility newSA = sa.copy();
+                SpellAbilityRestriction sar = new SpellAbilityRestriction();
+                sar.setVariables(sa.getRestrictions());
+                sar.setZone(null);
+                sar.setOpponentOnly(true);
                 newSA.setRestrictions(sar);
                 newSA.setBasicSpell(false);
                 newSA.setPayCosts(newSA.getPayCosts().copyWithNoMana());
@@ -233,7 +219,7 @@ public final class GameActionUtil {
                 newSA.setDescription(sa.getDescription() + " (by paying " + cost.toSimpleString() + " instead of its mana cost)");
                 alternatives.add(newSA);
             }
-            if (sa.isSpell() && keyword.equals("You may cast CARDNAME as though it had flash if you pay 2 more to cast it.")) {
+            if (sa.isSpell() && keyword.equals("You may cast CARDNAME any time you could cast an instant if you pay 2 more to cast it.")) {
                 final SpellAbility newSA = sa.copy();
                 newSA.setBasicSpell(false);
                 ManaCostBeingPaid newCost = new ManaCostBeingPaid(source.getManaCost());
@@ -298,7 +284,7 @@ public final class GameActionUtil {
         }
 
         // Buyback, Kicker
-        for (String keyword : source.getKeywords()) {
+        for (String keyword : source.getKeyword()) {
             if (keyword.startsWith("AlternateAdditionalCost")) {
                 final List<SpellAbility> newAbilities = new ArrayList<SpellAbility>();
                 String[] costs = TextUtil.split(keyword, ':');
@@ -406,7 +392,7 @@ public final class GameActionUtil {
         // Splice
         final List<SpellAbility> newAbilities = new ArrayList<SpellAbility>();
         for (SpellAbility sa : abilities) {
-            if (sa.isSpell() && sa.getHostCard().getType().hasStringType("Arcane") && sa.getApi() != null ) {
+            if (sa.isSpell() && sa.getHostCard().isType("Arcane") && sa.getApi() != null ) {
                 newAbilities.addAll(GameActionUtil.getSpliceAbilities(sa));
             }
         }
@@ -436,7 +422,7 @@ public final class GameActionUtil {
             }
 
             String spliceKwCost = null;
-            for (String keyword : c.getKeywords()) {
+            for (String keyword : c.getKeyword()) {
                 if (keyword.startsWith("Splice")) {
                     spliceKwCost = keyword.substring(19);
                     break;
@@ -446,7 +432,7 @@ public final class GameActionUtil {
             if (spliceKwCost == null)
                 continue;
 
-            Map<String, String> params = AbilityFactory.getMapParams(c.getCurrentState().getFirstUnparsedAbility());
+            Map<String, String> params = AbilityFactory.getMapParams(c.getCharacteristics().getUnparsedAbilities().get(0));
             AbilityRecordType rc = AbilityRecordType.getRecordType(params);
             ApiType api = rc.getApiTypeOf(params);
             AbilitySub subAbility = (AbilitySub) AbilityFactory.getAbility(AbilityRecordType.SubAbility, api, params, null, c);
@@ -486,13 +472,31 @@ public final class GameActionUtil {
         return newSAs;
     }
 
+    /**
+     * <p>
+     * hasUrzaLands.
+     * </p>
+     * 
+     * @param p
+     *            a {@link forge.game.player.Player} object.
+     * @return a boolean.
+     */
     private static boolean hasUrzaLands(final Player p) {
-        final CardCollectionView landsControlled = p.getCardsIn(ZoneType.Battlefield);
+        final List<Card> landsControlled = p.getCardsIn(ZoneType.Battlefield);
         return Iterables.any(landsControlled, Predicates.and(CardPredicates.isType("Urza's"), CardPredicates.isType("Mine")))
                 && Iterables.any(landsControlled, Predicates.and(CardPredicates.isType("Urza's"), CardPredicates.isType("Power-Plant")))
                 && Iterables.any(landsControlled, Predicates.and(CardPredicates.isType("Urza's"), CardPredicates.isType("Tower")));
     }
 
+    /**
+     * <p>
+     * generatedMana.
+     * </p>
+     *
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @return a {@link java.lang.String} object.
+     */
     public static String generatedMana(final SpellAbility sa) {
         // Calculate generated mana here for stack description and resolving
 

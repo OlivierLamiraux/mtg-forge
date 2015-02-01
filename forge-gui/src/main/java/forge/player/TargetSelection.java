@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -28,8 +29,7 @@ import forge.game.Game;
 import forge.game.GameEntity;
 import forge.game.GameObject;
 import forge.game.card.Card;
-import forge.game.card.CardUtil;
-import forge.game.player.PlayerView;
+import forge.game.card.CardLists;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityStackInstance;
 import forge.game.spellability.TargetRestrictions;
@@ -39,6 +39,9 @@ import forge.match.MatchUtil;
 import forge.match.input.InputSelectTargets;
 import forge.util.Aggregates;
 import forge.util.gui.SGuiChoose;
+import forge.view.CardView;
+import forge.view.PlayerView;
+import forge.view.StackItemView;
 
 /**
  * <p>
@@ -62,6 +65,13 @@ public class TargetSelection {
     }
 
     private boolean bTargetingDone = false;
+
+
+    /**
+     * <p>
+     * resetTargets.
+     * </p>
+     */
 
     public final boolean chooseTargets(Integer numTargets) {
         final TargetRestrictions tgt = getTgt();
@@ -88,14 +98,13 @@ public class TargetSelection {
             return true;
         }
 
-        final boolean hasCandidates = tgt.hasCandidates(this.ability, true);
-        if (!hasCandidates && !hasEnoughTargets) {
+        if (!tgt.hasCandidates(this.ability, true) && !hasEnoughTargets) {
             // Cancel ability if there aren't any valid Candidates
             return false;
         }
         
         final List<ZoneType> zone = tgt.getZone();
-        final boolean mandatory = tgt.getMandatory() && hasCandidates;
+        final boolean mandatory = tgt.getMandatory() && tgt.hasCandidates(this.ability, true);
         
         final boolean choiceResult;
         final boolean random = tgt.isRandomTarget();
@@ -110,7 +119,7 @@ public class TargetSelection {
             return this.chooseCardFromStack(mandatory);
         }
         else {
-            final List<Card> validTargets = CardUtil.getValidCardsToTarget(tgt, ability);
+            final List<Card> validTargets = this.getValidCardsToTarget();
             if (validTargets.isEmpty()) {
                 //if no valid cards to target and only one valid non-card, auto-target the non-card
                 //this handles "target opponent" cards, along with any other cards that can only target a single non-card game entity
@@ -131,7 +140,7 @@ public class TargetSelection {
             }
             final Map<PlayerView, Object> playersWithValidTargets = Maps.newHashMap();
             for (Card card : validTargets) {
-                playersWithValidTargets.put(PlayerView.get(card.getController()), null);
+                playersWithValidTargets.put(controller.getPlayerView(card.getController()), null);
             }
             if (MatchUtil.getController().openZones(zone, playersWithValidTargets)) {
                 InputSelectTargets inp = new InputSelectTargets(controller, validTargets, ability, mandatory);
@@ -149,24 +158,96 @@ public class TargetSelection {
         return choiceResult && chooseTargets(numTargets);
     }
 
+    // these have been copied over from CardFactoryUtil as they need two extra
+    // parameters for target selection.
+    // however, due to the changes necessary for SA_Requirements this is much
+    // different than the original
+
+    /**
+     * <p>
+     * chooseValidInput.
+     * </p>
+     * @return 
+     */
+    private final List<Card> getValidCardsToTarget() {
+        final TargetRestrictions tgt = this.getTgt();
+        final Game game = ability.getActivatingPlayer().getGame();
+        final List<ZoneType> zone = tgt.getZone();
+
+        final boolean canTgtStack = zone.contains(ZoneType.Stack);
+        List<Card> validCards = CardLists.getValidCards(game.getCardsIn(zone), tgt.getValidTgts(), this.ability.getActivatingPlayer(), this.ability.getHostCard());
+        List<Card> choices = CardLists.getTargetableCards(validCards, this.ability);
+        if (canTgtStack) {
+            // Since getTargetableCards doesn't have additional checks if one of the Zones is stack
+            // Remove the activating card from targeting itself if its on the Stack
+            Card activatingCard = ability.getHostCard();
+            if (activatingCard.isInZone(ZoneType.Stack)) {
+                choices.remove(ability.getHostCard());
+            }
+        }
+        List<GameObject> targetedObjects = this.ability.getUniqueTargets();
+
+        // Remove cards already targeted
+        final List<Card> targeted = Lists.newArrayList(ability.getTargets().getTargetCards());
+        for (final Card c : targeted) {
+            if (choices.contains(c)) {
+                choices.remove(c);
+            }
+        }
+
+        // If all cards (including subability targets) must have the same controller
+        if (tgt.isSameController() && !targetedObjects.isEmpty()) {
+            final List<Card> list = new ArrayList<Card>();
+            for (final Object o : targetedObjects) {
+                if (o instanceof Card) {
+                    list.add((Card) o);
+                }
+            }
+            if (!list.isEmpty()) {
+                final Card card = list.get(0);
+                choices = CardLists.filter(choices, new Predicate<Card>() {
+                    @Override
+                    public boolean apply(final Card c) {
+                        return c.sharesControllerWith(card);
+                    }
+                });
+            }
+        }
+
+        return choices;
+    }
+
+    /**
+     * <p>
+     * chooseCardFromList.
+     * </p>
+     * 
+     * @param choices
+     *            a {@link forge.CardList} object.
+     * @param targeted
+     *            a boolean.
+     * @param mandatory
+     *            a boolean.
+     */
     private final boolean chooseCardFromList(final List<Card> choices, final boolean targeted, final boolean mandatory) {
         // Send in a list of valid cards, and popup a choice box to target
         final Game game = ability.getActivatingPlayer().getGame();
 
-        final List<Card> crdsBattle  = Lists.newArrayList();
-        final List<Card> crdsExile   = Lists.newArrayList();
-        final List<Card> crdsGrave   = Lists.newArrayList();
-        final List<Card> crdsLibrary = Lists.newArrayList();
-        final List<Card> crdsStack   = Lists.newArrayList();
-        final List<Card> crdsAnte    = Lists.newArrayList();
+        final List<CardView> crdsBattle  = Lists.newArrayList();
+        final List<CardView> crdsExile   = Lists.newArrayList();
+        final List<CardView> crdsGrave   = Lists.newArrayList();
+        final List<CardView> crdsLibrary = Lists.newArrayList();
+        final List<CardView> crdsStack   = Lists.newArrayList();
+        final List<CardView> crdsAnte    = Lists.newArrayList();
         for (final Card inZone : choices) {
+            final CardView view = controller.getCardView(inZone);
             Zone zz = game.getZoneOf(inZone);
-            if (zz.is(ZoneType.Battlefield))    crdsBattle.add(inZone);
-            else if (zz.is(ZoneType.Exile))     crdsExile.add(inZone);
-            else if (zz.is(ZoneType.Graveyard)) crdsGrave.add(inZone);
-            else if (zz.is(ZoneType.Library))   crdsLibrary.add(inZone);
-            else if (zz.is(ZoneType.Stack))     crdsStack.add(inZone);
-            else if (zz.is(ZoneType.Ante))      crdsAnte.add(inZone);
+            if (zz.is(ZoneType.Battlefield))    crdsBattle.add(view);
+            else if (zz.is(ZoneType.Exile))     crdsExile.add(view);
+            else if (zz.is(ZoneType.Graveyard)) crdsGrave.add(view);
+            else if (zz.is(ZoneType.Library))   crdsLibrary.add(view);
+            else if (zz.is(ZoneType.Stack))     crdsStack.add(view);
+            else if (zz.is(ZoneType.Ante))      crdsAnte.add(view);
         }
         List<Object> choicesFiltered = new ArrayList<Object>();
         if (!crdsBattle.isEmpty()) {
@@ -202,10 +283,9 @@ public class TargetSelection {
         
         Object chosen = null;
         if (!choices.isEmpty() && mandatory) {
-            chosen = SGuiChoose.one(getTgt().getVTSelection(), choicesFiltered);
-        }
-        else {
-            chosen = SGuiChoose.oneOrNone(getTgt().getVTSelection(), choicesFiltered);
+            chosen = SGuiChoose.one(controller.getGui(), getTgt().getVTSelection(), choicesFiltered);
+        } else {
+            chosen = SGuiChoose.oneOrNone(controller.getGui(), getTgt().getVTSelection(), choicesFiltered);
         }
         if (chosen == null) {
             return false;
@@ -215,12 +295,21 @@ public class TargetSelection {
             return true;
         }
 
-        if (chosen instanceof Card) {
-            ability.getTargets().add((Card) chosen);
+        if (chosen instanceof CardView) {
+            final Card chosenCard = controller.getCard((CardView) chosen);
+            ability.getTargets().add(chosenCard);
         }
         return true;
     }
 
+    /**
+     * <p>
+     * chooseCardFromStack.
+     * </p>
+     * 
+     * @param mandatory
+     *            a boolean.
+     */
     private final boolean chooseCardFromStack(final boolean mandatory) {
         final TargetRestrictions tgt = this.getTgt();
         final String message = tgt.getVTSelection();
@@ -229,13 +318,12 @@ public class TargetSelection {
 
         final Game game = ability.getActivatingPlayer().getGame();
         for (final SpellAbilityStackInstance si : game.getStack()) {
-            SpellAbility abilityOnStack = si.getSpellAbility(true);
+            SpellAbility abilityOnStack = si.getSpellAbility();
             if (ability.equals(abilityOnStack)) {
                 // By peeking at stack item, target is set to its SI state. So set it back before adding targets
                 ability.resetTargets();
-            }
-            else if (ability.canTargetSpellAbility(abilityOnStack)) {
-                selectOptions.add(si);
+            } else if (ability.canTargetSpellAbility(abilityOnStack)) {
+                selectOptions.add(controller.getStackItemView(si));
             }
         }
 
@@ -252,18 +340,15 @@ public class TargetSelection {
             if (selectOptions.isEmpty()) {
                 // Not enough targets, cancel targeting
                 return false;
-            }
-            else {
-                final Object madeChoice = SGuiChoose.oneOrNone(message, selectOptions);
+            } else {
+                final Object madeChoice = SGuiChoose.oneOrNone(controller.getGui(), message, selectOptions);
                 if (madeChoice == null) {
                     return false;
                 }
-                if (madeChoice instanceof SpellAbilityStackInstance) {
-                    ability.getTargets().add(((SpellAbilityStackInstance)madeChoice).getSpellAbility(true));
-                }
-                else {// 'FINISH TARGETING' chosen 
+                if (madeChoice instanceof StackItemView) {
+                    ability.getTargets().add(controller.getStackItem((StackItemView)madeChoice).getSpellAbility());
+                } else // 'FINISH TARGETING' chosen 
                     bTargetingDone = true;
-                }
             }
         }
         return true;

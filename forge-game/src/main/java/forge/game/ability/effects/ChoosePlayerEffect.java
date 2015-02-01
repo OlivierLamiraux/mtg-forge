@@ -7,7 +7,6 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.util.Aggregates;
-import forge.util.FCollectionView;
 
 import java.util.List;
 
@@ -33,7 +32,7 @@ public class ChoosePlayerEffect extends SpellAbilityEffect {
 
         final TargetRestrictions tgt = sa.getTargetRestrictions();
 
-        final FCollectionView<Player> choices = sa.hasParam("Choices") ? AbilityUtils.getDefinedPlayers(
+        final List<Player> choices = sa.hasParam("Choices") ? AbilityUtils.getDefinedPlayers(
                 sa.getHostCard(), sa.getParam("Choices"), sa) : sa.getActivatingPlayer().getGame().getPlayersInTurnOrder();
 
         final String choiceDesc = sa.hasParam("ChoiceTitle") ? sa.getParam("ChoiceTitle") : "Choose a player";

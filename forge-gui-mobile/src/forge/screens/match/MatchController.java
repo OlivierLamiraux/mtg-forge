@@ -7,23 +7,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+
+import com.badlogic.gdx.Gdx;
+
 import forge.Forge;
 import forge.Graphics;
+import forge.GuiBase;
 import forge.LobbyPlayer;
 import forge.assets.FImage;
 import forge.assets.FSkin;
 import forge.assets.FTextureRegionImage;
-import forge.card.CardRenderer;
-import forge.game.GameEntityView;
-import forge.game.GameView;
 import forge.game.Match;
-import forge.game.card.CardView;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
-import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.interfaces.IButton;
 import forge.match.IMatchController;
@@ -33,10 +30,10 @@ import forge.player.PlayerControllerHuman;
 import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.screens.match.views.VAssignDamage;
-import forge.screens.match.views.VCardDisplayArea.CardAreaPanel;
 import forge.screens.match.views.VPhaseIndicator;
-import forge.screens.match.views.VPhaseIndicator.PhaseLabel;
 import forge.screens.match.views.VPlayerPanel;
+import forge.screens.match.views.VCardDisplayArea.CardAreaPanel;
+import forge.screens.match.views.VPhaseIndicator.PhaseLabel;
 import forge.screens.match.views.VPlayerPanel.InfoTab;
 import forge.screens.match.views.VPrompt;
 import forge.screens.match.winlose.ViewWinLose;
@@ -44,12 +41,18 @@ import forge.toolbox.FDisplayObject;
 import forge.util.ITriggerEvent;
 import forge.util.WaitCallback;
 import forge.util.gui.SGuiChoose;
+import forge.view.CardView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
 
 public class MatchController implements IMatchController {
     private MatchController() { }
     public static final MatchController instance = new MatchController();
 
-    private static final Map<String, FImage> avatarImages = new HashMap<String, FImage>();
+    private static final Map<LobbyPlayer, FImage> avatarImages = new HashMap<LobbyPlayer, FImage>();
 
     private static MatchScreen view;
 
@@ -58,21 +61,16 @@ public class MatchController implements IMatchController {
     }
 
     public static FImage getPlayerAvatar(final PlayerView p) {
-        String lp = p.getLobbyPlayerName();
+        LobbyPlayer lp = p.getLobbyPlayer();
         FImage avatar = avatarImages.get(lp);
         if (avatar == null) {
-            if (StringUtils.isEmpty(p.getAvatarCardImageKey())) {
-                avatar = new FTextureRegionImage(FSkin.getAvatars().get(p.getAvatarIndex()));
-            }
-            else { //handle lobby players with art from cards
-                avatar = CardRenderer.getCardArt(p.getAvatarCardImageKey(), false);
-            }
+            avatar = new FTextureRegionImage(FSkin.getAvatars().get(lp.getAvatarIndex()));
         }
         return avatar;
     }
 
     public static void setPlayerAvatar(final LobbyPlayer lp, final FImage avatarImage) {
-        avatarImages.put(lp.getName(), avatarImage);
+        avatarImages.put(lp, avatarImage);
     }
 
     public void refreshCardDetails(Iterable<CardView> cards) {
@@ -80,6 +78,7 @@ public class MatchController implements IMatchController {
         for (VPlayerPanel pnl : view.getPlayerPanels().values()) {
             pnl.getField().update();
         }
+        Gdx.graphics.requestRendering();
     }
 
     @Override
@@ -103,7 +102,7 @@ public class MatchController implements IMatchController {
         boolean noHumans = MatchUtil.getHumanCount() == 0;
         List<VPlayerPanel> playerPanels = new ArrayList<VPlayerPanel>();
         for (Player p : sortedPlayers) {
-            playerPanels.add(new VPlayerPanel(PlayerView.get(p), noHumans || p.getController() instanceof PlayerControllerHuman));
+            playerPanels.add(new VPlayerPanel(MatchUtil.getGameView(p).getPlayerView(p, false), noHumans || p.getController() instanceof PlayerControllerHuman));
         }
         view = new MatchScreen(playerPanels);
 
@@ -156,7 +155,7 @@ public class MatchController implements IMatchController {
 
     @Override
     public void updatePhase() {
-        GameView gameView = MatchUtil.getGameView();
+        LocalGameView gameView = MatchUtil.getGameView();
         final PlayerView p = gameView.getPlayerTurn();
         final PhaseType ph = gameView.getPhase();
 
@@ -166,17 +165,19 @@ public class MatchController implements IMatchController {
         if (lbl != null) {
             lbl.setActive(true);
         }
+        Gdx.graphics.requestRendering();
     }
 
     @Override
     public void updateTurn(final PlayerView player) {
+        Gdx.graphics.requestRendering();
     }
 
     @Override
     public void updatePlayerControl() {
         //show/hide hand for top player based on whether the opponent is controlled
         if (MatchUtil.getHumanCount() == 1) {
-            PlayerView player = view.getTopPlayerPanel().getPlayer();
+            Player player = MatchUtil.getGameView().getPlayer(view.getTopPlayerPanel().getPlayer());
             if (player.getMindSlaveMaster() != null) {
                 view.getTopPlayerPanel().setSelectedZone(ZoneType.Hand);
             }
@@ -184,6 +185,7 @@ public class MatchController implements IMatchController {
                 view.getTopPlayerPanel().setSelectedTab(null);
             }
         }
+        Gdx.graphics.requestRendering();
     }
 
     @Override
@@ -202,6 +204,7 @@ public class MatchController implements IMatchController {
     @Override
     public void updateStack() {
         view.getStack().update();
+        Gdx.graphics.requestRendering();
     }
 
     @Override
@@ -210,18 +213,20 @@ public class MatchController implements IMatchController {
     }
 
     @Override
-    public SpellAbility getAbilityToPlay(List<SpellAbility> abilities, ITriggerEvent triggerEvent) {
+    public int getAbilityToPlay(List<SpellAbilityView> abilities, ITriggerEvent triggerEvent) {
         if (abilities.isEmpty()) {
-            return null;
+            return -1;
         }
         if (abilities.size() == 1) {
-            return abilities.get(0);
+            return abilities.get(0).getId();
         }
-        return SGuiChoose.oneOrNone("Choose ability to play", abilities);
+        final SpellAbilityView choice = SGuiChoose.oneOrNone(GuiBase.getInterface(), "Choose ability to play", abilities);
+        return choice == null ? -1 : choice.getId();
     }
 
     @Override
-    public void showCombat() {
+    public void showCombat(final CombatView combat) {
+        Gdx.graphics.requestRendering();
     }
 
     @Override
@@ -297,6 +302,7 @@ public class MatchController implements IMatchController {
         for (PlayerView p : manaPoolUpdate) {
             view.getPlayerPanel(p).updateManaPool();
         }
+        Gdx.graphics.requestRendering();
     }
 
     @Override
@@ -304,10 +310,12 @@ public class MatchController implements IMatchController {
         for (PlayerView p : livesUpdate) {
             view.getPlayerPanel(p).updateLife();
         }
+        Gdx.graphics.requestRendering();
     }
 
     @Override
     public void hear(LobbyPlayer player, String message) {
+        Gdx.graphics.requestRendering();
     }
 
     @Override

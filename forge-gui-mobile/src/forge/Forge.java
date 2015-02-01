@@ -17,6 +17,7 @@ import forge.assets.ImageCache;
 import forge.error.BugReporter;
 import forge.error.ExceptionHandler;
 import forge.interfaces.IDeviceAdapter;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
 import forge.model.FModel;
 import forge.properties.ForgeConstants;
@@ -38,7 +39,7 @@ import forge.util.FileUtil;
 import forge.util.Utils;
 
 public class Forge implements ApplicationListener {
-    public static final String CURRENT_VERSION = "1.5.34.004";
+    public static final String CURRENT_VERSION = "1.5.29.002";
 
     private static final ApplicationListener app = new Forge();
     private static Clipboard clipboard;
@@ -56,7 +57,8 @@ public class Forge implements ApplicationListener {
         if (GuiBase.getInterface() == null) {
             clipboard = clipboard0;
             deviceAdapter = deviceAdapter0;
-            GuiBase.setInterface(new GuiMobile(assetDir0));
+            final IGuiBase gui = new GuiMobile(assetDir0);
+            GuiBase.setInterface(gui);
         }
         return app;
     }
@@ -67,7 +69,7 @@ public class Forge implements ApplicationListener {
     @Override
     public void create() {
         //install our error handler
-        ExceptionHandler.registerErrorHandling();
+        ExceptionHandler.registerErrorHandling(GuiBase.getInterface());
 
         MatchUtil.setController(MatchController.instance);
 
@@ -92,7 +94,7 @@ public class Forge implements ApplicationListener {
                 AssetsDownloader.checkForUpdates(splashScreen);
                 if (exited) { return; } //don't continue if user chose to exit or couldn't download required assets
 
-                FModel.initialize(splashScreen.getProgressBar());
+                FModel.initialize(GuiBase.getInterface(), splashScreen.getProgressBar());
 
                 splashScreen.getProgressBar().setDescription("Loading fonts...");
                 FSkinFont.preloadAll();
@@ -158,14 +160,6 @@ public class Forge implements ApplicationListener {
         });
     }
 
-    //set screen that will be gone to on pressing Back before going to current Back screen
-    public static void setBackScreen(final FScreen screen0) {
-        int index = screens.size() - 1;
-        if (index > 0 && screens.get(index) != screen0) {
-            screens.add(index, screen0);
-        }
-    }
-
     public static void exit(boolean silent) {
         if (exited) { return; } //don't allow exiting multiple times
 
@@ -221,7 +215,7 @@ public class Forge implements ApplicationListener {
         }
         catch (Exception ex) {
             graphics.end();
-            BugReporter.reportException(ex);
+            BugReporter.reportException(ex, GuiBase.getInterface());
         }
     }
 
@@ -265,7 +259,7 @@ public class Forge implements ApplicationListener {
         }
         catch (Exception ex) {
             graphics.end();
-            BugReporter.reportException(ex);
+            BugReporter.reportException(ex, GuiBase.getInterface());
         }
     }
 
@@ -283,7 +277,7 @@ public class Forge implements ApplicationListener {
         }
         catch (Exception ex) {
             graphics.end();
-            BugReporter.reportException(ex);
+            BugReporter.reportException(ex, GuiBase.getInterface());
         }
     }
 
@@ -373,16 +367,13 @@ public class Forge implements ApplicationListener {
     private static class MainInputProcessor extends FGestureAdapter {
         private static final ArrayList<FDisplayObject> potentialListeners = new ArrayList<FDisplayObject>();
         private static char lastKeyTyped;
-        private static boolean keyTyped, shiftKeyDown;
+        private static boolean keyTyped;
 
         @Override
         public boolean keyDown(int keyCode) {
             if (keyCode == Keys.MENU) {
                 showMenu();
                 return true;
-            }
-            if (keyCode == Keys.SHIFT_LEFT || keyCode == Keys.SHIFT_RIGHT) {
-                shiftKeyDown = true;
             }
             if (keyInputAdapter == null) {
                 if (KeyInputAdapter.isModifierKey(keyCode)) {
@@ -404,9 +395,6 @@ public class Forge implements ApplicationListener {
         @Override
         public boolean keyUp(int keyCode) {
             keyTyped = false; //reset on keyUp
-            if (keyCode == Keys.SHIFT_LEFT || keyCode == Keys.SHIFT_RIGHT) {
-                shiftKeyDown = false;
-            }
             if (keyInputAdapter != null) {
                 return keyInputAdapter.keyUp(keyCode);
             }
@@ -443,12 +431,10 @@ public class Forge implements ApplicationListener {
 
         @Override
         public boolean touchDown(int x, int y, int pointer, int button) {
-            if (pointer == 0) { //don't change listeners when second finger goes down for zoom
-                updatePotentialListeners(x, y);
-                if (keyInputAdapter != null) {
-                    if (!keyInputAdapter.allowTouchInput() || !potentialListeners.contains(keyInputAdapter.getOwner())) {
-                        endKeyInput(); //end key input if needed
-                    }
+            updatePotentialListeners(x, y);
+            if (keyInputAdapter != null) {
+                if (!keyInputAdapter.allowTouchInput() || !potentialListeners.contains(keyInputAdapter.getOwner())) {
+                    endKeyInput(); //end key input if needed
                 }
             }
             return super.touchDown(x, y, pointer, button);
@@ -465,7 +451,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -481,7 +467,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -497,16 +483,13 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
 
         @Override
         public boolean tap(float x, float y, int count) {
-            if (shiftKeyDown && flick(x, y)) {
-                return true; //give flick logic a chance to handle Shift+click
-            }
             try {
                 for (FDisplayObject listener : potentialListeners) {
                     if (listener.tap(listener.screenToLocalX(x), listener.screenToLocalY(y), count)) {
@@ -516,23 +499,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
-                return true;
-            }
-        }
-
-        @Override
-        public boolean flick(float x, float y) {
-            try {
-                for (FDisplayObject listener : potentialListeners) {
-                    if (listener.flick(listener.screenToLocalX(x), listener.screenToLocalY(y))) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -548,7 +515,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -564,7 +531,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -580,7 +547,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }
@@ -596,7 +563,7 @@ public class Forge implements ApplicationListener {
                 return false;
             }
             catch (Exception ex) {
-                BugReporter.reportException(ex);
+                BugReporter.reportException(ex, GuiBase.getInterface());
                 return true;
             }
         }

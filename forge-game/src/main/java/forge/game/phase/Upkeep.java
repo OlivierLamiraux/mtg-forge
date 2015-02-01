@@ -23,7 +23,6 @@ import forge.card.mana.ManaCost;
 import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.card.CounterType;
@@ -36,6 +35,8 @@ import forge.game.trigger.TriggerType;
 import forge.game.zone.ZoneType;
 
 import java.util.HashMap;
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -69,6 +70,7 @@ public class Upkeep extends Phase {
      */
     @Override
     public final void executeAt() {
+         
         game.getStack().freezeStack();
 
         Upkeep.upkeepUpkeepCost(game); // sacrifice unless upkeep cost is paid
@@ -77,8 +79,15 @@ public class Upkeep extends Phase {
         game.getStack().unfreezeStack();
     }
 
+    // UPKEEP CARDS:
+
+    /**
+     * <p>
+     * upkeepEcho.
+     * </p>
+     */
     private static void upkeepEcho(final Game game) {
-        CardCollectionView list = game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Battlefield);
+        List<Card> list = game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Battlefield);
         list = CardLists.filter(list, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
@@ -106,15 +115,22 @@ public class Upkeep extends Phase {
                 c.removeAllExtrinsicKeyword("(Echo unpaid)");
             }
         }
-    }
+    } // echo
 
+    /**
+     * <p>
+     * upkeepUpkeepCost.
+     * </p>
+     */
     private static void upkeepUpkeepCost(final Game game) {
-        final CardCollectionView list = game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Battlefield);
+        
+        final List<Card> list = game.getPhaseHandler().getPlayerTurn().getCardsIn(ZoneType.Battlefield);
 
         for (int i = 0; i < list.size(); i++) {
             final Card c = list.get(i);
             final Player controller = c.getController();
-            for (String ability : c.getKeywords()) {
+            for (String ability : c.getKeyword()) {
+
                 // sacrifice
                 if (ability.startsWith("At the beginning of your upkeep, sacrifice")) {
 
@@ -132,10 +148,11 @@ public class Upkeep extends Phase {
                     upkeepAbility.setTrigger(true);
 
                     game.getStack().addSimultaneousStackEntry(upkeepAbility);
-                }
+                } // sacrifice
 
                 // Cumulative upkeep
                 if (ability.startsWith("Cumulative upkeep")) {
+                    
                     final StringBuilder sb = new StringBuilder();
                     final String[] k = ability.split(":");
                     sb.append("Cumulative upkeep for " + c);
@@ -149,13 +166,12 @@ public class Upkeep extends Phase {
                             this.setCumulativeupkeep(true);
                             boolean isPaid = controller.getController().payManaOptional(c, upkeepCost, this, sb.toString(), ManaPaymentPurpose.CumulativeUpkeep);
                             final HashMap<String, Object> runParams = new HashMap<String, Object>();
-                            runParams.put("CumulativeUpkeepPaid", Boolean.valueOf(isPaid));
+                            runParams.put("CumulativeUpkeepPaid", (Boolean) isPaid);
                             runParams.put("Card", this.getHostCard());
                             runParams.put("PayingMana", StringUtils.join(this.getPayingMana(), ""));
                             game.getTriggerHandler().runTrigger(TriggerType.PayCumulativeUpkeep, runParams, false);
-                            if (!isPaid) {
-                                game.getAction().sacrifice(c, this);
-                            }
+                            if(!isPaid)
+                                game.getAction().sacrifice(c, null);
                         }
                     };
                     sb.append("\n");
@@ -164,8 +180,9 @@ public class Upkeep extends Phase {
                     upkeepAbility.setDescription(sb.toString());
 
                     game.getStack().addSimultaneousStackEntry(upkeepAbility);
-                }
+                } // Cumulative upkeep
             }
-        }
-    }
-}
+
+        } // for
+    } // upkeepCost
+} // end class Upkeep

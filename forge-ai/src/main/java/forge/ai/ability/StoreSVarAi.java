@@ -68,7 +68,7 @@ public class StoreSVarAi extends SpellAbilityAi {
             }
             return false;
         }
-        else if (ComputerUtil.waitForBlocking(sa) || ai.getLife() + 1 >= source.getNetToughness()
+        else if (ComputerUtil.waitForBlocking(sa) || ai.getLife() + 1 >= source.getNetDefense()
                 || (ai.getLife() > 5 && !ComputerUtilCombat.lifeInSeriousDanger(ai, ai.getGame().getCombat()))) {
             return false;
         }

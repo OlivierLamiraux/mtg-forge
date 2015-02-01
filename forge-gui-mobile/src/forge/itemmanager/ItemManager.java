@@ -20,7 +20,6 @@ package forge.itemmanager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont.HAlignment;
 import com.badlogic.gdx.math.Rectangle;
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -31,7 +30,6 @@ import forge.Graphics;
 import forge.assets.FSkinColor;
 import forge.assets.FSkinFont;
 import forge.assets.FSkinImage;
-import forge.card.CardZoom.ActivateHandler;
 import forge.item.InventoryItem;
 import forge.itemmanager.filters.ItemFilter;
 import forge.itemmanager.filters.TextSearchFilter;
@@ -39,6 +37,7 @@ import forge.itemmanager.views.ImageView;
 import forge.itemmanager.views.ItemListView;
 import forge.itemmanager.views.ItemView;
 import forge.menu.FDropDownMenu;
+import forge.model.FModel;
 import forge.screens.FScreen;
 import forge.toolbox.FComboBox;
 import forge.toolbox.FContainer;
@@ -54,9 +53,9 @@ import java.util.*;
 import java.util.Map.Entry;
 
 
-public abstract class ItemManager<T extends InventoryItem> extends FContainer implements IItemManager<T>, ActivateHandler {
+public abstract class ItemManager<T extends InventoryItem> extends FContainer implements IItemManager<T> {
     private ItemPool<T> pool;
-    protected final ItemManagerModel<T> model;
+    private final ItemManagerModel<T> model;
     private Predicate<? super T> filterPredicate = null;
     private final List<ItemFilter<? extends T>> filters = new ArrayList<ItemFilter<? extends T>>();
     private boolean hideFilters = false;
@@ -66,7 +65,7 @@ public abstract class ItemManager<T extends InventoryItem> extends FContainer im
     private ContextMenu contextMenu;
     private final Class<T> genericType;
     private ItemManagerConfig config;
-    private Function<Entry<? extends InventoryItem, Integer>, Object> fnNewGet;
+    private boolean hasNewColumn;
     private boolean viewUpdating, needSecondUpdate;
     private List<ItemColumn> sortCols = new ArrayList<ItemColumn>();
 
@@ -242,13 +241,7 @@ public abstract class ItemManager<T extends InventoryItem> extends FContainer im
         }
         setViewIndex(config0.getViewIndex());
         setHideFilters(config0.getHideFilters());
-
-        if (colOverrides == null || !colOverrides.containsKey(ColumnDef.NEW)) {
-            fnNewGet = null;
-        }
-        else {
-            fnNewGet = colOverrides.get(ColumnDef.NEW).getFnDisplay();
-        }
+        hasNewColumn = config.getCols().containsKey(ColumnDef.NEW);
     }
 
     protected boolean allowSortChange() {
@@ -256,19 +249,13 @@ public abstract class ItemManager<T extends InventoryItem> extends FContainer im
     }
 
     protected String getItemSuffix(Entry<T, Integer> item) {
-        if (fnNewGet != null) {
-            String suffix = fnNewGet.apply(item).toString();
-            if (!suffix.isEmpty()) {
-                return " *" + suffix + "*";
-            }
-        }
-        return null;
+        return hasNewColumn && FModel.getQuest().getCards().isNew(item.getKey()) ? " *NEW*" : null;
     }
 
     public abstract class ItemRenderer {
         public abstract float getItemHeight();
-        public abstract boolean tap(Integer index, Entry<T, Integer> value, float x, float y, int count);
-        public abstract boolean longPress(Integer index, Entry<T, Integer> value, float x, float y);
+        public abstract boolean tap(Entry<T, Integer> value, float x, float y, int count);
+        public abstract boolean longPress(Entry<T, Integer> value, float x, float y);
         public abstract void drawValue(Graphics g, Entry<T, Integer> value, FSkinFont font, FSkinColor foreColor, FSkinColor backColor, boolean pressed, float x, float y, float w, float h);
     }
     public abstract ItemRenderer getListItemRenderer(final CompactModeHandler compactModeHandler);
@@ -986,23 +973,12 @@ public abstract class ItemManager<T extends InventoryItem> extends FContainer im
         contextMenuBuilder = contextMenuBuilder0;
     }
 
-    public void showMenu(boolean delay) {
+    public void showMenu() {
         if (contextMenuBuilder != null && getSelectionCount() > 0) {
             if (contextMenu == null) {
                 contextMenu = new ContextMenu();
             }
-            if (delay) { //delay showing menu to prevent it hiding right away
-                FThreads.delayInEDT(50, new Runnable() {
-                    @Override
-                    public void run() {
-                        contextMenu.show();
-                        Gdx.graphics.requestRendering();
-                    }
-                });
-            }
-            else {
-                contextMenu.show();
-            }
+            contextMenu.show();
         }
     }
 
@@ -1085,19 +1061,5 @@ public abstract class ItemManager<T extends InventoryItem> extends FContainer im
 
             setBounds(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
         }
-    }
-
-    @Override
-    public String getActivateAction(int index) {
-        if (contextMenuBuilder != null) {
-            return "select card";
-        }
-        return null;
-    }
-
-    @Override
-    public void activate(int index) {
-        setSelectedIndex(index);
-        showMenu(true);
     }
 }

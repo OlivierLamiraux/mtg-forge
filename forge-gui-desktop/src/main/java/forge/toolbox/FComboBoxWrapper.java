@@ -32,145 +32,138 @@ public class FComboBoxWrapper<E> implements IComboBox<E> {
 
     public FComboBoxWrapper() {
         super();
-        comboBox = new FComboBox<E>();
+        this.comboBox = new FComboBox<E>();
         allWrappers.add(this);
     }
 
     public FComboBoxWrapper(E[] items) {
         super();
-        comboBox = new FComboBox<E>(items);
+        this.comboBox = new FComboBox<E>(items);
         allWrappers.add(this);
     }
 
     public FComboBoxWrapper(Vector<E> items) {
         super();
-        comboBox = new FComboBox<E>(items);
+        this.comboBox = new FComboBox<E>(items);
         allWrappers.add(this);
     }
 
     public FComboBoxWrapper(ComboBoxModel<E> aModel) {
         super();
-        comboBox = new FComboBox<E>(aModel);
+        this.comboBox = new FComboBox<E>(aModel);
         allWrappers.add(this);
     }
 
     public void addItem(E item) {
-        comboBox.addItem(item);
+        this.comboBox.addItem(item);
     }
 
     public void removeItem(E item) {
-        comboBox.removeItem(item);
+        this.comboBox.removeItem(item);
     }
 
     public void removeAllItems() {
-        comboBox.removeAllItems();
+        this.comboBox.removeAllItems();
     }
 
     @SuppressWarnings("unchecked")
     public E getSelectedItem() {
-        Object res = comboBox.getSelectedItem();
+        Object res = this.comboBox.getSelectedItem();
         return res == null ? null : (E) res;
     }
 
     public void setSelectedItem(Object item) {
-        comboBox.setSelectedItem(item);
+        this.comboBox.setSelectedItem(item);
     }
 
     public int getSelectedIndex() {
-        return comboBox.getSelectedIndex();
+        return this.comboBox.getSelectedIndex();
     }
 
     public void setSelectedIndex(int index) {
-        comboBox.setSelectedIndex(index);
-    }
-
-    public String getText() {
-        return comboBox.getText();
-    }
-    public void setText(String text0) {
-        comboBox.setText(text0);
+        this.comboBox.setSelectedIndex(index);
     }
 
     public void setMaximumRowCount(int count) {
-        comboBox.setMaximumRowCount(count);
+        this.comboBox.setMaximumRowCount(count);
     }
 
     public int getItemCount() {
-        return comboBox.getItemCount();
+        return this.comboBox.getItemCount();
     }
 
     public E getItemAt(int index) {
-        return comboBox.getItemAt(index);
+        return this.comboBox.getItemAt(index);
     }
 
     public void addActionListener(ActionListener l) {
-        comboBox.addActionListener(l);
+        this.comboBox.addActionListener(l);
     }
 
     public void addItemListener(ItemListener l) {
-        comboBox.addItemListener(l);
+        this.comboBox.addItemListener(l);
     }
 
     public void addKeyListener(KeyListener l) {
-        comboBox.addKeyListener(l);
+        this.comboBox.addKeyListener(l);
     }
 
     public void setRenderer(ListCellRenderer<? super E> aRenderer) {
-        comboBox.setRenderer(aRenderer);
+        this.comboBox.setRenderer(aRenderer);
     }
 
     public void setModel(ComboBoxModel<E> aModel) {
-        comboBox.setModel(aModel);
+        this.comboBox.setModel(aModel);
     }
 
     public void setTextAlignment(TextAlignment align) {
-        comboBox.setTextAlignment(align);
+        this.comboBox.setTextAlignment(align);
     }
 
     public void setSkinFont(SkinFont skinFont) {
-        comboBox.setSkinFont(skinFont);
+        this.comboBox.setSkinFont(skinFont);
     }
 
     @Override
     public boolean isVisible() {
-        return comboBox.isVisible();
+        return this.comboBox.isVisible();
     }
 
     @Override
     public void setVisible(boolean aFlag) {
-        comboBox.setVisible(aFlag);
+        this.comboBox.setVisible(aFlag);
     }
 
     @Override
     public boolean isEnabled() {
-        return comboBox.isEnabled();
+        return this.comboBox.isEnabled();
     }
 
     @Override
     public void setEnabled(boolean aFlag) {
-        comboBox.setEnabled(aFlag);
+        this.comboBox.setEnabled(aFlag);
     }
 
     public int getAutoSizeWidth() {
-        return comboBox.getAutoSizeWidth();
+        return this.comboBox.getAutoSizeWidth();
     }
 
     public void addTo(Container container) {
-        addTo(container, null);
+        this.addTo(container, null);
     }
     public void addTo(Container container, Object constraints0) {
-        container.add(comboBox, constraints0);
-        constraints = constraints0;
+        container.add(this.comboBox, constraints0);
+        this.constraints = constraints0;
     }
 
     //disguise as component for sake of rare places that need to access component in wrapper
     //use addTo instead if you want constraints remembered after refreshing skin
     public JComponent getComponent() {
-        return comboBox;
+        return this.comboBox;
     }
 
     private void refreshSkin() {
-        comboBox = refreshComboBoxSkin(comboBox, constraints);
+        this.comboBox = refreshComboBoxSkin(this.comboBox, this.constraints);
     }
 
     //refresh combo box skin by replacing it with a copy of itself

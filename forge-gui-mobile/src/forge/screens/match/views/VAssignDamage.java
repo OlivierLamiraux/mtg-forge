@@ -24,9 +24,6 @@ import forge.assets.FSkinFont;
 import forge.assets.FSkinImage;
 import forge.assets.FSkinColor.Colors;
 import forge.card.CardZoom;
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
 import forge.match.MatchUtil;
 import forge.screens.match.MatchController;
 import forge.toolbox.FButton;
@@ -42,6 +39,9 @@ import forge.toolbox.FScrollPane;
 import forge.util.Callback;
 import forge.util.Utils;
 import forge.util.WaitCallback;
+import forge.view.CardView;
+import forge.view.GameEntityView;
+import forge.view.PlayerView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -102,9 +102,9 @@ public class VAssignDamage extends FDialog {
         callback = waitCallback;
         totalDamageToAssign = damage0;
         defender = defender0;
-        attackerHasDeathtouch = attacker.getCurrentState().hasDeathtouch();
-        attackerHasInfect = attacker.getCurrentState().hasInfect();
-        attackerHasTrample = defender != null && attacker.getCurrentState().hasTrample();
+        attackerHasDeathtouch = attacker.getOriginal().hasDeathtouch();
+        attackerHasInfect = attacker.getOriginal().hasInfect();
+        attackerHasTrample = defender != null && attacker.getOriginal().hasTrample();
         overrideCombatantOrder = overrideOrder;
 
         pnlAttacker = add(new AttDefCardPanel(attacker));
@@ -461,7 +461,7 @@ public class VAssignDamage extends FDialog {
             }
             else if (defender instanceof CardView) { // planeswalker
                 CardView pw = (CardView)defender;
-                lethalDamage = pw.getCurrentState().getLoyalty();
+                lethalDamage = pw.getOriginal().getLoyalty();
             }
         }
         else {

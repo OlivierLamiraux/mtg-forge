@@ -17,7 +17,6 @@
  */
 package forge.game.ability.effects;
 
-import forge.card.CardType;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
 import forge.game.replacement.ReplacementEffect;
@@ -26,13 +25,34 @@ import forge.game.staticability.StaticAbility;
 import forge.game.trigger.Trigger;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public abstract class AnimateEffectBase extends SpellAbilityEffect {
-    void doAnimate(final Card c, final SpellAbility sa, final int power, final int toughness,
-            final CardType addType, final CardType removeType, final String colors,
-            final List<String> keywords, final List<String> removeKeywords,
-            final List<String> hiddenKeywords, final long timestamp) {
+
+    /**
+     * <p>
+     * doAnimate.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.game.card.Card} object.
+     * @param af
+     *            a {@link forge.game.ability.AbilityFactory} object.
+     * @param power
+     *            a int.
+     * @param toughness
+     *            a int.
+     * @param types
+     *            a {@link java.util.ArrayList} object.
+     * @param colors
+     *            a {@link java.lang.String} object.
+     * @param keywords
+     *            a {@link java.util.ArrayList} object.
+     * @return a long.
+     */
+    long doAnimate(final Card c, final SpellAbility sa, final int power, final int toughness,
+            final ArrayList<String> types, final ArrayList<String> removeTypes, final String colors,
+            final ArrayList<String> keywords, final ArrayList<String> removeKeywords,
+            final ArrayList<String> hiddenKeywords, final long timestamp) {
 
         boolean removeSuperTypes = false;
         boolean removeCardTypes = false;
@@ -74,8 +94,8 @@ public abstract class AnimateEffectBase extends SpellAbilityEffect {
             c.addNewPT(power, toughness, timestamp);
         }
 
-        if (!addType.isEmpty() || !removeType.isEmpty() || removeCreatureTypes) {
-            c.addChangedCardTypes(addType, removeType, removeSuperTypes, removeCardTypes, removeSubTypes,
+        if (!types.isEmpty() || !removeTypes.isEmpty() || removeCreatureTypes) {
+            c.addChangedCardTypes(types, removeTypes, removeSuperTypes, removeCardTypes, removeSubTypes,
                     removeCreatureTypes, timestamp);
         }
 
@@ -85,7 +105,8 @@ public abstract class AnimateEffectBase extends SpellAbilityEffect {
             c.addHiddenExtrinsicKeyword(k);
         }
 
-        c.addColor(colors, !sa.hasParam("OverwriteColors"), timestamp);
+        final long colorTimestamp = c.addColor(colors, !sa.hasParam("OverwriteColors"), true);
+        return colorTimestamp;
     }
 
     /**
@@ -113,9 +134,10 @@ public abstract class AnimateEffectBase extends SpellAbilityEffect {
      *            a long.
      */
     void doUnanimate(final Card c, SpellAbility sa, final String colorDesc,
-            final List<String> hiddenKeywords, final List<SpellAbility> addedAbilities,
-            final List<Trigger> addedTriggers, final List<ReplacementEffect> addedReplacements, 
-            final boolean givesStAbs, final List<SpellAbility> removedAbilities, final long timestamp) {
+            final ArrayList<String> hiddenKeywords, final ArrayList<SpellAbility> addedAbilities,
+            final ArrayList<Trigger> addedTriggers, final ArrayList<ReplacementEffect> addedReplacements, 
+            final long colorTimestamp, final boolean givesStAbs,
+            final ArrayList<SpellAbility> removedAbilities, final long timestamp) {
 
         c.removeNewPT(timestamp);
 
@@ -131,7 +153,7 @@ public abstract class AnimateEffectBase extends SpellAbilityEffect {
             c.removeChangedCardTypes(timestamp);
         }
 
-        c.removeColor(timestamp);
+        c.removeColor(colorDesc, c, !sa.hasParam("OverwriteColors"), colorTimestamp);
 
         for (final String k : hiddenKeywords) {
             c.removeHiddenExtrinsicKeyword(k);
@@ -150,7 +172,7 @@ public abstract class AnimateEffectBase extends SpellAbilityEffect {
         }
 
         for (final ReplacementEffect rep : addedReplacements) {
-            c.removeReplacementEffect(rep);
+            c.getReplacementEffects().remove(rep);
         }
 
         // any other unanimate cleanup

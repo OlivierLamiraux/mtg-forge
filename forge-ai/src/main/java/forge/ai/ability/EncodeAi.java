@@ -19,8 +19,8 @@ package forge.ai.ability;
 
 import com.google.common.base.Predicate;
 
+import forge.ai.ComputerUtil;
 import forge.ai.ComputerUtilCard;
-import forge.ai.ComputerUtilCombat;
 import forge.ai.SpellAbilityAi;
 import forge.game.card.Card;
 import forge.game.card.CardLists;
@@ -29,6 +29,7 @@ import forge.game.player.Player;
 import forge.game.player.PlayerActionConfirmMode;
 import forge.game.spellability.SpellAbility;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -72,14 +73,14 @@ public final class EncodeAi extends SpellAbilityAi {
      * @see forge.card.ability.SpellAbilityAi#chooseSingleCard(forge.game.player.Player, forge.card.spellability.SpellAbility, java.util.List, boolean)
      */
     @Override
-    public Card chooseSingleCard(final Player ai, SpellAbility sa, Iterable<Card> options, boolean isOptional, Player targetedPlayer) {
+    public Card chooseSingleCard(final Player ai, SpellAbility sa, Collection<Card> options, boolean isOptional, Player targetedPlayer) {
         Card choice = null;
 //        final String logic = sa.getParam("AILogic");
 //        if (logic == null) {
         final List<Card> attackers = CardLists.filter(options, new Predicate<Card>() {
             @Override
             public boolean apply(final Card c) {
-                return ComputerUtilCombat.canAttackNextTurn(c);
+                return ComputerUtil.canAttackNextTurn(c);
             }
         });
         final List<Card> unblockables = CardLists.filter(attackers, new Predicate<Card>() {

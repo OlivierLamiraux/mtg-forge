@@ -23,6 +23,7 @@ import com.google.common.base.Predicate;
 import forge.card.CardEdition;
 import forge.card.IUnOpenedProduct;
 import forge.card.UnOpenedProduct;
+import forge.interfaces.IGuiBase;
 import forge.item.IPaperCard;
 import forge.item.PaperCard;
 import forge.util.TextUtil;
@@ -41,9 +42,11 @@ import java.util.TreeMap;
  * This is a CardBlock class.
  */
 public final class CardBlock implements Comparable<CardBlock> {
+    private static final CardEdition[] EMPTY_SET_ARRAY = new CardEdition[] {};
+
     private final int orderNum;
     private final String name;
-    private final List<CardEdition> sets;
+    private final CardEdition[] sets;
     private final Map<String, MetaSet> metaSets = new TreeMap<String, MetaSet>();
     private final CardEdition landSet;
     private final int cntBoostersDraft;
@@ -72,7 +75,7 @@ public final class CardBlock implements Comparable<CardBlock> {
             final CardEdition landSet, final int cntBoostersDraft, final int cntBoostersSealed) {
         this.orderNum = index;
         this.name = name;
-        this.sets = java.util.Collections.unmodifiableList(sets);
+        this.sets = sets.toArray(CardBlock.EMPTY_SET_ARRAY);
         for(MetaSet m : metas) {
             this.metaSets.put(m.getCode(), m);
         }
@@ -95,7 +98,7 @@ public final class CardBlock implements Comparable<CardBlock> {
      * 
      * @return the sets
      */
-    public List<CardEdition> getSets() {
+    public CardEdition[] getSets() {
         return this.sets;
     }
 
@@ -204,7 +207,7 @@ public final class CardBlock implements Comparable<CardBlock> {
      */
     @Override
     public String toString() {
-        if (this.metaSets.isEmpty() && this.sets.isEmpty()) {
+        if (this.metaSets.isEmpty() && this.sets.length < 1) {
             return this.name + " (empty)";
         } else if (this.metaSets.size() + this.getNumberSets() < 2) {
             return this.name + " (set)";
@@ -272,7 +275,12 @@ public final class CardBlock implements Comparable<CardBlock> {
      * @return int, number of sets.
      */
     public int getNumberSets() {
-    	return sets == null ? 0 : sets.size();
+        if (sets == null || sets.length < 1) {
+            return 0;
+        }
+        else {
+            return sets.length;
+        }
     }
 
     public Iterable<String> getMetaSetNames() {
@@ -285,9 +293,15 @@ public final class CardBlock implements Comparable<CardBlock> {
 
     /**
      * Tries to create a booster for the selected meta-set code.
+     *
+     * @param code
+     *            String, the MetaSet code
+     * @param gui
+     *            the {@link IGuiBase} resolving any choices to be made.
+     * @return UnOpenedProduct, the created booster.
      */
-    public IUnOpenedProduct getBooster(final String code) {
+    public IUnOpenedProduct getBooster(final String code, final IGuiBase gui) {
         MetaSet ms = metaSets.get(code);
-        return ms == null ? new UnOpenedProduct(FModel.getMagicDb().getBoosters().get(code)) : ms.getBooster();
+        return ms == null ? new UnOpenedProduct(FModel.getMagicDb().getBoosters().get(code)) : ms.getBooster(gui);
     }
 }

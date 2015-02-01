@@ -12,19 +12,7 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.math.Rectangle;
 import com.google.common.collect.Maps;
 
-import forge.Forge;
-import forge.Forge.KeyInputAdapter;
-import forge.Graphics;
-import forge.animation.AbilityEffect;
-import forge.assets.FSkinColor;
-import forge.assets.FSkinColor.Colors;
-import forge.assets.FSkinTexture;
-import forge.game.GameEntityView;
-import forge.game.GameView;
-import forge.game.card.CardView;
-import forge.game.combat.CombatView;
 import forge.game.phase.PhaseType;
-import forge.game.player.PlayerView;
 import forge.game.zone.ZoneType;
 import forge.match.MatchUtil;
 import forge.menu.FDropDown;
@@ -37,24 +25,35 @@ import forge.properties.ForgePreferences;
 import forge.properties.ForgePreferences.FPref;
 import forge.screens.FScreen;
 import forge.screens.match.views.VAvatar;
-import forge.screens.match.views.VCardDisplayArea.CardAreaPanel;
 import forge.screens.match.views.VDevMenu;
 import forge.screens.match.views.VGameMenu;
 import forge.screens.match.views.VLog;
 import forge.screens.match.views.VManaPool;
-import forge.screens.match.views.VPhaseIndicator.PhaseLabel;
 import forge.screens.match.views.VPlayerPanel;
+import forge.screens.match.views.VCardDisplayArea.CardAreaPanel;
+import forge.screens.match.views.VPhaseIndicator.PhaseLabel;
 import forge.screens.match.views.VPlayerPanel.InfoTab;
 import forge.screens.match.views.VPlayers;
 import forge.screens.match.views.VPrompt;
 import forge.screens.match.views.VStack;
 import forge.sound.MusicPlaylist;
 import forge.sound.SoundSystem;
+import forge.Forge.KeyInputAdapter;
+import forge.Forge;
+import forge.Graphics;
+import forge.animation.AbilityEffect;
+import forge.assets.FSkinColor;
+import forge.assets.FSkinTexture;
+import forge.assets.FSkinColor.Colors;
 import forge.toolbox.FCardPanel;
 import forge.toolbox.FEvent;
 import forge.toolbox.FEvent.FEventHandler;
 import forge.toolbox.FScrollPane;
 import forge.util.Callback;
+import forge.view.CardView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.PlayerView;
 
 public class MatchScreen extends FScreen {
     public static FSkinColor BORDER_COLOR = FSkinColor.get(Colors.CLR_BORDERS);
@@ -86,13 +85,13 @@ public class MatchScreen extends FScreen {
                 new FEventHandler() {
                     @Override
                     public void handleEvent(FEvent e) {
-                        MatchUtil.getHumanController().selectButtonOk();
+                        MatchUtil.getGameView().selectButtonOk();
                     }
                 },
                 new FEventHandler() {
                     @Override
                     public void handleEvent(FEvent e) {
-                        MatchUtil.getHumanController().selectButtonCancel();
+                        MatchUtil.getGameView().selectButtonCancel();
                     }
                 }));
 
@@ -104,13 +103,13 @@ public class MatchScreen extends FScreen {
                     new FEventHandler() {
                         @Override
                         public void handleEvent(FEvent e) {
-                            MatchUtil.getHumanController().selectButtonOk();
+                            MatchUtil.getGameView().selectButtonOk();
                         }
                     },
                     new FEventHandler() {
                         @Override
                         public void handleEvent(FEvent e) {
-                            MatchUtil.getHumanController().selectButtonCancel();
+                            MatchUtil.getGameView().selectButtonCancel();
                         }
                     }));
             topPlayerPrompt.setRotate180(true);
@@ -230,7 +229,7 @@ public class MatchScreen extends FScreen {
     }
 
     public boolean isTopHumanPlayerActive() {
-        return topPlayerPrompt != null && topPlayerPanel.getPlayer() == MatchUtil.getCurrentPlayer().getView();
+        return topPlayerPrompt != null && MatchUtil.getGameView().getPlayer(topPlayerPanel.getPlayer()) == MatchUtil.getCurrentPlayer();
     }
 
     public VPrompt getActivePrompt() {
@@ -299,9 +298,6 @@ public class MatchScreen extends FScreen {
 
     @Override
     protected void drawOverlay(Graphics g) {
-        GameView game = MatchUtil.getGameView();
-        if (game == null) { return; }
-
         //draw arrows for paired cards
         HashSet<CardView> pairedCards = new HashSet<CardView>();
         for (VPlayerPanel playerPanel : playerPanels.values()) {
@@ -316,7 +312,7 @@ public class MatchScreen extends FScreen {
         }
 
         //draw arrows for combat
-        final CombatView combat = game.getCombat();
+        final CombatView combat = MatchUtil.getGameView().getCombat();
         if (combat != null) {
             for (final CardView attacker : combat.getAttackers()) {
                 //connect each attacker with planeswalker it's attacking if applicable
@@ -379,7 +375,7 @@ public class MatchScreen extends FScreen {
             break;
         case Keys.Z: //undo on Ctrl+Z
             if (KeyInputAdapter.isCtrlKeyDown()) {
-                MatchUtil.getHumanController().tryUndoLastAction();
+                MatchUtil.getGameView().tryUndoLastAction();
                 return true;
             }
             break;
@@ -438,18 +434,19 @@ public class MatchScreen extends FScreen {
     }
 
     public void updateSingleCard(final CardView card) {
-        final CardAreaPanel pnl = CardAreaPanel.get(card);
-        if (pnl == null) { return; }
         final ZoneType zone = card.getZone();
         if (zone != null && zone == ZoneType.Battlefield) {
-            pnl.updateCard(card);
+            getPlayerPanel(card.getController()).getField().updateCard(card);
         }
         else { //ensure card not on battlefield is reset such that it no longer thinks it's on the battlefield
-            pnl.setTapped(false);
-            pnl.getAttachedPanels().clear();
-            pnl.setAttachedToPanel(null);
-            pnl.setPrevPanelInStack(null);
-            pnl.setNextPanelInStack(null);
+            final CardAreaPanel pnl = CardAreaPanel.get(card);
+            if (pnl != null) {
+                pnl.setTapped(false);
+                pnl.getAttachedPanels().clear();
+                pnl.setAttachedToPanel(null);
+                pnl.setPrevPanelInStack(null);
+                pnl.setNextPanelInStack(null);
+            }
         }
     }
 

@@ -21,14 +21,13 @@ import java.net.Proxy;
 
 import com.badlogic.gdx.Gdx;
 
+import forge.GuiBase;
 import forge.UiCommand;
 import forge.assets.FSkinFont;
 import forge.download.GuiDownloadService;
-import forge.download.GuiDownloadZipService;
 import forge.toolbox.*;
 import forge.toolbox.FEvent.FEventHandler;
 import forge.toolbox.FRadioButton.RadioButtonGroup;
-import forge.util.Callback;
 
 public class GuiDownloader extends FDialog {
     public static final Proxy.Type[] TYPES = Proxy.Type.values();
@@ -46,25 +45,16 @@ public class GuiDownloader extends FDialog {
     private final UiCommand cmdClose = new UiCommand() {
         @Override
         public void run() {
-            Gdx.graphics.setContinuousRendering(false);
             service.setCancel(true);
             hide();
-            if (callback != null) {
-                callback.run(btnStart.getText() == "OK"); //determine result based on whether download finished
-            }
         }
     };
 
     private final GuiDownloadService service;
-    private final Callback<Boolean> callback;
 
     public GuiDownloader(GuiDownloadService service0) {
-        this(service0, null);
-    }
-    public GuiDownloader(GuiDownloadService service0, Callback<Boolean> callback0) {
         super(service0.getTitle());
         service = service0;
-        callback = callback0;
 
         txtAddress.setGhostText("Proxy Address");
         txtPort.setGhostText("Proxy Port");
@@ -93,12 +83,10 @@ public class GuiDownloader extends FDialog {
 
         show();
 
-        service.initialize(txtAddress, txtPort, progressBar, btnStart, cmdClose, new Runnable() {
+        service.initialize(GuiBase.getInterface(), txtAddress, txtPort, progressBar, btnStart, cmdClose, new Runnable() {
             @Override
             public void run() {
-                if (!(service instanceof GuiDownloadZipService)) { //retain continuous rendering for zip service
-                    Gdx.graphics.setContinuousRendering(false);
-                }
+                Gdx.graphics.setContinuousRendering(false);
                 progressBar.setShowProgressTrail(false);
             }
         }, null);

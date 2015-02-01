@@ -83,7 +83,7 @@ public final class GameMenu {
         return new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MatchUtil.getHumanController().tryUndoLastAction();
+                MatchUtil.getGameView().tryUndoLastAction();
             }
         };
     }
@@ -179,12 +179,12 @@ public final class GameMenu {
                 prefs.setPref(FPref.UI_TARGETING_OVERLAY, String.valueOf(arcState));
                 prefs.save();
                 controller.setArcState(arcState);
-                setTargetingArcMenuIcon((SkinnedRadioButtonMenuItem)e.getSource());
+                setTargetingArcMenuIcon((SkinnedMenuItem)e.getSource());
             }
         };
     }
 
-    private static void setTargetingArcMenuIcon(SkinnedRadioButtonMenuItem item) {
+    private static void setTargetingArcMenuIcon(SkinnedMenuItem item) {
         JPopupMenu pop = (JPopupMenu)item.getParent();
         JMenu menu = (JMenu)pop.getInvoker();
         menu.setIcon(item.getIcon());
@@ -201,7 +201,7 @@ public final class GameMenu {
         return new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                final VAutoYields autoYields = new VAutoYields(MatchUtil.getHumanController());
+                final VAutoYields autoYields = new VAutoYields(MatchUtil.getGameView());
                 autoYields.showAutoYields();
             }
         };

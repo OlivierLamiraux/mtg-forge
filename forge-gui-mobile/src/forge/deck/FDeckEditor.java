@@ -38,7 +38,6 @@ import forge.menu.FDropDownMenu;
 import forge.menu.FMenuItem;
 import forge.menu.FPopupMenu;
 import forge.model.FModel;
-import forge.planarconquest.ConquestUtil;
 import forge.properties.ForgePreferences.FPref;
 import forge.quest.data.QuestPreferences.QPref;
 import forge.screens.TabPageScreen;
@@ -107,12 +106,6 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
             public Deck get() {
                 return new Deck();
             }
-        })),
-        PlanarConquest(new DeckController<Deck>(null, new Supplier<Deck>() { //delay setting root folder until conquest loaded
-            @Override
-            public Deck get() {
-                return new Deck();
-            }
         }));
 
         private final DeckController<? extends DeckBase> controller;
@@ -168,11 +161,6 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
                     new CatalogPage(ItemManagerConfig.QUEST_EDITOR_POOL, "Inventory", FSkinImage.QUEST_BOX),
                     new DeckSectionPage(DeckSection.Main, ItemManagerConfig.QUEST_DECK_EDITOR),
                     new DeckSectionPage(DeckSection.Sideboard, ItemManagerConfig.QUEST_DECK_EDITOR)
-            };
-        case PlanarConquest:
-            return new DeckEditorPage[] {
-                    new CatalogPage(ItemManagerConfig.CONQUEST_COLLECTION, "Collection", FSkinImage.QUEST_BOX),
-                    new DeckSectionPage(DeckSection.Main, ItemManagerConfig.CONQUEST_DECK_EDITOR, "Deck", FSkinImage.DECKLIST)
             };
         }
     }
@@ -306,50 +294,39 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
                                 setSelectedPage(getMainDeckPage()); //select main deck page if needed so main deck if visible below dialog
                             }
                         }));
-                        if (allowRename()) {
-                            addItem(new FMenuItem("Rename Deck", FSkinImage.EDIT, new FEventHandler() {
-                                @Override
-                                public void handleEvent(FEvent e) {
-                                    FOptionPane.showInputDialog("Enter new name for deck:", "Rename Deck", null, deck.getName(), new Callback<String>() {
-                                        @Override
-                                        public void run(String result) {
-                                            editorType.getController().rename(result);
-                                        }
-                                    });
-                                }
-                            }));
-                        }
-                        if (allowDelete()) {
-                            addItem(new FMenuItem("Delete Deck", FSkinImage.DELETE, new FEventHandler() {
-                                @Override
-                                public void handleEvent(FEvent e) {
-                                    FOptionPane.showConfirmDialog(
-                                            "Are you sure you want to delete '" + deck.getName() + "'?",
-                                            "Delete Deck", "Delete", "Cancel", false, new Callback<Boolean>() {
-                                                @Override
-                                                public void run(Boolean result) {
-                                                    if (result) {
-                                                        editorType.getController().delete();
-                                                        Forge.back();
-                                                    }
+                        addItem(new FMenuItem("Rename Deck", FSkinImage.EDIT, new FEventHandler() {
+                            @Override
+                            public void handleEvent(FEvent e) {
+                                FOptionPane.showInputDialog("Enter new name for deck:", "Rename Deck", null, deck.getName(), new Callback<String>() {
+                                    @Override
+                                    public void run(String result) {
+                                        editorType.getController().rename(result);
+                                    }
+                                });
+                            }
+                        }));
+                        addItem(new FMenuItem("Delete Deck", FSkinImage.DELETE, new FEventHandler() {
+                            @Override
+                            public void handleEvent(FEvent e) {
+                                FOptionPane.showConfirmDialog(
+                                        "Are you sure you want to delete '" + deck.getName() + "'?",
+                                        "Delete Deck", "Delete", "Cancel", false, new Callback<Boolean>() {
+                                            @Override
+                                            public void run(Boolean result) {
+                                                if (result) {
+                                                    editorType.getController().delete();
+                                                    Forge.back();
                                                 }
-                                            });
-                                }
-                            }));
-                        }
+                                            }
+                                        });
+                            }
+                        }));
                         ((DeckEditorPage)getSelectedPage()).buildDeckMenu(this);
                     }
                 };
                 menu.show(btnMoreOptions, 0, btnMoreOptions.getHeight());
             }
         });
-    }
-
-    protected boolean allowRename() {
-        return true;
-    }
-    protected boolean allowDelete() {
-        return true;
     }
 
     @Override
@@ -420,7 +397,6 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
         case Winston:
             return CardLimit.None;
         case Commander:
-        case PlanarConquest:
             return CardLimit.Singleton;
         }
     }
@@ -781,9 +757,6 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
                 cardpool.removeAll(parentScreen.getDeck().getOrCreate(DeckSection.Sideboard));
                 cardManager.setPool(cardpool);
                 break;
-            case PlanarConquest:
-                cardManager.setPool(ConquestUtil.getAvailablePool(parentScreen.getDeck()));
-                break;
             default:
                 if (cardManager.getWantUnique()) {
                     cardManager.setPool(ItemPool.createFrom(FModel.getMagicDb().getCommonCards().getUniqueCards(), PaperCard.class), true);
@@ -919,7 +892,7 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
     }
 
     protected static class DeckSectionPage extends CardManagerPage {
-        private String captionPrefix;
+        private final String captionPrefix;
         private final DeckSection deckSection;
 
         protected DeckSectionPage(DeckSection deckSection0) {
@@ -962,13 +935,6 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
                 icon = FSkinImage.POISON;
                 break;
             }
-        }
-        protected DeckSectionPage(DeckSection deckSection0, ItemManagerConfig config, String caption0, FImage icon0) {
-            super(config, null, icon0);
-
-            deckSection = deckSection0;
-            captionPrefix = caption0;
-            cardManager.setCaption(caption0);
         }
 
         @Override
@@ -1048,17 +1014,15 @@ public class FDeckEditor extends TabPageScreen<FDeckEditor> {
                         }
                     });
                 }
-                if (parentScreen.getSideboardPage() != null) {
-                    addItem(menu, "Move", "to Sideboard", parentScreen.getSideboardPage().getIcon(), false, false, new Callback<Integer>() {
-                        @Override
-                        public void run(Integer result) {
-                            if (result == null || result <= 0) { return; }
-    
-                            removeCard(card, result);
-                            parentScreen.getSideboardPage().addCard(card, result);
-                        }
-                    });
-                }
+                addItem(menu, "Move", "to Sideboard", parentScreen.getSideboardPage().getIcon(), false, false, new Callback<Integer>() {
+                    @Override
+                    public void run(Integer result) {
+                        if (result == null || result <= 0) { return; }
+
+                        removeCard(card, result);
+                        parentScreen.getSideboardPage().addCard(card, result);
+                    }
+                });
                 break;
             case Sideboard:
                 addItem(menu, "Add", null, FSkinImage.PLUS, true, false, new Callback<Integer>() {

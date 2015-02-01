@@ -4,8 +4,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
 import forge.game.card.CardUtil;
@@ -37,7 +35,7 @@ public class SacrificeEffect extends SpellAbilityEffect {
                     sa, "Pay Echo", ManaPaymentPurpose.Echo);
             }
             final HashMap<String, Object> runParams = new HashMap<String, Object>();
-            runParams.put("EchoPaid", Boolean.valueOf(isPaid));
+            runParams.put("EchoPaid", (Boolean) isPaid);
             runParams.put("Card", card);
             game.getTriggerHandler().runTrigger(TriggerType.PayEcho, runParams, false);
             if (isPaid || !card.getController().equals(activator)) {
@@ -77,25 +75,24 @@ public class SacrificeEffect extends SpellAbilityEffect {
             }
         }
         else {
-            CardCollectionView choosenToSacrifice = null;
+            List<Card> choosenToSacrifice = null;
             for (final Player p : tgts) {
-                CardCollectionView battlefield = p.getCardsIn(ZoneType.Battlefield);
-                CardCollectionView validTargets = AbilityUtils.filterListByType(battlefield, valid, sa);
+                List<Card> battlefield = p.getCardsIn(ZoneType.Battlefield);
+                List<Card> validTargets = AbilityUtils.filterListByType(battlefield, valid, sa);
                 if (!destroy) {
                     validTargets = CardLists.filter(validTargets, CardPredicates.canBeSacrificedBy(sa));
                 }
-
+                
                 if (sa.hasParam("Random")) {
-                    choosenToSacrifice = Aggregates.random(validTargets, Math.min(amount, validTargets.size()), new CardCollection());
-                }
-                else {
+                    choosenToSacrifice = Aggregates.random(validTargets, Math.min(amount, validTargets.size()));
+                } else {
                     boolean isOptional = sa.hasParam("Optional");
                     choosenToSacrifice = destroy ? 
                         p.getController().choosePermanentsToDestroy(sa, isOptional ? 0 : amount, amount, validTargets, msg) :
                         p.getController().choosePermanentsToSacrifice(sa, isOptional ? 0 : amount, amount, validTargets, msg);
                 }
-
-                for (Card sac : choosenToSacrifice) {
+                
+                for(Card sac : choosenToSacrifice) {
                     final Card lKICopy = CardUtil.getLKICopy(sac);
                     boolean wasSacrificed = !destroy && game.getAction().sacrifice(sac, sa) != null;
                     boolean wasDestroyed = destroy && game.getAction().destroy(sac, sa);

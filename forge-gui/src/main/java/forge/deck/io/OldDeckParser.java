@@ -19,6 +19,7 @@ package forge.deck.io;
 
 import forge.deck.Deck;
 import forge.deck.DeckGroup;
+import forge.interfaces.IGuiBase;
 import forge.properties.ForgeConstants;
 import forge.util.FileSection;
 import forge.util.FileUtil;
@@ -47,8 +48,20 @@ public class OldDeckParser {
         }
     };
 
-    public OldDeckParser(final IStorage<Deck> constructed2, final IStorage<DeckGroup> draft2,
+    private final IGuiBase gui;
+
+    /**
+     * TODO: Write javadoc for Constructor.
+     *
+     * @param file the file
+     * @param constructed2 the constructed2
+     * @param draft2 the draft2
+     * @param sealed2 the sealed2
+     * @param cube2 the cube2
+     */
+    public OldDeckParser(final IGuiBase gui, final IStorage<Deck> constructed2, final IStorage<DeckGroup> draft2,
             final IStorage<DeckGroup> sealed2, final IStorage<Deck> cube2) {
+        this.gui = gui;
         this.deckDir = new File(ForgeConstants.DECK_BASE_DIR);
         this.sealed = sealed2;
         this.constructed = constructed2;
@@ -136,7 +149,7 @@ public class OldDeckParser {
                 this.draft.add(d);
             } else {
                 final String msg = String.format("Draft '%s' lacked some decks.%n%nShould it be deleted?");
-                mayDelete = SOptionPane.showConfirmDialog(msg, "Draft loading error");
+                mayDelete = SOptionPane.showConfirmDialog(gui, msg, "Draft loading error");
             }
 
             if (mayDelete) {
@@ -172,7 +185,7 @@ public class OldDeckParser {
                         final String msg = String
                                 .format("Can not convert deck '%s' for some unsupported cards it contains. %n%s%n%nMay Forge delete all such decks?",
                                         name, ex.getMessage());
-                        allowDeleteUnsupportedConstructed = SOptionPane.showConfirmDialog(msg, "Problem converting decks");
+                        allowDeleteUnsupportedConstructed = SOptionPane.showConfirmDialog(gui, msg, "Problem converting decks");
                     }
                 }
                 if (importedOk || allowDeleteUnsupportedConstructed) {
@@ -191,7 +204,7 @@ public class OldDeckParser {
                         final String msg = String
                                 .format("Can not convert deck '%s' for some unsupported cards it contains. %n%s%n%nMay Forge delete all such decks?",
                                         name, ex.getMessage());
-                        allowDeleteUnsupportedConstructed = SOptionPane.showConfirmDialog(msg, "Problem converting decks");
+                        allowDeleteUnsupportedConstructed = SOptionPane.showConfirmDialog(gui, msg, "Problem converting decks");
                     }
                 }
                 if (importedOk || allowDeleteUnsupportedConstructed) {
@@ -243,7 +256,7 @@ public class OldDeckParser {
             }
             sb.append(System.getProperty("line.separator"));
             sb.append("May Forge delete these decks?");
-            if (SOptionPane.showConfirmDialog(sb.toString(), "Some of your sealed decks are orphaned")) {
+            if (SOptionPane.showConfirmDialog(gui, sb.toString(), "Some of your sealed decks are orphaned")) {
                 for (final Pair<DeckGroup, MutablePair<File, File>> s : sealedDecks.values()) {
                     if (s.getRight().getLeft() != null) {
                         s.getRight().getLeft().delete();

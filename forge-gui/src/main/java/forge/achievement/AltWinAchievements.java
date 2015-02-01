@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import forge.game.Game;
 import forge.game.player.Player;
+import forge.interfaces.IGuiBase;
 import forge.item.IPaperCard;
 import forge.model.FModel;
 import forge.properties.ForgeConstants;
@@ -48,7 +49,7 @@ public class AltWinAchievements extends AchievementCollection {
     }
 
     @Override
-    public void updateAll(Player player) {
+    public void updateAll(IGuiBase gui, Player player) {
         //only call update achievement for alternate win condition (if any)
         if (player.getOutcome().hasWon()) {
             String altWinCondition = player.getOutcome().altWinSourceName;
@@ -64,7 +65,7 @@ public class AltWinAchievements extends AchievementCollection {
 
             Achievement achievement = achievements.get(altWinCondition);
             if (achievement != null) {
-                achievement.update(player);
+                achievement.update(gui, player);
                 save();
             }
         }

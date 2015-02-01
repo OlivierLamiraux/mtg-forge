@@ -4,6 +4,7 @@ import forge.UiCommand;
 import forge.Singletons;
 import forge.deck.Deck;
 import forge.deck.DeckBase;
+import forge.deck.io.DeckHtmlSerializer;
 import forge.deck.io.DeckSerializer;
 import forge.deck.io.DeckStorage;
 import forge.gui.framework.ICDoc;
@@ -129,7 +130,7 @@ public enum CCurrentDeck implements ICDoc {
         final ACEditorBase<TItem, TModel> ed = (ACEditorBase<TItem, TModel>)
                 CDeckEditorUI.SINGLETON_INSTANCE.getCurrentEditorController();
 
-        final DeckImport dImport = new DeckImport(ed, ed instanceof CEditorCommander);
+        final DeckImport dImport = new DeckImport(ed);
         dImport.setModalityType(ModalityType.APPLICATION_MODAL);
         dImport.setVisible(true);
     }

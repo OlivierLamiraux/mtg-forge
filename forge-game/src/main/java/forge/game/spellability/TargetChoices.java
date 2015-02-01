@@ -18,11 +18,8 @@
 package forge.game.spellability;
 
 import com.google.common.collect.Iterables;
-
 import forge.game.GameObject;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.player.Player;
 
 import java.util.ArrayList;
@@ -40,86 +37,166 @@ public class TargetChoices implements Cloneable {
     private int numTargeted = 0;
 
     // Card or Player are legal targets.
-    private final CardCollection targetCards = new CardCollection();
+    private final List<Card> targetCards = new ArrayList<Card>();
     private final List<Player> targetPlayers = new ArrayList<Player>();
     private final List<SpellAbility> targetSpells = new ArrayList<SpellAbility>();
 
+    /**
+     * <p>
+     * Getter for the field <code>numTargeted</code>.
+     * </p>
+     * 
+     * @return a int.
+     */
     public final int getNumTargeted() {
-        return numTargeted;
+        return this.numTargeted;
     }
 
+    /**
+     * <p>
+     * addTarget.
+     * </p>
+     * 
+     * @param o
+     *            a {@link java.lang.Object} object.
+     * @return a boolean.
+     */
     public final boolean add(final GameObject o) {
         if (o instanceof Player) {
-            return addTarget((Player) o);
+            return this.addTarget((Player) o);
         } else if (o instanceof Card) {
-            return addTarget((Card) o);
+            return this.addTarget((Card) o);
         } else if (o instanceof SpellAbility) {
-            return addTarget((SpellAbility) o);
+            return this.addTarget((SpellAbility) o);
         }
 
         return false;
     }
 
+    /**
+     * <p>
+     * addTarget.
+     * </p>
+     * 
+     * @param c
+     *            a {@link forge.game.card.Card} object.
+     * @return a boolean.
+     */
     private final boolean addTarget(final Card c) {
-        if (!targetCards.contains(c)) {
-            targetCards.add(c);
-            numTargeted++;
+        if (!this.targetCards.contains(c)) {
+            this.targetCards.add(c);
+            this.numTargeted++;
             return true;
         }
         return false;
     }
 
+    /**
+     * <p>
+     * addTarget.
+     * </p>
+     * 
+     * @param p
+     *            a {@link forge.game.player.Player} object.
+     * @return a boolean.
+     */
     private final boolean addTarget(final Player p) {
-        if (!targetPlayers.contains(p)) {
-            targetPlayers.add(p);
-            numTargeted++;
+        if (!this.targetPlayers.contains(p)) {
+            this.targetPlayers.add(p);
+            this.numTargeted++;
             return true;
         }
         return false;
     }
 
+    /**
+     * <p>
+     * addTarget.
+     * </p>
+     * 
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     * @return a boolean.
+     */
     private final boolean addTarget(final SpellAbility sa) {
-        if (!targetSpells.contains(sa)) {
-            targetSpells.add(sa);
-            numTargeted++;
+        if (!this.targetSpells.contains(sa)) {
+            this.targetSpells.add(sa);
+            this.numTargeted++;
             return true;
         }
         return false;
     }
 
+    /**
+     * <p>
+     * removeTarget.
+     * </p>
+     * 
+     * @param card
+     *            a {@link forge.game.card.Card} object.
+     * @return a boolean.
+     */
     public final boolean remove(final GameObject target) {
         // remove returns true if element was found in given list
-        if (targetCards.remove(target) || targetPlayers.remove(target) || targetSpells.remove(target)) {
-            numTargeted--;
+        if (this.targetCards.remove(target) || this.targetPlayers.remove(target) || this.targetSpells.remove(target)) {
+            this.numTargeted--;
             return true;
         }
         return false;
     }
 
-    public final CardCollectionView getTargetCards() {
-        return targetCards;
+    /**
+     * <p>
+     * Getter for the field <code>targetCards</code>.
+     * </p>
+     * 
+     * @return a {@link java.util.ArrayList} object.
+     */
+    public final Iterable<Card> getTargetCards() {
+        return this.targetCards;
     }
 
+    /**
+     * <p>
+     * Getter for the field <code>targetPlayers</code>.
+     * </p>
+     * 
+     * @return a {@link java.util.ArrayList} object.
+     */
     public final Iterable<Player> getTargetPlayers() {
-        return targetPlayers;
+        return this.targetPlayers;
     }
 
+    /**
+     * <p>
+     * Getter for the field <code>targetSAs</code>.
+     * </p>
+     * 
+     * @return a {@link java.util.ArrayList} object.
+     */
     public final Iterable<SpellAbility> getTargetSpells() {
-        return targetSpells;
+        return this.targetSpells;
     }
 
+    /**
+     * <p>
+     * getTargets.
+     * </p>
+     * 
+     * @return a {@link java.util.ArrayList} object.
+     */
     public final List<GameObject> getTargets() {
         final ArrayList<GameObject> tgts = new ArrayList<GameObject>();
-        tgts.addAll(targetPlayers);
-        tgts.addAll(targetCards);
-        tgts.addAll(targetSpells);
+        tgts.addAll(this.targetPlayers);
+        tgts.addAll(this.targetCards);
+        tgts.addAll(this.targetSpells);
 
         return tgts;
     }
 
 
     public final String getTargetedString() {
-        final List<GameObject> tgts = getTargets();
+        final List<GameObject> tgts = this.getTargets();
         final StringBuilder sb = new StringBuilder();
         for (final Object o : tgts) {
             if (o instanceof Player) {
@@ -169,6 +246,9 @@ public class TargetChoices implements Cloneable {
         return Iterables.getFirst(targetSpells, null);
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.spellability.ITargetsChosen#isEmpty()
+     */
     public final boolean isEmpty() {
         return targetCards.isEmpty() && targetSpells.isEmpty() && targetPlayers.isEmpty();
     }
@@ -176,10 +256,10 @@ public class TargetChoices implements Cloneable {
     @Override
     public TargetChoices clone() {
         TargetChoices tc = new TargetChoices();
-        tc.targetCards.addAll(targetCards);
-        tc.targetPlayers.addAll(targetPlayers);
-        tc.targetSpells.addAll(targetSpells);
-        tc.numTargeted = numTargeted;
+        tc.targetCards.addAll(this.targetCards);
+        tc.targetPlayers.addAll(this.targetPlayers);
+        tc.targetSpells.addAll(this.targetSpells);
+        tc.numTargeted = this.numTargeted;
         return tc;
     }
 }

@@ -3,6 +3,7 @@ package forge.gamesimulationtests.util;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import forge.LobbyPlayer;
@@ -24,8 +25,6 @@ import forge.game.GameObject;
 import forge.game.GameType;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardShields;
 import forge.game.card.CounterType;
 import forge.game.combat.Combat;
@@ -51,7 +50,6 @@ import forge.gamesimulationtests.util.player.PlayerSpecificationHandler;
 import forge.gamesimulationtests.util.playeractions.*;
 import forge.player.HumanPlay;
 import forge.item.PaperCard;
-import forge.util.FCollectionView;
 import forge.util.ITriggerEvent;
 import forge.util.MyRandom;
 
@@ -121,7 +119,7 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public Map<Card, Integer> assignCombatDamage(Card attacker, CardCollectionView blockers, int damageDealt, GameEntity defender, boolean overrideOrder) {
+	public Map<Card, Integer> assignCombatDamage(Card attacker, List<Card> blockers, int damageDealt, GameEntity defender, boolean overrideOrder) {
 		if (blockers.size() == 1 && damageDealt == 2 && (
 				(attacker.getName().equals("Grizzly Bears") && blockers.get(0).getName().equals("Ajani's Sunstriker")) ||
 				(attacker.getName().equals("Ajani's Sunstriker") && blockers.get(0).getName().equals("Grizzly Bears"))
@@ -139,12 +137,12 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollectionView choosePermanentsToSacrifice(SpellAbility sa, int min, int max, CardCollectionView validTargets, String message) {
+	public List<Card> choosePermanentsToSacrifice(SpellAbility sa, int min, int max, List<Card> validTargets, String message) {
 		return chooseItems(validTargets, min);
 	}
 
 	@Override
-	public CardCollectionView choosePermanentsToDestroy(SpellAbility sa, int min, int max, CardCollectionView validTargets, String message) {
+	public List<Card> choosePermanentsToDestroy(SpellAbility sa, int min, int max, List<Card> validTargets, String message) {
 		return chooseItems(validTargets, min);
 	}
 
@@ -159,12 +157,12 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollectionView chooseCardsForEffect(CardCollectionView sourceList, SpellAbility sa, String title, int min, int max, boolean isOptional) {
+	public List<Card> chooseCardsForEffect(List<Card> sourceList, SpellAbility sa, String title, int min, int max, boolean isOptional) {
 		return chooseItems(sourceList, max);
 	}
 
 	@Override
-	public <T extends GameEntity> T chooseSingleEntityForEffect(FCollectionView<T> optionList, DelayedReveal delayedReveal, SpellAbility sa, String title, boolean isOptional, Player targetedPlayer) {
+	public <T extends GameEntity> T chooseSingleEntityForEffect(Collection<T> optionList, DelayedReveal delayedReveal, SpellAbility sa, String title, boolean isOptional, Player targetedPlayer) {
         if (delayedReveal != null) {
             delayedReveal.reveal(this);
         }
@@ -203,24 +201,25 @@ public class PlayerControllerForTests extends PlayerController {
     }
 
 	@Override
-	public CardCollection orderBlockers(Card attacker, CardCollection blockers) {
+	public List<Card> orderBlockers(Card attacker, List<Card> blockers) {
 		return blockers;
 	}
-
+	
 	@Override
-	public CardCollection orderBlocker(final Card attacker, final Card blocker, final CardCollection oldBlockers) {
-		final CardCollection allBlockers = new CardCollection(oldBlockers);
+	public List<Card> orderBlocker(final Card attacker, final Card blocker,
+			final List<Card> oldBlockers) {
+		final List<Card> allBlockers = Lists.newArrayList(oldBlockers);
 		allBlockers.add(blocker);
 		return allBlockers;
 	}
 
 	@Override
-	public CardCollection orderAttackers(Card blocker, CardCollection attackers) {
+	public List<Card> orderAttackers(Card blocker, List<Card> attackers) {
 		return attackers;
 	}
 
 	@Override
-	public void reveal(CardCollectionView cards, ZoneType zone, Player owner, String messagePrefix) {
+	public void reveal(Collection<Card> cards, ZoneType zone, Player owner, String messagePrefix) {
 		//nothing needs to be done here
 	}
 
@@ -230,7 +229,7 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public ImmutablePair<CardCollection, CardCollection> arrangeForScry(CardCollection topN) {
+	public ImmutablePair<List<Card>, List<Card>> arrangeForScry(List<Card> topN) {
 		return ImmutablePair.of(topN, null);
 	}
 
@@ -240,12 +239,12 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollectionView orderMoveToZoneList(CardCollectionView cards, ZoneType destinationZone) {
+	public List<Card> orderMoveToZoneList(List<Card> cards, ZoneType destinationZone) {
 		return cards;
 	}
 
 	@Override
-	public CardCollection chooseCardsToDiscardFrom(Player playerDiscard, SpellAbility sa, CardCollection validCards, int min, int max) {
+	public List<Card> chooseCardsToDiscardFrom(Player playerDiscard, SpellAbility sa, List<Card> validCards, int min, int max) {
 		return chooseItems(validCards, min);
 	}
 
@@ -255,17 +254,17 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollectionView chooseCardsToDelve(int colorLessAmount, CardCollection grave) {
-		return CardCollection.EMPTY;
+	public List<Card> chooseCardsToDelve(int colorLessAmount, List<Card> grave) {
+		return Collections.<Card>emptyList();
 	}
 
 	@Override
-	public CardCollectionView chooseCardsToRevealFromHand(int min, int max, CardCollectionView valid) {
+	public List<Card> chooseCardsToRevealFromHand(int min, int max, List<Card> valid) {
 		return chooseItems(valid, min);
 	}
 
 	@Override
-	public CardCollectionView chooseCardsToDiscardUnlessType(int min, CardCollectionView hand, String param, SpellAbility sa) {
+	public List<Card> chooseCardsToDiscardUnlessType(int min, List<Card> hand, String param, SpellAbility sa) {
 		throw new IllegalStateException("Erring on the side of caution here...");
 	}
 
@@ -290,7 +289,7 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollectionView getCardsToMulligan(boolean isCommander, Player firstPlayer) {
+	public List<Card> getCardsToMulligan(boolean isCommander, Player firstPlayer) {
 		return null;
 	}
 
@@ -317,10 +316,6 @@ public class PlayerControllerForTests extends PlayerController {
 			Card defender = CardSpecificationHandler.INSTANCE.find(game.getCardsInGame(), planeswalkerAttackAssignment.getKey());
 			attack(combat, planeswalkerAttackAssignment.getKey(), defender);
 		}
-
-		if (!CombatUtil.validateAttackers(combat)) {
-		    throw new IllegalStateException("Illegal attack declaration!");
-		}
 	}
 
 	private Player getPlayerBeingAttacked(Game game, Player attacker, PlayerSpecification defenderSpecification) {
@@ -340,7 +335,7 @@ public class PlayerControllerForTests extends PlayerController {
 
 	private void attack(Combat combat, CardSpecification attackerSpecification, GameEntity defender) {
 		Card attacker = CardSpecificationHandler.INSTANCE.find(combat.getAttackingPlayer().getCreaturesInPlay(), attackerSpecification);
-		if (!CombatUtil.canAttack(attacker, defender)) {
+		if (!CombatUtil.canAttack(attacker, defender, combat)) {
 			throw new IllegalStateException(attacker + " can't attack " + defender);
 		}
 		combat.addAttacker(attacker, defender);
@@ -378,7 +373,7 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public List<SpellAbility> chooseSpellAbilityToPlay() {
+	public SpellAbility chooseSpellAbilityToPlay() {
 		//TODO: This method has to return the spellability chosen by player
 	    // It should not play the sa right from here. The code has been left as it is to quickly adapt to changed playercontroller interface 
 		if (playerActions != null) {
@@ -396,7 +391,7 @@ public class PlayerControllerForTests extends PlayerController {
 	}
 
 	@Override
-	public CardCollection chooseCardsToDiscardToMaximumHandSize(int numDiscard) {
+	public List<Card> chooseCardsToDiscardToMaximumHandSize(int numDiscard) {
 		return chooseItems(player.getZone(ZoneType.Hand).getCards(), numDiscard);
 	}
 
@@ -439,16 +434,17 @@ public class PlayerControllerForTests extends PlayerController {
     public byte chooseColorAllowColorless(String message, Card card, ColorSet colors) {
         return Iterables.getFirst(colors, (byte)0);
     }
+    
 
-    private CardCollection chooseItems(CardCollectionView items, int amount) {
-        if (items == null || items.isEmpty()) {
-            return new CardCollection(items);
-        }
-        return (CardCollection)items.subList(0, Math.max(amount, items.size()));
-    }
+	private <T> List<T> chooseItems(Collection<T> items, int amount) {
+		if (items == null || items.isEmpty()) {
+			return new ArrayList<T>(items);
+		}
+		return new ArrayList<T>(items).subList(0, Math.max(amount, items.size()));
+	}
 
-	private <T> T chooseItem(Iterable<T> items) {
-		if (items == null) {
+	private <T> T chooseItem(Collection<T> items) {
+		if (items == null || items.isEmpty()) {
 			return null;
 		}
 		return Iterables.getFirst(items, null);
@@ -503,7 +499,7 @@ public class PlayerControllerForTests extends PlayerController {
     }
 
     @Override
-    public boolean payCostToPreventEffect(Cost cost, SpellAbility sa, boolean alreadyPaid, FCollectionView<Player> allPayers) {
+    public boolean payCostToPreventEffect(Cost cost, SpellAbility sa, boolean alreadyPaid, List<Player> allPayers) {
         // TODO Auto-generated method stub
         return false;
     }
@@ -568,7 +564,7 @@ public class PlayerControllerForTests extends PlayerController {
     }
 
     @Override
-    public boolean chooseCardsPile(SpellAbility sa, CardCollectionView pile1, CardCollectionView pile2, boolean faceUp) {
+    public boolean chooseCardsPile(SpellAbility sa, List<Card> pile1, List<Card> pile2, boolean faceUp) {
         return MyRandom.getRandom().nextBoolean();
     }
 
@@ -579,7 +575,7 @@ public class PlayerControllerForTests extends PlayerController {
 
 	@Override
 	public CardShields chooseRegenerationShield(Card c) {
-		return Iterables.getFirst(c.getShields(), null);
+		return Iterables.getFirst(c.getShield(), null);
 	}
 
     @Override
@@ -603,7 +599,7 @@ public class PlayerControllerForTests extends PlayerController {
 
     @Override
     public Map<Card, ManaCostShard> chooseCardsForConvoke(SpellAbility sa, ManaCost manaCost,
-            CardCollectionView untappedCreats) {
+            List<Card> untappedCreats) {
         // TODO: AI to choose a creature to tap would go here
         // Probably along with deciding how many creatures to tap
         return new HashMap<Card, ManaCostShard>();
@@ -624,7 +620,7 @@ public class PlayerControllerForTests extends PlayerController {
 
     @Override
     public Card chooseSingleCardForZoneChange(ZoneType destination,
-            List<ZoneType> origin, SpellAbility sa, CardCollection fetchList, DelayedReveal delayedReveal,
+            List<ZoneType> origin, SpellAbility sa, List<Card> fetchList, DelayedReveal delayedReveal,
             String selectPrompt, boolean isOptional, Player decider) {
 
         if (delayedReveal != null) {

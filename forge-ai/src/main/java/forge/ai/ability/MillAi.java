@@ -6,7 +6,6 @@ import forge.ai.ComputerUtilMana;
 import forge.ai.SpellAbilityAi;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.cost.Cost;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
@@ -14,6 +13,8 @@ import forge.game.player.PlayerActionConfirmMode;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
+
+import java.util.List;
 
 public class MillAi extends SpellAbilityAi {
 
@@ -55,10 +56,9 @@ public class MillAi extends SpellAbilityAi {
             return true;
         }
 
-        // Don't use mill abilities before main 2 if possible
+        // Don't use draw abilities before main 2 if possible
         if (ai.getGame().getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2) && !sa.hasParam("ActivationPhases")
-                && !ComputerUtil.castSpellInMain1(ai, sa)
-                && !"Main1".equals(sa.getParam("AILogic"))) {
+                && !ComputerUtil.castSpellInMain1(ai, sa)) {
             return false;
         }
 
@@ -96,7 +96,7 @@ public class MillAi extends SpellAbilityAi {
 
             final int numCards = AbilityUtils.calculateAmount(sa.getHostCard(), sa.getParam("NumCards"), sa);
 
-            final CardCollectionView pLibrary = opp.getCardsIn(ZoneType.Library);
+            final List<Card> pLibrary = opp.getCardsIn(ZoneType.Library);
 
             if (pLibrary.isEmpty()) { // deck already empty, no need to mill
                 if (!mandatory) {

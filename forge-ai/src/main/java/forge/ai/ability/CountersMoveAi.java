@@ -4,7 +4,6 @@ import forge.ai.ComputerUtilCard;
 import forge.ai.SpellAbilityAi;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CounterType;
 import forge.game.player.Player;
@@ -78,7 +77,7 @@ public class CountersMoveAi extends SpellAbilityAi {
             }
         } else { // targeted
             final Player player = sa.isCurse() ? ai.getOpponent() : ai;
-            CardCollectionView list = CardLists.getTargetableCards(player.getCardsIn(ZoneType.Battlefield), sa);
+            List<Card> list = CardLists.getTargetableCards(player.getCardsIn(ZoneType.Battlefield), sa);
             list = CardLists.getValidCards(list, abTgt.getValidTgts(), host.getController(), host);
             if (list.isEmpty() && mandatory) {
                 // If there isn't any prefered cards to target, gotta choose
@@ -101,22 +100,25 @@ public class CountersMoveAi extends SpellAbilityAi {
                 if (preferred) {
                     choice = CountersAi.chooseCursedTarget(list, type, amount);
                 }
-                else if (type.equals("M1M1")) {
-                    choice = ComputerUtilCard.getWorstCreatureAI(list);
-                }
+
                 else {
-                    choice = Aggregates.random(list);
+                    if (type.equals("M1M1")) {
+                        choice = ComputerUtilCard.getWorstCreatureAI(list);
+                    } else {
+                        choice = Aggregates.random(list);
+                    }
                 }
-            }
-            else {
+            } else {
                 if (preferred) {
                     choice = CountersAi.chooseBoonTarget(list, type);
                 }
-                else if (type.equals("P1P1")) {
-                    choice = ComputerUtilCard.getWorstCreatureAI(list);
-                }
+
                 else {
-                    choice = Aggregates.random(list);
+                    if (type.equals("P1P1")) {
+                        choice = ComputerUtilCard.getWorstCreatureAI(list);
+                    } else {
+                        choice = Aggregates.random(list);
+                    }
                 }
             }
 
@@ -124,6 +126,8 @@ public class CountersMoveAi extends SpellAbilityAi {
             // addTarget()?
             sa.getTargets().add(choice);
         }
+
         return chance;
     }
+
 }

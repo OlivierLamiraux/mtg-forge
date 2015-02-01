@@ -25,7 +25,6 @@ import com.google.common.base.Function;
 
 import forge.Singletons;
 import forge.UiCommand;
-import forge.game.player.PlayerView;
 import forge.game.zone.ZoneType;
 import forge.gui.framework.ICDoc;
 import forge.match.MatchConstants;
@@ -33,6 +32,8 @@ import forge.match.MatchUtil;
 import forge.screens.match.ZoneAction;
 import forge.screens.match.views.VField;
 import forge.toolbox.MouseTriggerEvent;
+import forge.view.CardView;
+import forge.view.PlayerView;
 
 /**
  * Controls Swing components of a player's field instance.
@@ -65,18 +66,34 @@ public class CField implements ICDoc {
         final ZoneAction libraryAction   = new ZoneAction(player, ZoneType.Library,   MatchConstants.HUMANLIBRARY);
         final ZoneAction exileAction     = new ZoneAction(player, ZoneType.Exile,     MatchConstants.HUMANEXILED);
         final ZoneAction graveAction     = new ZoneAction(player, ZoneType.Graveyard, MatchConstants.HUMANGRAVEYARD);
-        final ZoneAction flashBackAction = new ZoneAction(player, ZoneType.Flashback, MatchConstants.HUMANFLASHBACK);
-
-        Function<Byte, Boolean> manaAction = new Function<Byte, Boolean>() {
-            public Boolean apply(Byte colorCode) {
-                if (CField.this.player.isLobbyPlayer(Singletons.getControl().getGuiPlayer())) {
-                    return MatchUtil.getHumanController().useMana(colorCode.byteValue());
+        @SuppressWarnings("serial")
+        final ZoneAction flashBackAction = new ZoneAction(player, null,               MatchConstants.HUMANFLASHBACK) {
+            @Override
+            protected void doAction(final CardView c) {
+                // activate cards only via your own flashback button
+                if (player.getLobbyPlayer() != Singletons.getControl().getGuiPlayer()) {
+                    return;
                 }
-                return false;
+
+                CPrompt.SINGLETON_INSTANCE.selectCard(c, null);
+            }
+            @Override
+            protected Iterable<CardView> getCardsAsIterable() {
+                return player.getFlashbackCards();
             }
         };
 
+        Function<Byte, Void> manaAction = new Function<Byte, Void>() {
+            public Void apply(Byte colorCode) {
+                if (CField.this.player.getLobbyPlayer() == Singletons.getControl().getGuiPlayer()) {
+                    MatchUtil.getGameView().useMana(colorCode.byteValue());
+                }
+                return null;
+            }
+        };
+        
         view.getDetailsPanel().setupMouseActions(handAction, libraryAction, exileAction, graveAction, flashBackAction, manaAction);
+        
     }
 
     @Override

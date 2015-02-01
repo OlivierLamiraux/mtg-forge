@@ -17,7 +17,6 @@
  */
 package forge.match.input;
 
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,11 +25,13 @@ import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.phase.PhaseHandler;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
 import forge.player.PlayerControllerHuman;
 import forge.util.ITriggerEvent;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
 
 /**
  * <p>
@@ -51,8 +52,14 @@ public abstract class InputBase implements java.io.Serializable, Input {
     public final PlayerControllerHuman getController() {
         return controller;
     }
+    public LocalGameView getGameView() {
+        return controller.getGameView();
+    }
     public PlayerView getOwner() {
-        return controller.getPlayer().getView();
+        return controller.getPlayerView(controller.getPlayer());
+    }
+    public IGuiBase getGui() {
+        return controller.getGui();
     }
 
     private boolean finished = false;
@@ -61,7 +68,7 @@ public abstract class InputBase implements java.io.Serializable, Input {
         finished = true;
 
         if (allowAwaitNextInput()) {
-            awaitNextInput(controller);
+            awaitNextInput(getGameView());
         }
     }
 
@@ -72,17 +79,17 @@ public abstract class InputBase implements java.io.Serializable, Input {
     private static final Timer awaitNextInputTimer = new Timer();
     private static TimerTask awaitNextInputTask;
 
-    public static void awaitNextInput(final PlayerControllerHuman controller) {
+    public static void awaitNextInput(final LocalGameView gameView) {
         //delay updating prompt to await next input briefly so buttons don't flicker disabled then enabled
         awaitNextInputTask = new TimerTask() {
             @Override
             public void run() {
-                FThreads.invokeInEdtLater(new Runnable() {
+                FThreads.invokeInEdtLater(gameView.getGui(), new Runnable() {
                     @Override
                     public void run() {
                         synchronized (awaitNextInputTimer) {
                             if (awaitNextInputTask != null) {
-                                updatePromptForAwait(controller);
+                                updatePromptForAwait(gameView);
                                 awaitNextInputTask = null;
                             }
                         }
@@ -94,20 +101,20 @@ public abstract class InputBase implements java.io.Serializable, Input {
     }
 
     public static void waitForOtherPlayer() {
-        final PlayerControllerHuman controller = MatchUtil.getOtherHumanController();
-        if (controller == null) { return; }
+        final LocalGameView gameView = MatchUtil.getOtherGameView();
+        if (gameView == null) { return; }
 
         cancelAwaitNextInput();
-        FThreads.invokeInEdtNowOrLater(new Runnable() {
+        FThreads.invokeInEdtNowOrLater(gameView.getGui(), new Runnable() {
             @Override
             public void run() {
-                updatePromptForAwait(controller);
+                updatePromptForAwait(gameView);
             }
         });
     }
 
-    private static void updatePromptForAwait(final PlayerControllerHuman controller) {
-        PlayerView playerView = controller.getLocalPlayerView();
+    private static void updatePromptForAwait(final LocalGameView gameView) {
+        PlayerView playerView = gameView.getLocalPlayerView();
         MatchUtil.getController().showPromptMessage(playerView, "Waiting for opponent...");
         ButtonUtil.update(playerView, false, false, false);
     }
@@ -141,9 +148,7 @@ public abstract class InputBase implements java.io.Serializable, Input {
     }
 
     @Override
-    public boolean selectAbility(final SpellAbility ab) {
-        return false;
-    }
+    public void selectAbility(final SpellAbility ab) { }
 
     @Override
     public final void selectButtonCancel() {
@@ -158,12 +163,12 @@ public abstract class InputBase implements java.io.Serializable, Input {
     }
 
     @Override
-    public final boolean selectCard(final Card c, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    public final boolean selectCard(final Card c, final ITriggerEvent triggerEvent) {
         if (isFinished()) { return false; }
-        return onCardSelected(c, otherCardsToSelect, triggerEvent);
+        return onCardSelected(c, triggerEvent);
     }
 
-    protected boolean onCardSelected(final Card c, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    protected boolean onCardSelected(final Card c, final ITriggerEvent triggerEvent) {
         return false;
     }
     protected void onPlayerSelected(final Player player, final ITriggerEvent triggerEvent) {}
@@ -173,6 +178,10 @@ public abstract class InputBase implements java.io.Serializable, Input {
     // to remove need for CMatchUI dependence
     protected final void showMessage(final String message) {
         MatchUtil.getController().showPromptMessage(getOwner(), message);
+    }
+
+    protected final void flashIncorrectAction() {
+        MatchUtil.getController().flashIncorrectAction();
     }
 
     protected String getTurnPhasePriorityMessage(final Game game) {

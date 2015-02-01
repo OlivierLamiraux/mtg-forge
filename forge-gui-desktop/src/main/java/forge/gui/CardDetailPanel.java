@@ -31,22 +31,19 @@ import javax.swing.border.EmptyBorder;
 import org.apache.commons.lang3.StringUtils;
 
 import forge.card.CardDetailUtil;
-import forge.card.CardRarity;
 import forge.card.CardDetailUtil.DetailColors;
 import forge.card.CardEdition;
-import forge.game.card.Card;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
-import forge.game.zone.ZoneType;
 import forge.item.IPaperCard;
 import forge.item.InventoryItemFromSet;
-import forge.match.MatchUtil;
 import forge.model.FModel;
 import forge.toolbox.FHtmlViewer;
 import forge.toolbox.FLabel;
 import forge.toolbox.FScrollPane;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinnedPanel;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
+import forge.view.ViewUtil;
 
 /**
  * The class CardDetailPanel. Shows the details of a card.
@@ -72,33 +69,33 @@ public class CardDetailPanel extends SkinnedPanel {
 
     public CardDetailPanel() {
         super();
-        setLayout(null);
-        setOpaque(false);
+        this.setLayout(null);
+        this.setOpaque(false);
 
-        nameCostLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
-        typeLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
-        idLabel = new FLabel.Builder().fontAlign(SwingConstants.LEFT).tooltip("Card ID").build();
-        powerToughnessLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
-        setInfoLabel = new JLabel();
-        setInfoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        this.nameCostLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
+        this.typeLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
+        this.idLabel = new FLabel.Builder().fontAlign(SwingConstants.LEFT).tooltip("Card ID").build();
+        this.powerToughnessLabel = new FLabel.Builder().fontAlign(SwingConstants.CENTER).build();
+        this.setInfoLabel = new JLabel();
+        this.setInfoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         final Font font = new Font("Dialog", 0, 14);
-        nameCostLabel.setFont(font);
-        typeLabel.setFont(font);
-        idLabel.setFont(font);
-        powerToughnessLabel.setFont(font);
+        this.nameCostLabel.setFont(font);
+        this.typeLabel.setFont(font);
+        this.idLabel.setFont(font);
+        this.powerToughnessLabel.setFont(font);
 
-        cdArea = new FHtmlViewer();
-        cdArea.setBorder(new EmptyBorder(2, 6, 2, 6));
-        cdArea.setOpaque(false);
-        scrArea = new FScrollPane(cdArea, false);
+        this.cdArea = new FHtmlViewer();
+        this.cdArea.setBorder(new EmptyBorder(2, 6, 2, 6));
+        this.cdArea.setOpaque(false);
+        this.scrArea = new FScrollPane(this.cdArea, false);
 
-        add(nameCostLabel);
-        add(typeLabel);
-        add(idLabel);
-        add(powerToughnessLabel);
-        add(setInfoLabel);
-        add(scrArea);
+        this.add(this.nameCostLabel);
+        this.add(this.typeLabel);
+        this.add(this.idLabel);
+        this.add(this.powerToughnessLabel);
+        this.add(this.setInfoLabel);
+        this.add(this.scrArea);
     }
 
     @Override
@@ -108,23 +105,23 @@ public class CardDetailPanel extends SkinnedPanel {
         int x = insets;
         int y = insets;
         int lineWidth = getWidth() - 2 * insets;
-        int lineHeight = nameCostLabel.getPreferredSize().height;
+        int lineHeight = this.nameCostLabel.getPreferredSize().height;
         int dy = lineHeight + 1;
 
-        nameCostLabel.setBounds(x, y, lineWidth, lineHeight);
+        this.nameCostLabel.setBounds(x, y, lineWidth, lineHeight);
         y += dy;
 
-        typeLabel.setBounds(x, y, lineWidth, lineHeight);
+        this.typeLabel.setBounds(x, y, lineWidth, lineHeight);
         y += dy;
 
-        idLabel.setBounds(x, y, idLabel.getAutoSizeWidth(), lineHeight);
-        powerToughnessLabel.setBounds(x, y, lineWidth, lineHeight);
+        this.idLabel.setBounds(x, y, this.idLabel.getAutoSizeWidth(), lineHeight);
+        this.powerToughnessLabel.setBounds(x, y, lineWidth, lineHeight);
 
         //+1 to x,y so set info label right up against border and the baseline matches ID and P/T
-        setInfoLabel.setBounds(x + lineWidth - setInfoWidth + 1, y + 1, setInfoWidth, lineHeight);
+        this.setInfoLabel.setBounds(x + lineWidth - setInfoWidth + 1, y + 1, setInfoWidth, lineHeight);
         y += dy;
 
-        scrArea.setBounds(0, y, getWidth(), getHeight() - y);
+        this.scrArea.setBounds(0, y, getWidth(), getHeight() - y);
     }
 
     public final void setItem(final InventoryItemFromSet item) {
@@ -133,7 +130,7 @@ public class CardDetailPanel extends SkinnedPanel {
         powerToughnessLabel.setVisible(false);
         idLabel.setText("");
         cdArea.setText(CardDetailUtil.getItemDescription(item));
-        updateBorder(item instanceof IPaperCard ? Card.getCardForUi((IPaperCard)item).getView().getCurrentState() : null, true);
+        this.updateBorder(item instanceof IPaperCard ? ViewUtil.getCardForUi((IPaperCard)item).getOriginal() : null);
 
         String set = item.getEdition();
         setInfoLabel.setText(set);
@@ -147,10 +144,10 @@ public class CardDetailPanel extends SkinnedPanel {
                 setInfoLabel.setToolTipText(edition.getName());
             }
             
-            setInfoLabel.setOpaque(true);
-            setInfoLabel.setBackground(Color.BLACK);
-            setInfoLabel.setForeground(Color.WHITE);
-            setInfoLabel.setBorder(BorderFactory.createLineBorder(Color.WHITE));
+            this.setInfoLabel.setOpaque(true);
+            this.setInfoLabel.setBackground(Color.BLACK);
+            this.setInfoLabel.setForeground(Color.WHITE);
+            this.setInfoLabel.setBorder(BorderFactory.createLineBorder(Color.WHITE));
         }
 
         SwingUtilities.invokeLater(new Runnable() {
@@ -162,72 +159,56 @@ public class CardDetailPanel extends SkinnedPanel {
     }
 
     public final void setCard(final CardView card) {
-        setCard(card, false);
+        this.setCard(card, false);
     }
 
     public final void setCard(final CardView card, final boolean isInAltState) {
-        nameCostLabel.setText("");
-        typeLabel.setVisible(true);
-        typeLabel.setText("");
-        powerToughnessLabel.setVisible(true);
-        powerToughnessLabel.setText("");
-        idLabel.setText("");
-        setInfoLabel.setText("");
-        setInfoLabel.setToolTipText("");
-        setInfoLabel.setOpaque(false);
-        setInfoLabel.setBorder(null);
-        cdArea.setText("");
-
+        this.nameCostLabel.setText("");
+        this.typeLabel.setVisible(true);
+        this.typeLabel.setText("");
+        this.powerToughnessLabel.setVisible(true);
+        this.powerToughnessLabel.setText("");
+        this.idLabel.setText("");
+        this.setInfoLabel.setText("");
+        this.setInfoLabel.setToolTipText("");
+        this.setInfoLabel.setOpaque(false);
+        this.setInfoLabel.setBorder(null);
+        this.cdArea.setText("");
         if (card == null) {
-            updateBorder(null, false);
+            this.updateBorder(null);
             return;
         }
 
         final CardStateView state = card.getState(isInAltState);
-        if (state == null) {
-            updateBorder(null, false);
-            return;
-        }
 
-        boolean canShow = MatchUtil.canCardBeShown(card);
-
-        if (state.getManaCost().isNoCost() || !canShow) {
-            nameCostLabel.setText(CardDetailUtil.formatCardName(card, canShow, isInAltState));
-        }
-        else {
+        if (state.getManaCost().isNoCost()) {
+            this.nameCostLabel.setText(CardDetailUtil.formatCardName(state));
+        } else {
             final String manaCost;
-            if (card.isSplitCard() && card.hasAlternateState() && card.getZone() != ZoneType.Stack) { //only display current state's mana cost when on stack
-                manaCost = card.getCurrentState().getManaCost() + " // " + card.getAlternateState().getManaCost();
-            }
-            else {
+            if (card.isSplitCard() && card.hasAltState()) {
+                manaCost = card.getOriginal().getManaCost() + " // " + card.getAlternate().getManaCost();
+            } else {
                 manaCost = state.getManaCost().toString();
             }
-            nameCostLabel.setText(FSkin.encodeSymbols(CardDetailUtil.formatCardName(card, canShow, isInAltState) + " - " + manaCost, true));
+            this.nameCostLabel.setText(FSkin.encodeSymbols(CardDetailUtil.formatCardName(state) + " - " + manaCost, true));
         }
-        typeLabel.setText(CardDetailUtil.formatCardType(state, canShow));
-
-        String set = state.getSetCode();
-        CardRarity rarity = state.getRarity();
-        if (!canShow) {
-            set = CardEdition.UNKNOWN.getCode();
-            rarity = CardRarity.Unknown;
-        }
-        setInfoLabel.setText(set);
+        this.typeLabel.setText(CardDetailUtil.formatCardType(state));
+            
+        String set = card.getSetCode();
+        this.setInfoLabel.setText(set);
         if (null != set && !set.isEmpty()) {
-            if (canShow) {
-                CardEdition edition = FModel.getMagicDb().getEditions().get(set);
-                if (null == edition) {
-                    setInfoLabel.setToolTipText(rarity.name());
-                }
-                else {
-                    setInfoLabel.setToolTipText(String.format("%s (%s)", edition.getName(), rarity.name()));
-                }
+            CardEdition edition = FModel.getMagicDb().getEditions().get(set);
+            if (null == edition) {
+                setInfoLabel.setToolTipText(card.getRarity().name());
+            }
+            else {
+                setInfoLabel.setToolTipText(String.format("%s (%s)", edition.getName(), card.getRarity().name()));
             }
 
-            setInfoLabel.setOpaque(true);
+            this.setInfoLabel.setOpaque(true);
 
             Color backColor;
-            switch (rarity) {
+            switch(card.getRarity()) {
             case Uncommon:
                 backColor = fromDetailColor(DetailColors.UNCOMMON);
                 break;
@@ -250,19 +231,19 @@ public class CardDetailPanel extends SkinnedPanel {
             }
 
             Color foreColor = FSkin.getHighContrastColor(backColor);
-            setInfoLabel.setBackground(backColor);
-            setInfoLabel.setForeground(foreColor);
-            setInfoLabel.setBorder(BorderFactory.createLineBorder(foreColor));
+            this.setInfoLabel.setBackground(backColor);
+            this.setInfoLabel.setForeground(foreColor);
+            this.setInfoLabel.setBorder(BorderFactory.createLineBorder(foreColor));
         }
 
-        updateBorder(state, canShow);
+        this.updateBorder(state);
 
-        powerToughnessLabel.setText(CardDetailUtil.formatPowerToughness(state, canShow));
+        this.powerToughnessLabel.setText(CardDetailUtil.formatPowerToughness(state));
 
-        idLabel.setText(canShow ? CardDetailUtil.formatCardId(state) : "");
+        this.idLabel.setText(CardDetailUtil.formatCardId(state));
 
         // fill the card text
-        cdArea.setText(FSkin.encodeSymbols(CardDetailUtil.composeCardText(state, canShow), true));
+        this.cdArea.setText(FSkin.encodeSymbols(CardDetailUtil.composeCardText(state), true));
 
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -274,39 +255,39 @@ public class CardDetailPanel extends SkinnedPanel {
 
     /** @return FLabel */
     public FLabel getNameCostLabel() {
-        return nameCostLabel;
+        return this.nameCostLabel;
     }
 
     /** @return FLabel */
     public FLabel getTypeLabel() {
-        return typeLabel;
+        return this.typeLabel;
     }
 
     /** @return FLabel */
     public FLabel getPowerToughnessLabel() {
-        return powerToughnessLabel;
+        return this.powerToughnessLabel;
     }
 
     /** @return JLabel */
     public JLabel getSetInfoLabel() {
-        return setInfoLabel;
+        return this.setInfoLabel;
     }
 
     /** @return FHtmlViewer */
     public FHtmlViewer getCDArea() {
-        return cdArea;
+        return this.cdArea;
     }
 
-    private void updateBorder(final CardStateView card, final boolean canShow) {
+    private void updateBorder(final CardStateView card) {
         // color info
         if (card == null) {
-            setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            this.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
             scrArea.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
             return;
         }
 
-        Color color = fromDetailColor(CardDetailUtil.getBorderColor(card, canShow));
-        setBorder(BorderFactory.createLineBorder(color, 2));
+        Color color = fromDetailColor(CardDetailUtil.getBorderColor(card));
+        this.setBorder(BorderFactory.createLineBorder(color, 2));
         scrArea.setBorder(BorderFactory.createMatteBorder(2, 0, 0, 0, color));
     }
 

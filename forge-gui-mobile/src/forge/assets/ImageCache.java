@@ -24,13 +24,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 
 import forge.ImageKeys;
-import forge.game.card.CardView;
 import forge.game.player.IHasIcon;
 import forge.item.InventoryItem;
 import forge.item.PaperCard;
-import forge.match.MatchUtil;
 import forge.properties.ForgeConstants;
-import forge.util.ImageUtil;
+import forge.view.CardView;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -82,7 +80,7 @@ public class ImageCache {
     }
 
     public static Texture getImage(CardView card) {
-        final String key = MatchUtil.getCardImageKey(card.getCurrentState());
+        final String key = card.getOriginal().getImageKey(false);
         return getImage(key, true);
     }
 

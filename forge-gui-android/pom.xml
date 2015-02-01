@@ -6,14 +6,14 @@
         <maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
         <packaging.type>jar</packaging.type>
         <build.min.memory>-Xms128m</build.min.memory>
-        <build.max.memory>-Xmx1024m</build.max.memory>
-        <alpha-version>1.5.34.004</alpha-version>
+        <build.max.memory>-Xmx2048m</build.max.memory>
+        <alpha-version>1.5.29.002</alpha-version>
     </properties>
 
     <parent>
         <artifactId>forge</artifactId>
         <groupId>forge</groupId>
-        <version>1.5.34-SNAPSHOT</version>
+        <version>1.5.29-SNAPSHOT</version>
     </parent>
 
     <artifactId>forge-gui-android</artifactId>
@@ -101,7 +101,7 @@
         <dependency>
             <groupId>com.badlogicgames.gdx</groupId>
             <artifactId>gdx-backend-android</artifactId>
-            <version>1.5.0</version>
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 
@@ -116,7 +116,7 @@
                     <plugin>
                         <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                         <artifactId>android-maven-plugin</artifactId>
-                        <version>3.9.0-rc.2</version>
+                        <version>3.9.0-rc.1</version>
                         <extensions>true</extensions>
                         <configuration>
                             <sign>
@@ -161,7 +161,7 @@
                     <plugin>
                         <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                         <artifactId>android-maven-plugin</artifactId>
-                        <version>3.9.0-rc.2</version>
+                        <version>3.9.0-rc.1</version>
                         <extensions>true</extensions>
                         <configuration>
                             <sign>
@@ -243,7 +243,7 @@
                     <plugin>
                         <groupId>com.jayway.maven.plugins.android.generation2</groupId>
                         <artifactId>android-maven-plugin</artifactId>
-                        <version>3.9.0-rc.2</version>
+                        <version>3.9.0-rc.1</version>
                         <inherited>true</inherited>
                         <configuration>
                             <sign>

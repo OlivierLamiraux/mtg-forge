@@ -1,13 +1,15 @@
 package forge.player;
 
-import java.io.BufferedWriter;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,10 +31,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import forge.FThreads;
-import forge.GuiBase;
 import forge.LobbyPlayer;
 import forge.achievement.AchievementCollection;
-import forge.ai.GameState;
+import forge.card.CardCharacteristicName;
 import forge.card.ColorSet;
 import forge.card.MagicColor;
 import forge.card.mana.ManaCost;
@@ -41,21 +42,19 @@ import forge.control.FControlGamePlayback;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
+import forge.events.UiEventAttackerDeclared;
 import forge.game.Game;
 import forge.game.GameEntity;
-import forge.game.GameEntityView;
 import forge.game.GameLogEntryType;
 import forge.game.GameObject;
+import forge.game.GameOutcome;
 import forge.game.GameType;
 import forge.game.PlanarDice;
 import forge.game.ability.effects.CharmEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardPredicates;
 import forge.game.card.CardShields;
-import forge.game.card.CardView;
 import forge.game.card.CounterType;
 import forge.game.combat.Combat;
 import forge.game.combat.CombatUtil;
@@ -68,7 +67,6 @@ import forge.game.player.DelayedReveal;
 import forge.game.player.Player;
 import forge.game.player.PlayerActionConfirmMode;
 import forge.game.player.PlayerController;
-import forge.game.player.PlayerView;
 import forge.game.replacement.ReplacementEffect;
 import forge.game.spellability.AbilityManaPart;
 import forge.game.spellability.AbilitySub;
@@ -76,10 +74,12 @@ import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityStackInstance;
 import forge.game.spellability.TargetChoices;
 import forge.game.trigger.Trigger;
+import forge.game.trigger.TriggerType;
 import forge.game.trigger.WrappedAbility;
 import forge.game.zone.MagicStack;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
+import forge.interfaces.IGuiBase;
 import forge.item.IPaperCard;
 import forge.item.PaperCard;
 import forge.match.MatchUtil;
@@ -93,16 +93,12 @@ import forge.match.input.InputConfirmMulligan;
 import forge.match.input.InputPassPriority;
 import forge.match.input.InputPayMana;
 import forge.match.input.InputProliferate;
-import forge.match.input.InputProxy;
-import forge.match.input.InputQueue;
 import forge.match.input.InputSelectCardsForConvoke;
 import forge.match.input.InputSelectCardsFromList;
 import forge.match.input.InputSelectEntitiesFromList;
 import forge.model.FModel;
 import forge.properties.ForgeConstants;
 import forge.properties.ForgePreferences.FPref;
-import forge.util.FCollection;
-import forge.util.FCollectionView;
 import forge.util.ITriggerEvent;
 import forge.util.Lang;
 import forge.util.MessageUtil;
@@ -110,6 +106,13 @@ import forge.util.TextUtil;
 import forge.util.gui.SGuiChoose;
 import forge.util.gui.SGuiDialog;
 import forge.util.gui.SOptionPane;
+import forge.view.CardView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
+import forge.view.StackItemView;
 
 /** 
  * A prototype for player controller class
@@ -117,46 +120,40 @@ import forge.util.gui.SOptionPane;
  * Handles phase skips for now.
  */
 public class PlayerControllerHuman extends PlayerController {
+    private final GameView gameView;
     /**
      * Cards this player may look at right now, for example when searching a
      * library.
      */
     private boolean mayLookAtAllCards = false;
-    private boolean disableAutoYields = false;
 
-    protected final InputQueue inputQueue;
-    protected final InputProxy inputProxy;
-
-    public PlayerControllerHuman(Game game0, Player p, LobbyPlayer lp) {
+    public PlayerControllerHuman(Game game0, Player p, LobbyPlayer lp, IGuiBase gui) {
         super(game0, p, lp);
-        inputProxy = new InputProxy(this);
-        inputQueue = new InputQueue(game, inputProxy);
-    }
-    public PlayerControllerHuman(Player p, LobbyPlayer lp, PlayerControllerHuman owner) {
-        super(owner.getGame(), p, lp);
-        inputProxy = owner.inputProxy;
-        inputQueue = owner.getInputQueue();
-    }
-
-    public final InputQueue getInputQueue() {
-        return inputQueue;
-    }
-
-    public InputProxy getInputProxy() {
-        return inputProxy;
+        if (p.getController() == null || p.getLobbyPlayer() == lp) {
+            gameView = new GameView(gui, game0);
+        }
+        else { //handle the case of one player controlling another
+            for (Player p0 : game.getPlayers()) {
+                if (p0.getLobbyPlayer() == lp) {
+                    p = p0;
+                    break;
+                }
+            }
+            gameView = (GameView)MatchUtil.getGameView(p);
+        }
     }
 
-    public PlayerView getLocalPlayerView() {
-        return player.getView();
+    public IGuiBase getGui() {
+        return gameView.getGui();
     }
 
-    public boolean getDisableAutoYields() {
-        return disableAutoYields;
-    }
-    public void setDisableAutoYields(boolean disableAutoYields0) {
-        disableAutoYields = disableAutoYields0;
+    public LocalGameView getGameView() {
+        return gameView;
     }
 
+    /**
+     * @return the mayLookAtAllCards
+     */
     public boolean mayLookAtAllCards() {
         return mayLookAtAllCards;
     }
@@ -171,9 +168,11 @@ public class PlayerControllerHuman extends PlayerController {
         }
     }
     private void tempShowCard(Card c) {
-        if (c == null) { return; }
-        tempShownCards.add(c);
-        c.setMayLookAt(player, true, true);
+        CardView cv = MatchUtil.cards.get(c.getId());
+        if (!cv.mayBeShown()) {
+            cv.setMayBeShown(true);
+            tempShownCards.add(c);
+        }
     }
     private void tempShowCards(Iterable<Card> cards) {
         if (mayLookAtAllCards) { return; } //no needed if this is set
@@ -186,7 +185,7 @@ public class PlayerControllerHuman extends PlayerController {
         if (tempShownCards.isEmpty()) { return; }
 
         for (Card c : tempShownCards) {
-            c.setMayLookAt(player, false, true);
+            MatchUtil.cards.get(c.getId()).setMayBeShown(false);
         }
         tempShownCards.clear();
     }
@@ -203,16 +202,20 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     public boolean isUiSetToSkipPhase(final Player turn, final PhaseType phase) {
-        return !MatchUtil.getController().stopAtPhase(PlayerView.get(turn), phase);
+        return !MatchUtil.getController().stopAtPhase(getPlayerView(turn), phase);
     }
 
     /**
      * Uses GUI to learn which spell the player (human in our case) would like to play
      */ 
     public SpellAbility getAbilityToPlay(final List<SpellAbility> abilities, final ITriggerEvent triggerEvent) {
-        return MatchUtil.getController().getAbilityToPlay(abilities, triggerEvent);
+        final int choice = MatchUtil.getController().getAbilityToPlay(gameView.getSpellAbilityViews(abilities), triggerEvent);
+        return gameView.getSpellAbility(choice);
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#mayPlaySpellAbilityForFree(forge.card.spellability.SpellAbility)
+     */
     @Override
     public void playSpellAbilityForFree(SpellAbility copySA, boolean mayChoseNewTargets) {
         HumanPlay.playSaWithoutPayingManaCost(this, player.getGame(), copySA, mayChoseNewTargets);
@@ -223,6 +226,9 @@ public class PlayerControllerHuman extends PlayerController {
         HumanPlay.playSpellAbilityNoStack(this, player, effectSA, !canSetupTargets);
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#sideboard(forge.deck.Deck)
+     */
     @Override
     public List<PaperCard> sideboard(Deck deck, GameType gameType) {
         CardPool sideboard = deck.get(DeckSection.Sideboard);
@@ -258,37 +264,38 @@ public class PlayerControllerHuman extends PlayerController {
                 else {
                     errMsg = String.format("Too many cards in your sideboard (maximum %d), please make modifications to your deck again.", sbMax);
                 }
-                SOptionPane.showErrorDialog(errMsg, "Invalid Deck");
+                SOptionPane.showErrorDialog(getGui(), errMsg, "Invalid Deck");
             }
             // Sideboard rules have changed for M14, just need to consider min maindeck and max sideboard sizes
             // No longer need 1:1 sideboarding in non-limited formats
-            newMain = GuiBase.getInterface().sideboard(sideboard, main);
+            newMain = getGui().sideboard(sideboard, main);
         } while (conform && (newMain.size() < deckMinSize || combinedDeckSize - newMain.size() > sbMax));
 
         return newMain;
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#assignCombatDamage()
+     */
     @Override
     public Map<Card, Integer> assignCombatDamage(final Card attacker,
-            final CardCollectionView blockers, final int damageDealt,
+            final List<Card> blockers, final int damageDealt,
             final GameEntity defender, final boolean overrideOrder) {
         // Attacker is a poor name here, since the creature assigning damage
         // could just as easily be the blocker.
         final Map<Card, Integer> map = Maps.newHashMap();
         if (defender != null && assignDamageAsIfNotBlocked(attacker)) {
             map.put(null, damageDealt);
-        }
-        else {
-            final List<CardView> vBlockers = CardView.getCollection(blockers);
+        } else {
+            final List<CardView> vBlockers = getCardViews(blockers);
             if ((attacker.hasKeyword("Trample") && defender != null) || (blockers.size() > 1)) {
-                final CardView vAttacker = CardView.get(attacker);
-                final GameEntityView vDefender = GameEntityView.get(defender);
+                final CardView vAttacker = getCardView(attacker);
+                final GameEntityView vDefender = getGameEntityView(defender);
                 final Map<CardView, Integer> result = MatchUtil.getDamageToAssign(vAttacker, vBlockers, damageDealt, vDefender, overrideOrder);
                 for (final Entry<CardView, Integer> e : result.entrySet()) {
-                    map.put(game.getCard(e.getKey()), e.getValue());
+                    map.put(gameView.getCard(e.getKey()), e.getValue());
                 }
-            }
-            else {
+            } else {
                 map.put(blockers.get(0), damageDealt);
             }
         }
@@ -298,30 +305,33 @@ public class PlayerControllerHuman extends PlayerController {
     private final boolean assignDamageAsIfNotBlocked(final Card attacker) {
         return attacker.hasKeyword("CARDNAME assigns its combat damage as though it weren't blocked.")
                 || (attacker.hasKeyword("You may have CARDNAME assign its combat damage as though it weren't blocked.")
-                && SGuiDialog.confirm(CardView.get(attacker), "Do you want to assign its combat damage as though it weren't blocked?"));
+                && SGuiDialog.confirm(getGui(), getCardView(attacker), "Do you want to assign its combat damage as though it weren't blocked?"));
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#announceRequirements(java.lang.String)
+     */
     @Override
     public Integer announceRequirements(SpellAbility ability, String announce, boolean canChooseZero) {
         int min = canChooseZero ? 0 : 1;
-        return SGuiChoose.getInteger("Choose " + announce + " for " + ability.getHostCard().getName(),
+        return SGuiChoose.getInteger(getGui(), "Choose " + announce + " for " + ability.getHostCard().getName(),
                 min, Integer.MAX_VALUE, min + 9);
     }
 
     @Override
-    public CardCollectionView choosePermanentsToSacrifice(SpellAbility sa, int min, int max, CardCollectionView valid, String message) {
+    public List<Card> choosePermanentsToSacrifice(SpellAbility sa, int min, int max, List<Card> valid, String message) {
         return choosePermanentsTo(min, max, valid, message, "sacrifice");
     }
 
     @Override
-    public CardCollectionView choosePermanentsToDestroy(SpellAbility sa, int min, int max, CardCollectionView valid, String message) {
+    public List<Card> choosePermanentsToDestroy(SpellAbility sa, int min, int max, List<Card> valid, String message) {
         return choosePermanentsTo(min, max, valid, message, "destroy");
     }
 
-    private CardCollectionView choosePermanentsTo(int min, int max, CardCollectionView valid, String message, String action) {
+    private List<Card> choosePermanentsTo(int min, int max, List<Card> valid, String message, String action) {
         max = Math.min(max, valid.size());
         if (max <= 0) {
-            return CardCollection.EMPTY;
+            return new ArrayList<Card>();
         }
 
         StringBuilder builder = new StringBuilder("Select ");
@@ -334,20 +344,24 @@ public class PlayerControllerHuman extends PlayerController {
         inp.setMessage(builder.toString());
         inp.setCancelAllowed(min == 0);
         inp.showAndWait();
-        return new CardCollection(inp.getSelected());
+        return Lists.newArrayList(inp.getSelected());
     }
 
+
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseCardsForEffect(java.util.Collection, forge.card.spellability.SpellAbility, java.lang.String, int, boolean)
+     */
     @Override
-    public CardCollectionView chooseCardsForEffect(CardCollectionView sourceList, SpellAbility sa, String title, int min, int max, boolean isOptional) {
+    public List<Card> chooseCardsForEffect(List<Card> sourceList, SpellAbility sa, String title, int min, int max, boolean isOptional) {
         // If only one card to choose, use a dialog box.
         // Otherwise, use the order dialog to be able to grab multiple cards in one shot
-
+        
         if (max == 1) {
             Card singleChosen = chooseSingleEntityForEffect(sourceList, sa, title, isOptional);
-            return singleChosen == null ? CardCollection.EMPTY : new CardCollection(singleChosen);
+            return singleChosen == null ?  Lists.<Card>newArrayList() : Lists.newArrayList(singleChosen);
         }
 
-        MatchUtil.getController().setPanelSelection(CardView.get(sa.getHostCard()));
+        MatchUtil.getController().setPanelSelection(getCardView(sa.getHostCard()));
 
         // try to use InputSelectCardsFromList when possible 
         boolean cardsAreInMyHandOrBattlefield = true;
@@ -365,19 +379,19 @@ public class PlayerControllerHuman extends PlayerController {
             sc.setMessage(title);
             sc.setCancelAllowed(isOptional);
             sc.showAndWait();
-            return new CardCollection(sc.getSelected());
+            return Lists.newArrayList(sc.getSelected());
         }
 
         tempShowCards(sourceList);
-        final CardCollection choices = getGame().getCardList(SGuiChoose.many(title, "Chosen Cards", min, max, CardView.getCollection(sourceList), CardView.get(sa.getHostCard())));
+        final List<CardView> choices = SGuiChoose.many(getGui(), title, "Chosen Cards", min, max, getCardViews(sourceList), getCardView(sa.getHostCard()));
         endTempShowCards();
 
-        return choices;
+        return getCards(choices);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends GameEntity> T chooseSingleEntityForEffect(FCollectionView<T> optionList, DelayedReveal delayedReveal, SpellAbility sa, String title, boolean isOptional, Player targetedPlayer) {
+    public <T extends GameEntity> T chooseSingleEntityForEffect(Collection<T> optionList, DelayedReveal delayedReveal, SpellAbility sa, String title, boolean isOptional, Player targetedPlayer) {
         // Human is supposed to read the message and understand from it what to choose
         if (optionList.isEmpty()) {
             if (delayedReveal != null) {
@@ -417,32 +431,23 @@ public class PlayerControllerHuman extends PlayerController {
             return Iterables.getFirst(input.getSelected(), null);
         }
 
-        final GameEntityView result = GuiBase.getInterface().chooseSingleEntityForEffect(title, optionList, delayedReveal, isOptional, this);
-        endTempShowCards(); //assume tempShow called by GuiBase.getInterface().chooseSingleEntityForEffect
-        if (result instanceof CardView) {
-            return (T) game.getCard((CardView)result);
-        }
-        if (result instanceof PlayerView) {
-            return (T) game.getPlayer((PlayerView)result);
-        }
-        return null;
+        final GameEntityView result = getGui().chooseSingleEntityForEffect(title, optionList, delayedReveal, isOptional, this);
+        endTempShowCards(); //assume tempShow called by getGui().chooseSingleEntityForEffect
+        return (T) gameView.getGameEntity(result);
     }
 
     @Override
     public int chooseNumber(SpellAbility sa, String title, int min, int max) {
-    	if (min >= max) {
-    		return min;
-    	}
         final Integer[] choices = new Integer[max + 1 - min];
         for (int i = 0; i <= max - min; i++) {
             choices[i] = Integer.valueOf(i + min);
         }
-        return SGuiChoose.one(title, choices).intValue();
+        return SGuiChoose.one(getGui(), title, choices).intValue();
     }
     
     @Override
     public int chooseNumber(SpellAbility sa, String title, List<Integer> choices, Player relatedPlayer) {
-        return SGuiChoose.one(title, choices).intValue();
+        return SGuiChoose.one(getGui(), title, choices).intValue();
     }
 
     @Override
@@ -452,7 +457,8 @@ public class PlayerControllerHuman extends PlayerController {
         }
 
         // Human is supposed to read the message and understand from it what to choose
-        return SGuiChoose.one(title, spells);
+        final SpellAbilityView choice = SGuiChoose.one(getGui(), title, gameView.getSpellAbilityViews(spells));
+        return gameView.getSpellAbility(choice);
     }
 
     /* (non-Javadoc)
@@ -460,18 +466,18 @@ public class PlayerControllerHuman extends PlayerController {
      */
     @Override
     public boolean confirmAction(SpellAbility sa, PlayerActionConfirmMode mode, String message) {
-        return SGuiDialog.confirm(CardView.get(sa.getHostCard()), message);
+        return SGuiDialog.confirm(getGui(), getCardView(sa.getHostCard()), message);
     }
 
     @Override
     public boolean confirmBidAction(SpellAbility sa, PlayerActionConfirmMode bidlife,
             String string, int bid, Player winner) {
-        return SGuiDialog.confirm(CardView.get(sa.getHostCard()), string + " Highest Bidder " + winner);
+        return SGuiDialog.confirm(getGui(), getCardView(sa.getHostCard()), string + " Highest Bidder " + winner);
     }
 
     @Override
     public boolean confirmStaticApplication(Card hostCard, GameEntity affected, String logic, String message) {
-        return SGuiDialog.confirm(CardView.get(hostCard), message);
+        return SGuiDialog.confirm(getGui(), getCardView(hostCard), message);
     }
 
     @Override
@@ -483,11 +489,6 @@ public class PlayerControllerHuman extends PlayerController {
             return false;
         }
 
-        // triggers with costs can always be declined by not paying the cost
-        if (sa.hasParam("Cost") && !sa.getParam("Cost").equals("0")) {
-        	return true;
-        }
-        
         final StringBuilder buildQuestion = new StringBuilder("Use triggered ability of ");
         buildQuestion.append(regtrig.getHostCard().toString()).append("?");
         if (!FModel.getPreferences().getPrefBoolean(FPref.UI_COMPACT_PROMPT)) {
@@ -525,7 +526,7 @@ public class PlayerControllerHuman extends PlayerController {
         else {
             final String prompt = String.format("%s, you %s\n\nWho would you like to start this game?", 
                     player.getName(), isFirstGame ? " have won the coin toss." : " lost the last game.");
-            final InputSelectEntitiesFromList<Player> input = new InputSelectEntitiesFromList<Player>(this, 1, 1, new FCollection<Player>(game.getPlayersInTurnOrder()));
+            final InputSelectEntitiesFromList<Player> input = new InputSelectEntitiesFromList<>(this, 1, 1, game.getPlayersInTurnOrder());
             input.setMessage(prompt);
             input.showAndWait();
             return input.getFirstSelected();
@@ -533,28 +534,34 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     @Override
-    public CardCollection orderBlockers(final Card attacker, final CardCollection blockers) {
-        final CardView vAttacker = CardView.get(attacker);
+    public List<Card> orderBlockers(final Card attacker, final List<Card> blockers) {
+        final CardView vAttacker = getCardView(attacker);
         MatchUtil.getController().setPanelSelection(vAttacker);
-        return game.getCardList(SGuiChoose.order("Choose Damage Order for " + vAttacker, "Damaged First", CardView.getCollection(blockers), vAttacker));
+        final List<CardView> choices = SGuiChoose.order(getGui(), "Choose Damage Order for " + vAttacker, "Damaged First", getCardViews(blockers), vAttacker);
+        return gameView.getCards(choices);
     }
 
     @Override
-    public CardCollection orderBlocker(final Card attacker, final Card blocker, final CardCollection oldBlockers) {
-        final CardView vAttacker = CardView.get(attacker);
+    public List<Card> orderBlocker(final Card attacker, final Card blocker, final List<Card> oldBlockers) {
+        final CardView vAttacker = getCardView(attacker);
         MatchUtil.getController().setPanelSelection(vAttacker);
-        return game.getCardList(SGuiChoose.insertInList("Choose blocker after which to place " + vAttacker + " in damage order; cancel to place it first", CardView.get(blocker), CardView.getCollection(oldBlockers)));
+        final List<CardView> choices = SGuiChoose.insertInList(getGui(), "Choose blocker after which to place " + vAttacker + " in damage order; cancel to place it first", getCardView(blocker), getCardViews(oldBlockers));
+        return gameView.getCards(choices);
     }
 
     @Override
-    public CardCollection orderAttackers(final Card blocker, final CardCollection attackers) {
-        final CardView vBlocker = CardView.get(blocker);
+    public List<Card> orderAttackers(final Card blocker, final List<Card> attackers) {
+        final CardView vBlocker = getCardView(blocker);
         MatchUtil.getController().setPanelSelection(vBlocker);
-        return game.getCardList(SGuiChoose.order("Choose Damage Order for " + vBlocker, "Damaged First", CardView.getCollection(attackers), vBlocker));
+        final List<CardView> choices = SGuiChoose.order(getGui(), "Choose Damage Order for " + vBlocker, "Damaged First", getCardViews(attackers), vBlocker);
+        return gameView.getCards(choices);
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#reveal(java.lang.String, java.util.List, forge.game.zone.ZoneType, forge.game.player.Player)
+     */
     @Override
-    public void reveal(CardCollectionView cards, ZoneType zone, Player owner, String message) {
+    public void reveal(Collection<Card> cards, ZoneType zone, Player owner, String message) {
         if (StringUtils.isBlank(message)) {
             message = "Looking at cards in {player's} " + zone.name().toLowerCase();
         }
@@ -564,19 +571,19 @@ public class PlayerControllerHuman extends PlayerController {
         String fm = MessageUtil.formatMessage(message, player, owner);
         if (!cards.isEmpty()) {
             tempShowCards(cards);
-            SGuiChoose.reveal(fm, CardView.getCollection(cards));
+            SGuiChoose.reveal(getGui(), fm, getCardViews(cards));
             endTempShowCards();
         }
         else {
-            SGuiDialog.message(MessageUtil.formatMessage("There are no cards in {player's} " +
+            SGuiDialog.message(getGui(), MessageUtil.formatMessage("There are no cards in {player's} " +
                     zone.name().toLowerCase(), player, owner), fm);
         }
     }
 
     @Override
-    public ImmutablePair<CardCollection, CardCollection> arrangeForScry(CardCollection topN) {
-        CardCollection toBottom = null;
-        CardCollection toTop = null;
+    public ImmutablePair<List<Card>, List<Card>> arrangeForScry(List<Card> topN) {
+        List<Card> toBottom = null;
+        List<Card> toTop = null;
 
         tempShowCards(topN);
         if (topN.size() == 1) {
@@ -588,8 +595,9 @@ public class PlayerControllerHuman extends PlayerController {
             }
         }
         else {
-            toBottom = game.getCardList(SGuiChoose.many("Select cards to be put on the bottom of your library", "Cards to put on the bottom", -1, CardView.getCollection(topN), null));
-            topN.removeAll((Collection<?>)toBottom);
+            final List<CardView> toBottomViews = SGuiChoose.many(getGui(), "Select cards to be put on the bottom of your library", "Cards to put on the bottom", -1, getCardViews(topN), null); 
+            toBottom = gameView.getCards(toBottomViews);
+            topN.removeAll(toBottom);
             if (topN.isEmpty()) {
                 toTop = null;
             }
@@ -597,7 +605,8 @@ public class PlayerControllerHuman extends PlayerController {
                 toTop = topN;
             }
             else {
-                toTop = game.getCardList(SGuiChoose.order("Arrange cards to be put on top of your library", "Top of Library", CardView.getCollection(topN), null));
+                final List<CardView> toTopViews = SGuiChoose.order(getGui(), "Arrange cards to be put on top of your library", "Cards arranged", getCardViews(topN), null); 
+                toTop = gameView.getCards(toTopViews);
             }
         }
         endTempShowCards();
@@ -606,37 +615,34 @@ public class PlayerControllerHuman extends PlayerController {
 
     @Override
     public boolean willPutCardOnTop(final Card c) {
-        final CardView view = CardView.get(c);
-
-        tempShowCard(c);
-        boolean result = SGuiDialog.confirm(view, "Put " + view + " on the top or bottom of your library?", new String[]{"Top", "Bottom"});
-        endTempShowCards();
-        
-        return result;
+        final PaperCard pc = FModel.getMagicDb().getCommonCards().getCard(c.getName());
+        final Card c1 = (pc != null ? Card.fromPaperCard(pc, null) : c);
+        final CardView view = getCardView(c1);
+        return SGuiDialog.confirm(getGui(), view, "Put " + view + " on the top or bottom of your library?", new String[]{"Top", "Bottom"});
     }
 
     @Override
-    public CardCollectionView orderMoveToZoneList(CardCollectionView cards, ZoneType destinationZone) {
+    public List<Card> orderMoveToZoneList(List<Card> cards, ZoneType destinationZone) {
         List<CardView> choices;
         tempShowCards(cards);
         switch (destinationZone) {
             case Library:
-                choices = SGuiChoose.order("Choose order of cards to put into the library", "Closest to top", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of cards to put into the library", "Closest to top", getCardViews(cards), null);
                 break;
             case Battlefield:
-                choices = SGuiChoose.order("Choose order of cards to put onto the battlefield", "Put first", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of cards to put onto the battlefield", "Put first", getCardViews(cards), null);
                 break;
             case Graveyard:
-                choices = SGuiChoose.order("Choose order of cards to put into the graveyard", "Closest to bottom", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of cards to put into the graveyard", "Closest to bottom", getCardViews(cards), null);
                 break;
             case PlanarDeck:
-                choices = SGuiChoose.order("Choose order of cards to put into the planar deck", "Closest to top", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of cards to put into the planar deck", "Closest to top", getCardViews(cards), null);
                 break;
             case SchemeDeck:
-                choices = SGuiChoose.order("Choose order of cards to put into the scheme deck", "Closest to top", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of cards to put into the scheme deck", "Closest to top", getCardViews(cards), null);
                 break;
             case Stack:
-                choices = SGuiChoose.order("Choose order of copies to cast", "Put first", CardView.getCollection(cards), null);
+                choices = SGuiChoose.order(getGui(), "Choose order of copies to cast", "Put first", getCardViews(cards), null);
                 break;
             default:
                 System.out.println("ZoneType " + destinationZone + " - Not Ordered");
@@ -644,48 +650,47 @@ public class PlayerControllerHuman extends PlayerController {
                 return cards;
         }
         endTempShowCards();
-        return game.getCardList(choices);
+        return getCards(choices);
     }
 
     @Override
-    public CardCollectionView chooseCardsToDiscardFrom(Player p, SpellAbility sa, CardCollection valid, int min, int max) {
+    public List<Card> chooseCardsToDiscardFrom(Player p, SpellAbility sa, List<Card> valid, int min, int max) {
         if (p != player) {
             tempShowCards(valid);
-            final CardCollection choices = game.getCardList(SGuiChoose.many("Choose " + min + " card" + (min != 1 ? "s" : "") + " to discard",
-                    "Discarded", min, min, CardView.getCollection(valid), null));
+            final List<CardView> choices = SGuiChoose.many(getGui(), "Choose " + min + " card" + (min != 1 ? "s" : "") + " to discard",
+                    "Discarded", min, min, getCardViews(valid), null);
             endTempShowCards();
-            return choices;
+            return getCards(choices);
         }
 
         InputSelectCardsFromList inp = new InputSelectCardsFromList(this, min, max, valid);
         inp.setMessage(sa.hasParam("AnyNumber") ? "Discard up to %d card(s)" : "Discard %d card(s)");
         inp.showAndWait();
-        return new CardCollection(inp.getSelected());
+        return Lists.newArrayList(inp.getSelected());
     }
 
     @Override
     public void playMiracle(final SpellAbility miracle, final Card card) {
-        final CardView view = CardView.get(card);
-        if (SGuiDialog.confirm(view, view + " - Drawn. Play for Miracle Cost?")) {
+        final CardView view = getCardView(card);
+        if (SGuiDialog.confirm(getGui(), view, view + " - Drawn. Play for Miracle Cost?")) {
             HumanPlay.playSpellAbility(this, player, miracle);
         }
     }
 
     @Override
-    public CardCollectionView chooseCardsToDelve(final int colorLessAmount, final CardCollection grave) {
-        final int cardsInGrave = Math.min(colorLessAmount, grave.size());
-        if (cardsInGrave == 0) {
-            return CardCollection.EMPTY;
-        }
-        final CardCollection toExile = new CardCollection();
+    public List<Card> chooseCardsToDelve(int colorLessAmount, List<Card> grave) {
+        List<Card> toExile = new ArrayList<Card>();
+        int cardsInGrave = Math.min(colorLessAmount, grave.size());
         final Integer[] cntChoice = new Integer[cardsInGrave + 1];
         for (int i = 0; i <= cardsInGrave; i++) {
             cntChoice[i] = Integer.valueOf(i);
         }
 
-        final Integer chosenAmount = SGuiChoose.one("Delve how many cards?", cntChoice);
+        final Integer chosenAmount = SGuiChoose.one(getGui(), "Exile how many cards?", cntChoice);
+        System.out.println("Delve for " + chosenAmount);
+
         for (int i = 0; i < chosenAmount; i++) {
-            final CardView nowChosen = SGuiChoose.oneOrNone("Exile which card?", CardView.getCollection(grave));
+            final CardView nowChosen = SGuiChoose.oneOrNone(getGui(), "Exile which card?", getCardViews(grave));
 
             if (nowChosen == null) {
                 // User canceled,abort delving.
@@ -693,9 +698,8 @@ public class PlayerControllerHuman extends PlayerController {
                 break;
             }
 
-            Card card = game.getCard(nowChosen);
-            grave.remove(card);
-            toExile.add(card);
+            grave.remove(gameView.getCard(nowChosen));
+            toExile.add(gameView.getCard(nowChosen));
         }
         return toExile;
     }
@@ -725,14 +729,14 @@ public class PlayerControllerHuman extends PlayerController {
      * @see forge.game.player.PlayerController#chooseCardsToDiscardUnlessType(int, java.lang.String, forge.card.spellability.SpellAbility)
      */
     @Override
-    public CardCollectionView chooseCardsToDiscardUnlessType(int num, CardCollectionView hand, final String uType, SpellAbility sa) {
+    public List<Card> chooseCardsToDiscardUnlessType(int num, List<Card> hand, final String uType, SpellAbility sa) {
         final InputSelectEntitiesFromList<Card> target = new InputSelectEntitiesFromList<Card>(this, num, num, hand) {
             private static final long serialVersionUID = -5774108410928795591L;
 
             @Override
             protected boolean hasAllTargets() {
                 for (Card c : selected) {
-                    if (c.getType().hasStringType(uType)) {
+                    if (c.isType(uType)) {
                         return true;
                     }
                 }
@@ -741,7 +745,7 @@ public class PlayerControllerHuman extends PlayerController {
         };
         target.setMessage("Select %d card(s) to discard, unless you discard a " + uType + ".");
         target.showAndWait();
-        return new CardCollection(target.getSelected());
+        return Lists.newArrayList(target.getSelected());
     }
 
     /* (non-Javadoc)
@@ -754,7 +758,7 @@ public class PlayerControllerHuman extends PlayerController {
             Mana m = manaChoices.get(i);
             options.add(String.format("%d. %s mana from %s", 1+i, MagicColor.toLongString(m.getColor()), m.getSourceCard()));
         }
-        String chosen = SGuiChoose.one("Pay Mana from Mana Pool", options);
+        String chosen = SGuiChoose.one(getGui(), "Pay Mana from Mana Pool", options);
         String idx = TextUtil.split(chosen, '.')[0];
         return manaChoices.get(Integer.parseInt(idx)-1);
     }
@@ -769,14 +773,14 @@ public class PlayerControllerHuman extends PlayerController {
             Iterables.removeAll(types, invalidTypes);
         }
         if (isOptional) {
-            return SGuiChoose.oneOrNone("Choose a " + kindOfType.toLowerCase() + " type", types);
+            return SGuiChoose.oneOrNone(getGui(), "Choose a " + kindOfType.toLowerCase() + " type", types);
         }
-        return SGuiChoose.one("Choose a " + kindOfType.toLowerCase() + " type", types);
+        return SGuiChoose.one(getGui(), "Choose a " + kindOfType.toLowerCase() + " type", types);
     }
 
     @Override
     public Object vote(SpellAbility sa, String prompt, List<Object> options, ArrayListMultimap<Object, Player> votes) {
-        return SGuiChoose.one(prompt, options);
+        return SGuiChoose.one(getGui(), prompt, options);
     }
 
     /* (non-Javadoc)
@@ -784,11 +788,11 @@ public class PlayerControllerHuman extends PlayerController {
      */
     @Override
     public boolean confirmReplacementEffect(ReplacementEffect replacementEffect, SpellAbility effectSA, String question) {
-        return SGuiDialog.confirm(CardView.get(replacementEffect.getHostCard()), question);
+        return SGuiDialog.confirm(getGui(), getCardView(replacementEffect.getHostCard()), question);
     }
 
     @Override
-    public CardCollectionView getCardsToMulligan(boolean isCommander, Player firstPlayer) {
+    public List<Card> getCardsToMulligan(boolean isCommander, Player firstPlayer) {
         final InputConfirmMulligan inp = new InputConfirmMulligan(this, player, firstPlayer, isCommander);
         inp.showAndWait();
         return inp.isKeepHand() ? null : isCommander ? inp.getSelectedCards() : player.getCardsIn(ZoneType.Hand);
@@ -797,11 +801,22 @@ public class PlayerControllerHuman extends PlayerController {
     @Override
     public void declareAttackers(Player attackingPlayer, Combat combat) {
         if (mayAutoPass()) {
-            if (CombatUtil.validateAttackers(combat)) {
-                return; //don't prompt to declare attackers if user chose to end the turn and not attacking is legal
-            } else {
-                autoPassCancel(); //otherwise: cancel auto pass because of this unexpected attack
+            List<Pair<Card, GameEntity>> mandatoryAttackers = CombatUtil.getMandatoryAttackers(attackingPlayer, combat, combat.getDefenders());
+            if (!mandatoryAttackers.isEmpty()) {
+                //even if auto-passing attack phase, if there are any mandatory attackers,
+                //ensure they're declared and then delay slightly so user can see as much
+                for (Pair<Card, GameEntity> attacker : mandatoryAttackers) {
+                    combat.addAttacker(attacker.getLeft(), attacker.getRight());
+                    MatchUtil.fireEvent(new UiEventAttackerDeclared(getCardView(attacker.getLeft()), getGameEntityView(attacker.getRight())));
+                }
+                try {
+                    Thread.sleep(FControlGamePlayback.combatDelay);
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+            return; //don't prompt to declare attackers if user chose to end the turn
         }
 
         // This input should not modify combat object itself, but should return user choice
@@ -822,9 +837,10 @@ public class PlayerControllerHuman extends PlayerController {
             //allow user to cancel auto-pass
             InputBase.cancelAwaitNextInput(); //don't overwrite prompt with awaiting opponent
             PhaseType phase = getAutoPassUntilPhase();
-            MatchUtil.getController().showPromptMessage(player.getView(), "Yielding until " + (phase == PhaseType.CLEANUP ? "end of turn" : phase.nameForUi.toString()) +
+            PlayerView playerView = gameView.getLocalPlayerView();
+            MatchUtil.getController().showPromptMessage(playerView, "Yielding until " + (phase == PhaseType.CLEANUP ? "end of turn" : phase.nameForUi.toString()) +
                     ".\nYou may cancel this yield to take an action.");
-            ButtonUtil.update(player.getView(), false, true, false);
+            ButtonUtil.update(playerView, false, true, false);
         }
     }
 
@@ -840,14 +856,14 @@ public class PlayerControllerHuman extends PlayerController {
         super.autoPassCancel();
 
         //prevent prompt getting stuck on yielding message while actually waiting for next input opportunity
-        PlayerView playerView = getLocalPlayerView();
+        PlayerView playerView = gameView.getLocalPlayerView();
         MatchUtil.getController().showPromptMessage(playerView, "");
         ButtonUtil.update(playerView, false, false, false);
-        InputBase.awaitNextInput(this);
+        InputBase.awaitNextInput(gameView);
     }
 
     @Override
-    public List<SpellAbility> chooseSpellAbilityToPlay() {
+    public SpellAbility chooseSpellAbilityToPlay() {
         MagicStack stack = game.getStack();
 
         if (mayAutoPass()) {
@@ -905,7 +921,7 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     @Override
-    public CardCollection chooseCardsToDiscardToMaximumHandSize(int nDiscard) {
+    public List<Card> chooseCardsToDiscardToMaximumHandSize(int nDiscard) {
         final int max = player.getMaxHandSize();
 
         InputSelectCardsFromList inp = new InputSelectCardsFromList(this, nDiscard, nDiscard, player.getZone(ZoneType.Hand).getCards());
@@ -914,19 +930,25 @@ public class PlayerControllerHuman extends PlayerController {
         inp.setMessage(message);
         inp.setCancelAllowed(false);
         inp.showAndWait();
-        return new CardCollection(inp.getSelected());
+        return Lists.newArrayList(inp.getSelected());
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseCardsToRevealFromHand(int, int, java.util.List)
+     */
     @Override
-    public CardCollectionView chooseCardsToRevealFromHand(int min, int max, CardCollectionView valid) {
+    public List<Card> chooseCardsToRevealFromHand(int min, int max, List<Card> valid) {
         max = Math.min(max, valid.size());
         min = Math.min(min, max);
         InputSelectCardsFromList inp = new InputSelectCardsFromList(this, min, max, valid);
         inp.setMessage("Choose Which Cards to Reveal");
         inp.showAndWait();
-        return new CardCollection(inp.getSelected());
+        return Lists.newArrayList(inp.getSelected());
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#payManaOptional(forge.Card, forge.card.cost.Cost)
+     */
     @Override
     public boolean payManaOptional(Card c, Cost cost, SpellAbility sa, String prompt, ManaPaymentPurpose purpose) {
         if (sa == null && cost.isOnlyManaCost() && cost.getTotalMana().isZero() 
@@ -936,9 +958,12 @@ public class PlayerControllerHuman extends PlayerController {
         return HumanPlay.payCostDuringAbilityResolve(this, player, c, cost, sa, prompt);
     }
 
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseSaToActivateFromOpeningHand(java.util.List)
+     */
     @Override
     public List<SpellAbility> chooseSaToActivateFromOpeningHand(List<SpellAbility> usableFromOpeningHand) {
-        CardCollection srcCards = new CardCollection();
+        List<Card> srcCards = new ArrayList<Card>();
         for (SpellAbility sa : usableFromOpeningHand) {
             srcCards.add(sa.getHostCard());
         }
@@ -946,9 +971,9 @@ public class PlayerControllerHuman extends PlayerController {
         if (srcCards.isEmpty()) {
             return result;
         }
-        final List<CardView> chosen = SGuiChoose.many("Choose cards to activate from opening hand and their order", "Activate first", -1, CardView.getCollection(srcCards), null);
+        final List<CardView> chosen = SGuiChoose.many(getGui(), "Choose cards to activate from opening hand and their order", "Activate first", -1, getCardViews(srcCards), null);
         for (final CardView view : chosen) {
-            final Card c = game.getCard(view);
+            final Card c = getCard(view);
             for (SpellAbility sa : usableFromOpeningHand) {
                 if (sa.getHostCard() == c) {
                     result.add(sa);
@@ -959,6 +984,11 @@ public class PlayerControllerHuman extends PlayerController {
         return result;
     }
 
+    // end of not related candidates for move.
+
+    /* (non-Javadoc)
+     * @see forge.game.player.PlayerController#chooseBinary(java.lang.String, boolean)
+     */
     @Override
     public boolean chooseBinary(SpellAbility sa, String question, BinaryChoiceType kindOfChoice, Boolean defaultVal) {
         String[] labels = new String[]{"Option1", "Option2"};
@@ -971,7 +1001,7 @@ public class PlayerControllerHuman extends PlayerController {
             case PlayOrDraw:    labels = new String[]{"Play", "Draw"}; break;
             default:            labels = kindOfChoice.toString().split("Or");
         }
-        return SGuiDialog.confirm(CardView.get(sa.getHostCard()), question, defaultVal == null || defaultVal.booleanValue(), labels);
+        return SGuiDialog.confirm(getGui(), getCardView(sa.getHostCard()), question, defaultVal == null || defaultVal.booleanValue(), labels);
     }
 
     @Override
@@ -981,13 +1011,13 @@ public class PlayerControllerHuman extends PlayerController {
         for (int i = 0; i < results.length; i++) {
             strResults[i] = labelsSrc[results[i] ? 0 : 1];
         }
-        return SGuiChoose.one(sa.getHostCard().getName() + " - Choose a result", strResults).equals(labelsSrc[0]);
+        return SGuiChoose.one(getGui(), sa.getHostCard().getName() + " - Choose a result", strResults) == labelsSrc[0];
     }
 
     @Override
     public Card chooseProtectionShield(GameEntity entityBeingDamaged, List<String> options, Map<String, Card> choiceMap) {
         String title = entityBeingDamaged + " - select which prevention shield to use";
-        return choiceMap.get(SGuiChoose.one(title, options));
+        return choiceMap.get(SGuiChoose.one(getGui(), title, options));
     }
 
     @Override
@@ -998,12 +1028,12 @@ public class PlayerControllerHuman extends PlayerController {
         }
 
         String counterChoiceTitle = "Choose a counter type on " + cardWithCounter;
-        final CounterType chosen = SGuiChoose.one(counterChoiceTitle, cardWithCounter.getCounters().keySet());
+        final CounterType chosen = SGuiChoose.one(getGui(), counterChoiceTitle, cardWithCounter.getCounters().keySet());
 
         String putOrRemoveTitle = "What to do with that '" + chosen.getName() + "' counter ";
         final String putString = "Put another " + chosen.getName() + " counter on " + cardWithCounter;
         final String removeString = "Remove a " + chosen.getName() + " counter from " + cardWithCounter;
-        final String addOrRemove = SGuiChoose.one(putOrRemoveTitle, new String[]{putString,removeString});
+        final String addOrRemove = SGuiChoose.one(getGui(), putOrRemoveTitle, new String[]{putString,removeString});
 
         return new ImmutablePair<CounterType,String>(chosen,addOrRemove);
     }
@@ -1021,17 +1051,18 @@ public class PlayerControllerHuman extends PlayerController {
             }
         };
 
-        List<Pair<SpellAbilityStackInstance, GameObject>> chosen = SGuiChoose.getChoices(saSpellskite.getHostCard().getName(), 1, 1, allTargets, null, fnToString);
+        List<Pair<SpellAbilityStackInstance, GameObject>> chosen = SGuiChoose.getChoices(getGui(), saSpellskite.getHostCard().getName(), 1, 1, allTargets, null, fnToString);
         return Iterables.getFirst(chosen, null);
     }
 
     @Override
     public void notifyOfValue(SpellAbility sa, GameObject realtedTarget, String value) {
         String message = MessageUtil.formatNotificationMessage(sa, player, realtedTarget, value);
-        if (sa != null && sa.isManaAbility()) {
+        if (sa.isManaAbility()) {
             game.getGameLog().add(GameLogEntryType.LAND, message);
-        } else {
-            SGuiDialog.message(message, sa == null || sa.getHostCard() == null ? "" : CardView.get(sa.getHostCard()).toString());
+        }
+        else {
+            SGuiDialog.message(getGui(), message, sa.getHostCard() == null ? "" : getCardView(sa.getHostCard()).toString());
         }
     }
 
@@ -1042,30 +1073,30 @@ public class PlayerControllerHuman extends PlayerController {
      */
     @Override
     public List<AbilitySub> chooseModeForAbility(SpellAbility sa, int min, int num) {
-        List<AbilitySub> choices = CharmEffect.makePossibleOptions(sa);
+        List<SpellAbilityView> choices = getSpellAbilityViews(CharmEffect.makePossibleOptions(sa));
         String modeTitle = String.format("%s activated %s - Choose a mode", sa.getActivatingPlayer(), sa.getHostCard());
         List<AbilitySub> chosen = Lists.newArrayListWithCapacity(num);
         for (int i = 0; i < num; i++) {
-            AbilitySub a;
+            SpellAbilityView a;
             if (i < min) {
-                a = SGuiChoose.one(modeTitle, choices);
+                a = SGuiChoose.one(getGui(), modeTitle, choices);
             }
             else {
-                a = SGuiChoose.oneOrNone(modeTitle, choices);
+                a = SGuiChoose.oneOrNone(getGui(), modeTitle, choices);
             }
             if (a == null) {
                 break;
             }
 
             choices.remove(a);
-            chosen.add(a);
+            chosen.add((AbilitySub) getSpellAbility(a));
         }
         return chosen;
     }
 
     @Override
     public List<String> chooseColors(String message, SpellAbility sa, int min, int max, List<String> options) {
-        return SGuiChoose.getChoices(message, min, max, options);
+        return SGuiChoose.getChoices(getGui(), message, min, max, options);
     }
 
     @Override
@@ -1099,9 +1130,9 @@ public class PlayerControllerHuman extends PlayerController {
             colorNames[i++] = MagicColor.toLongString(b);
         }
         if (colorNames.length > 2) {
-            return MagicColor.fromName(SGuiChoose.one(message, colorNames));
+            return MagicColor.fromName(SGuiChoose.one(getGui(), message, colorNames));
         }
-        int idxChosen = SGuiDialog.confirm(CardView.get(c), message, colorNames) ? 0 : 1;
+        int idxChosen = SGuiDialog.confirm(getGui(), getCardView(c), message, colorNames) ? 0 : 1;
         return MagicColor.fromName(colorNames[idxChosen]);
     }
 
@@ -1110,7 +1141,7 @@ public class PlayerControllerHuman extends PlayerController {
         Iterable<PaperCard> cardsFromDb = FModel.getMagicDb().getCommonCards().getUniqueCards();
         List<PaperCard> cards = Lists.newArrayList(Iterables.filter(cardsFromDb, cpp));
         Collections.sort(cards);
-        return SGuiChoose.one(message, cards);
+        return SGuiChoose.one(getGui(), message, cards);
     }
 
     @Override
@@ -1118,7 +1149,7 @@ public class PlayerControllerHuman extends PlayerController {
         if (options.size() <= 1) {
             return Iterables.getFirst(options, null);
         }
-        return SGuiChoose.one(prompt, options);
+        return SGuiChoose.one(getGui(), prompt, options);
     }
 
     @Override
@@ -1133,16 +1164,16 @@ public class PlayerControllerHuman extends PlayerController {
         if (possibleReplacers.size() == 1) {
             return possibleReplacers.get(0);
         }
-        return SGuiChoose.one(prompt, possibleReplacers);
+        return SGuiChoose.one(getGui(), prompt, possibleReplacers);
     }
 
     @Override
     public String chooseProtectionType(String string, SpellAbility sa, List<String> choices) {
-        return SGuiChoose.one(string, choices);
+        return SGuiChoose.one(getGui(), string, choices);
     }
 
     @Override
-    public boolean payCostToPreventEffect(Cost cost, SpellAbility sa, boolean alreadyPaid, FCollectionView<Player> allPayers) {
+    public boolean payCostToPreventEffect(Cost cost, SpellAbility sa, boolean alreadyPaid, List<Player> allPayers) {
         // if it's paid by the AI already the human can pay, but it won't change anything
         return HumanPlay.payCostDuringAbilityResolve(this, player, sa.getHostCard(), cost, sa, null);
     }
@@ -1151,7 +1182,8 @@ public class PlayerControllerHuman extends PlayerController {
     public void orderAndPlaySimultaneousSa(List<SpellAbility> activePlayerSAs) {
         List<SpellAbility> orderedSAs = activePlayerSAs;
         if (activePlayerSAs.size() > 1) { // give a dual list form to create instead of needing to do it one at a time
-            orderedSAs = SGuiChoose.order("Select order for Simultaneous Spell Abilities", "Resolve first", activePlayerSAs, null);
+            final List<SpellAbilityView> orderedSAViews = SGuiChoose.order(getGui(), "Select order for Simultaneous Spell Abilities", "Resolve first", gameView.getSpellAbilityViews(activePlayerSAs), null);
+            orderedSAs = getSpellAbilities(orderedSAViews);
         }
         int size = orderedSAs.size();
         for (int i = size - 1; i >= 0; i--) {
@@ -1194,30 +1226,32 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     @Override
-    public boolean chooseCardsPile(SpellAbility sa, CardCollectionView pile1, CardCollectionView pile2, boolean faceUp) {
+    public boolean chooseCardsPile(SpellAbility sa, List<Card> pile1, List<Card> pile2, boolean faceUp) {
         if (!faceUp) {
             final String p1Str = String.format("Pile 1 (%s cards)", pile1.size());
             final String p2Str = String.format("Pile 2 (%s cards)", pile2.size());
             final String[] possibleValues = { p1Str , p2Str };
-            return SGuiDialog.confirm(CardView.get(sa.getHostCard()), "Choose a Pile", possibleValues);
+            return SGuiDialog.confirm(getGui(), getCardView(sa.getHostCard()), "Choose a Pile", possibleValues);
         }
 
         tempShowCards(pile1);
         tempShowCards(pile2);
 
         final List<CardView> cards = Lists.newArrayListWithCapacity(pile1.size() + pile2.size() + 2);
-        final CardView pileView1 = new CardView(Integer.MIN_VALUE, null, "--- Pile 1 ---");
+        final CardView pileView1 = new CardView(Integer.MIN_VALUE);
+        pileView1.getOriginal().setName("--- Pile 1 ---");
         cards.add(pileView1);
-        cards.addAll(CardView.getCollection(pile1));
+        cards.addAll(getCardViews(pile1));
 
-        final CardView pileView2 = new CardView(Integer.MIN_VALUE + 1, null, "--- Pile 2 ---");
+        final CardView pileView2 = new CardView(Integer.MIN_VALUE + 1);
+        pileView2.getOriginal().setName("--- Pile 2 ---");
         cards.add(pileView2);
-        cards.addAll(CardView.getCollection(pile2));
+        cards.addAll(getCardViews(pile2));
 
         // make sure Pile 1 or Pile 2 is clicked on
         boolean result;
         while (true) {
-            final CardView chosen = SGuiChoose.one("Choose a pile", cards);
+            final CardView chosen = SGuiChoose.one(getGui(), "Choose a pile", cards);
             if (chosen.equals(pileView1)) {
                 result = true;
                 break;
@@ -1235,25 +1269,21 @@ public class PlayerControllerHuman extends PlayerController {
     @Override
     public void revealAnte(String message, Multimap<Player, PaperCard> removedAnteCards) {
         for (Player p : removedAnteCards.keySet()) {
-            SGuiChoose.reveal(message + " from " + Lang.getPossessedObject(MessageUtil.mayBeYou(player, p), "deck"), removedAnteCards.get(p));
+            SGuiChoose.reveal(getGui(), message + " from " + Lang.getPossessedObject(MessageUtil.mayBeYou(player, p), "deck"), removedAnteCards.get(p));
         }
     }
 
     @Override
     public CardShields chooseRegenerationShield(Card c) {
-        if (c.getShieldCount() < 2) {
-            return Iterables.getFirst(c.getShields(), null);
+        if (c.getShield().size() < 2) {
+            return Iterables.getFirst(c.getShield(), null);
         }
-        ArrayList<CardShields> shields = new ArrayList<CardShields>();
-        for (CardShields shield : c.getShields()) {
-            shields.add(shield);
-        }
-        return SGuiChoose.one("Choose a regeneration shield:", shields);
+        return SGuiChoose.one(getGui(), "Choose a regeneration shield:", c.getShield());
     }
 
     @Override
     public List<PaperCard> chooseCardsYouWonToAddToDeck(List<PaperCard> losses) {
-        return SGuiChoose.many("Select cards to add to your deck", "Add these to my deck", 0, losses.size(), losses, null);
+        return SGuiChoose.many(getGui(), "Select cards to add to your deck", "Add these to my deck", 0, losses.size(), losses, null);
     }
 
     @Override
@@ -1262,7 +1292,7 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     @Override
-    public Map<Card, ManaCostShard> chooseCardsForConvoke(SpellAbility sa, ManaCost manaCost, CardCollectionView untappedCreats) {
+    public Map<Card, ManaCostShard> chooseCardsForConvoke(SpellAbility sa, ManaCost manaCost, List<Card> untappedCreats) {
         InputSelectCardsForConvoke inp = new InputSelectCardsForConvoke(this, player, manaCost, untappedCreats);
         inp.showAndWait();
         return inp.getConvokeMap();
@@ -1280,7 +1310,7 @@ public class PlayerControllerHuman extends PlayerController {
     }
 
     @Override
-    public Card chooseSingleCardForZoneChange(ZoneType destination, List<ZoneType> origin, SpellAbility sa, CardCollection fetchList, DelayedReveal delayedReveal, String selectPrompt, boolean isOptional, Player decider) {
+    public Card chooseSingleCardForZoneChange(ZoneType destination, List<ZoneType> origin, SpellAbility sa, List<Card> fetchList, DelayedReveal delayedReveal, String selectPrompt, boolean isOptional, Player decider) {
         return chooseSingleEntityForEffect(fetchList, delayedReveal, sa, selectPrompt, isOptional, decider);
     }
 
@@ -1288,97 +1318,362 @@ public class PlayerControllerHuman extends PlayerController {
         return lobbyPlayer == GamePlayerUtil.getGuiPlayer();
     }
 
-    public void updateAchievements() {
-        AchievementCollection.updateAll(this);
+    /*
+     * What follows are the View methods.
+     */
+    private class GameView extends LocalGameView {
+        public GameView(IGuiBase gui0, Game game0) {
+            super(gui0, game0);
+        }
+
+        @Override
+        public GameOutcome.AnteResult getAnteResult() {
+            return game.getOutcome().anteResult.get(player);
+        }
+
+        @Override
+        public void updateAchievements() {
+            AchievementCollection.updateAll(PlayerControllerHuman.this);
+        }
+
+        @Override
+        public boolean canUndoLastAction() {
+            if (!game.stack.canUndo(player)) {
+                return false;
+            }
+            final Player priorityPlayer = game.getPhaseHandler().getPriorityPlayer();
+            if (priorityPlayer == null || priorityPlayer != player) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean tryUndoLastAction() {
+            if (!canUndoLastAction()) {
+                return false;
+            }
+
+            if (game.getStack().undo()) {
+                final Input currentInput = inputQueue.getInput();
+                if (currentInput instanceof InputPassPriority) {
+                    currentInput.showMessageInitial(); //ensure prompt updated if needed
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void selectButtonOk() {
+            getInputProxy().selectButtonOK();
+        }
+
+        @Override
+        public void selectButtonCancel() {
+            getInputProxy().selectButtonCancel();
+        }
+
+        @Override
+        public void confirm() {
+            if (inputQueue.getInput() instanceof InputConfirm) {
+                selectButtonOk();
+            }
+        }
+
+        @Override
+        public boolean passPriority() {
+            return passPriority(false);
+        }
+        @Override
+        public boolean passPriorityUntilEndOfTurn() {
+            return passPriority(true);
+        }
+        private boolean passPriority(final boolean passUntilEndOfTurn) {
+            final Input inp = gameView.getInputProxy().getInput();
+            if (inp instanceof InputPassPriority) {
+                if (passUntilEndOfTurn) {
+                    autoPassUntilEndOfTurn();
+                }
+                inp.selectButtonOK();
+                return true;
+            }
+
+            FThreads.invokeInEdtNowOrLater(getGui(), new Runnable() {
+                @Override
+                public void run() {
+                    SOptionPane.showMessageDialog(getGui(), "Cannot pass priority at this time.");
+                }
+            });
+            return false;
+        }
+
+        @Override
+        public void useMana(final byte mana) {
+            final Input input = inputQueue.getInput();
+            if (input instanceof InputPayMana) {
+                ((InputPayMana) input).useManaFromPool(mana);
+            }
+        }
+
+        @Override
+        public void selectPlayer(final PlayerView player, final ITriggerEvent triggerEvent) {
+            getInputProxy().selectPlayer(player, triggerEvent);
+        }
+
+        @Override
+        public boolean selectCard(final CardView card, final ITriggerEvent triggerEvent) {
+            return getInputProxy().selectCard(card, triggerEvent);
+        }
+
+        @Override
+        public void selectAbility(final SpellAbilityView sa) {
+            getInputProxy().selectAbility(sa);
+        }
+
+        @Override
+        public void alphaStrike() {
+            getInputProxy().alphaStrike();
+        }
+
+        /**
+         * Check whether a card may be shown. If {@code mayLookAtAllCards} is
+         * {@code true}, any card may be shown.
+         * 
+         * @param c a card.
+         * @return whether the card may be shown.
+         * @see GameView#mayShowCardNoRedirect(CardView)
+         */
+        @Override
+        public boolean mayShowCard(final Card c) {
+            if (mayLookAtAllCards) {
+                return true;
+            }
+            return c == null || tempShownCards.contains(c) || c.canBeShownTo(player);
+        }
+
+        @Override
+        public boolean mayShowCardFace(final Card c) {
+            if (mayLookAtAllCards) {
+                return true;
+            }
+            return c == null || !c.isFaceDown() || c.canCardFaceBeShownTo(player);
+        }
+
+        @Override
+        public Iterable<String> getAutoYields() {
+            return PlayerControllerHuman.this.getAutoYields();
+        }
+
+        @Override
+        public boolean shouldAutoYield(final String key) {
+            return PlayerControllerHuman.this.shouldAutoYield(key);
+        }
+
+        @Override
+        public void setShouldAutoYield(String key, boolean autoYield) {
+            PlayerControllerHuman.this.setShouldAutoYield(key, autoYield);
+        }
+
+        @Override
+        public boolean getDisableAutoYields() {
+            return game.getDisableAutoYields();
+        }
+        @Override
+        public void setDisableAutoYields(final boolean b) {
+            game.setDisableAutoYields(b);
+        }
+
+        @Override
+        public boolean shouldAlwaysAcceptTrigger(final Integer trigger) {
+            return PlayerControllerHuman.this.shouldAlwaysAcceptTrigger(trigger);
+        }
+
+        @Override
+        public boolean shouldAlwaysDeclineTrigger(final Integer trigger) {
+            return PlayerControllerHuman.this.shouldAlwaysDeclineTrigger(trigger);
+        }
+
+        public boolean shouldAlwaysAskTrigger(final Integer trigger) {
+            return PlayerControllerHuman.this.shouldAlwaysAskTrigger(trigger);
+        }
+
+        @Override
+        public void setShouldAlwaysAcceptTrigger(final Integer trigger) {
+            PlayerControllerHuman.this.setShouldAlwaysAcceptTrigger(trigger);
+        }
+
+        @Override
+        public void setShouldAlwaysDeclineTrigger(final Integer trigger) {
+            PlayerControllerHuman.this.setShouldAlwaysDeclineTrigger(trigger);
+        }
+
+        @Override
+        public void setShouldAlwaysAskTrigger(final Integer trigger) {
+            PlayerControllerHuman.this.setShouldAlwaysAskTrigger(trigger);
+        }
+
+        @Override
+        public void autoPassCancel() {
+            PlayerControllerHuman.this.autoPassCancel();
+        }
+
+        @Override
+        public boolean canPlayUnlimitedLands() {
+            return PlayerControllerHuman.this.canPlayUnlimitedLands();
+        }
+
+        @Override
+        public boolean canViewAllCards() {
+            return PlayerControllerHuman.this.mayLookAtAllCards;
+        }
+
+        @Override
+        public DevModeCheats cheat() {
+            return PlayerControllerHuman.this.cheat();
+        }
+    }
+
+    /**
+     * @param c
+     * @return
+     * @see forge.view.LocalGameView#getCombat(forge.game.combat.Combat)
+     */
+    public CombatView getCombat() {
+        return gameView.getCombat();
+    }
+
+    /**
+     * @param si
+     * @return
+     * @see forge.view.LocalGameView#getStackItemView(forge.game.spellability.SpellAbilityStackInstance)
+     */
+    public StackItemView getStackItemView(SpellAbilityStackInstance si) {
+        return gameView.getStackItemView(si);
+    }
+
+    /**
+     * @param view
+     * @return
+     * @see forge.view.LocalGameView#getStackItem(forge.view.StackItemView)
+     */
+    public SpellAbilityStackInstance getStackItem(StackItemView view) {
+        return gameView.getStackItem(view);
+    }
+
+    /**
+     * @param e
+     * @return
+     * @see forge.view.LocalGameView#getGameEntityView(forge.game.GameEntity)
+     */
+    public final GameEntityView getGameEntityView(GameEntity e) {
+        return gameView.getGameEntityView(e, false);
+    }
+
+    /**
+     * @param players
+     * @return
+     * @see forge.view.LocalGameView#getPlayerViews(java.lang.Iterable)
+     */
+    public final List<PlayerView> getPlayerViews(Iterable<Player> players) {
+        return gameView.getPlayerViews(players, false);
+    }
+
+    public PlayerView getPlayerView() {
+        return gameView.getPlayerView(getPlayer(), false);
+    }
+    public PlayerView getPlayerView(Player p) {
+        return gameView.getPlayerView(p, false);
+    }
+
+    /**
+     * @param p
+     * @return
+     * @see forge.view.LocalGameView#getPlayer(forge.view.PlayerView)
+     */
+    public Player getPlayer(PlayerView p) {
+        return gameView.getPlayer(p);
+    }
+
+    /**
+     * @param c
+     * @return
+     * @see forge.view.LocalGameView#getCardView(forge.game.card.Card)
+     */
+    public CardView getCardView(Card c) {
+        return gameView.getCardView(c, true);
+    }
+
+    /**
+     * @param cards
+     * @return
+     * @see forge.view.LocalGameView#getCardViews(java.util.List)
+     */
+    public final List<CardView> getCardViews(final Iterable<Card> cards) {
+        return gameView.getCardViews(cards, true);
+    }
+
+    /**
+     * @param c
+     * @return
+     * @see forge.view.LocalGameView#getCard(forge.view.CardView)
+     */
+    public Card getCard(CardView c) {
+        return gameView.getCard(c);
+    }
+
+    /**
+     * @param cards
+     * @return
+     * @see forge.view.LocalGameView#getCards(java.util.List)
+     */
+    public final List<Card> getCards(List<CardView> cards) {
+        return gameView.getCards(cards);
+    }
+
+    /**
+     * @param sa
+     * @return
+     * @see forge.view.LocalGameView#getSpellAbilityView(forge.game.spellability.SpellAbility)
+     */
+    public SpellAbilityView getSpellAbilityView(SpellAbility sa) {
+        return gameView.getSpellAbilityView(sa);
+    }
+
+    /**
+     * @param cards
+     * @return
+     * @see forge.view.LocalGameView#getSpellAbilityViews(java.util.List)
+     */
+    public final List<SpellAbilityView> getSpellAbilityViews(
+            final List<? extends SpellAbility> spabs) {
+        return gameView.getSpellAbilityViews(spabs);
+    }
+
+    /**
+     * @param c
+     * @return
+     * @see forge.view.LocalGameView#getSpellAbility(forge.view.SpellAbilityView)
+     */
+    public SpellAbility getSpellAbility(SpellAbilityView c) {
+        return gameView.getSpellAbility(c);
+    }
+
+    /**
+     * @param cards
+     * @return
+     * @see forge.view.LocalGameView#getSpellAbilities(java.util.List)
+     */
+    public final List<SpellAbility> getSpellAbilities(List<SpellAbilityView> cards) {
+        return gameView.getSpellAbilities(cards);
     }
 
     public boolean canUndoLastAction() {
-        if (!game.stack.canUndo(player)) {
-            return false;
-        }
-        final Player priorityPlayer = game.getPhaseHandler().getPriorityPlayer();
-        if (priorityPlayer == null || priorityPlayer != player) {
-            return false;
-        }
-        return true;
+        return gameView.canUndoLastAction();
     }
 
     public boolean tryUndoLastAction() {
-        if (!canUndoLastAction()) {
-            return false;
-        }
-
-        if (game.getStack().undo()) {
-            final Input currentInput = inputQueue.getInput();
-            if (currentInput instanceof InputPassPriority) {
-                currentInput.showMessageInitial(); //ensure prompt updated if needed
-            }
-            return true;
-        }
-        return false;
-    }
-
-    public void selectButtonOk() {
-        inputProxy.selectButtonOK();
-    }
-
-    public void selectButtonCancel() {
-        inputProxy.selectButtonCancel();
-    }
-
-    public void confirm() {
-        if (inputQueue.getInput() instanceof InputConfirm) {
-            selectButtonOk();
-        }
-    }
-
-    public boolean passPriority() {
-        return passPriority(false);
-    }
-    public boolean passPriorityUntilEndOfTurn() {
-        return passPriority(true);
-    }
-    private boolean passPriority(final boolean passUntilEndOfTurn) {
-        final Input inp = inputProxy.getInput();
-        if (inp instanceof InputPassPriority) {
-            if (passUntilEndOfTurn) {
-                autoPassUntilEndOfTurn();
-            }
-            inp.selectButtonOK();
-            return true;
-        }
-
-        FThreads.invokeInEdtNowOrLater(new Runnable() {
-            @Override
-            public void run() {
-                SOptionPane.showMessageDialog("Cannot pass priority at this time.");
-            }
-        });
-        return false;
-    }
-
-    public boolean useMana(final byte mana) {
-        final Input input = inputQueue.getInput();
-        if (input instanceof InputPayMana) {
-            return ((InputPayMana) input).useManaFromPool(mana);
-        }
-        return false;
-    }
-
-    public void selectPlayer(final PlayerView playerView, final ITriggerEvent triggerEvent) {
-        inputProxy.selectPlayer(playerView, triggerEvent);
-    }
-
-    public boolean selectCard(final CardView cardView, final List<CardView> otherCardViewsToSelect, final ITriggerEvent triggerEvent) {
-        return inputProxy.selectCard(cardView, otherCardViewsToSelect, triggerEvent);
-    }
-
-    public void selectAbility(final SpellAbility sa) {
-        inputProxy.selectAbility(sa);
-    }
-
-    public void alphaStrike() {
-        inputProxy.alphaStrike();
+        return gameView.tryUndoLastAction();
     }
 
     @Override
@@ -1414,18 +1709,18 @@ public class PlayerControllerHuman extends PlayerController {
         public void setViewAllCards(final boolean canViewAll) {
             mayLookAtAllCards = canViewAll;
             for (final Player p : game.getPlayers()) {
-                MatchUtil.updateCards(CardView.getCollection(p.getAllCards()));
+                MatchUtil.updateCards(gameView.getCardViews(p.getAllCards(), true));
             }
         }
 
         public void generateMana() {
             Player pPriority = game.getPhaseHandler().getPriorityPlayer();
             if (pPriority == null) {
-                SGuiDialog.message("No player has priority at the moment, so mana cannot be added to their pool.");
+                SGuiDialog.message(getGui(), "No player has priority at the moment, so mana cannot be added to their pool.");
                 return;
             }
 
-            final Card dummy = new Card(-777777, game);
+            final Card dummy = new Card(-777777);
             dummy.setOwner(pPriority);
             Map<String, String> produced = new HashMap<String, String>();
             produced.put("Produced", "W W W W W W W U U U U U U U B B B B B B B G G G G G G G R R R R R R R 7");
@@ -1435,79 +1730,189 @@ public class PlayerControllerHuman extends PlayerController {
             });
         }
 
-        private GameState createGameStateObject() {
-            return new GameState() {
-                @Override
-                public IPaperCard getPaperCard(String cardName) {
-                    return FModel.getMagicDb().getCommonCards().getCard(cardName);
-                }
-            };
-        }
-
-        public void dumpGameState() {
-            final GameState state = createGameStateObject();
-            try {
-                state.initFromGame(game);
-                File f = GuiBase.getInterface().getSaveFile(new File(ForgeConstants.USER_GAMES_DIR, "state.txt"));
-                if (f != null && (!f.exists() || SOptionPane.showConfirmDialog("Overwrite existing file?"))) {
-                    final BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-                    bw.write(state.toString());
-                    bw.close();
-                }
-            } catch (Exception e) {
-                String err = e.getClass().getName();
-                if (e.getMessage() != null) {
-                    err += ": " + e.getMessage();
-                }
-                SOptionPane.showErrorDialog(err);
-                e.printStackTrace();
-            }
-        }
-
         public void setupGameState() {
+            int humanLife = -1;
+            int computerLife = -1;
+
+            final Map<ZoneType, String> humanCardTexts = new EnumMap<ZoneType, String>(ZoneType.class);
+            final Map<ZoneType, String> aiCardTexts = new EnumMap<ZoneType, String>(ZoneType.class);
+
+            String tChangePlayer = "NONE";
+            String tChangePhase = "NONE";
+
             File gamesDir = new File(ForgeConstants.USER_GAMES_DIR);
             if (!gamesDir.exists()) { // if the directory does not exist, try to create it
                 gamesDir.mkdir();
             }
             
-            String filename = GuiBase.getInterface().showFileDialog("Select Game State File", ForgeConstants.USER_GAMES_DIR);
+            String filename = getGui().showFileDialog("Select Game State File", ForgeConstants.USER_GAMES_DIR);
             if (filename == null) {
                 return;
             }
 
-            final GameState state = createGameStateObject();
             try {
                 final FileInputStream fstream = new FileInputStream(filename);
-                state.parse(fstream);
-                fstream.close();
+                final DataInputStream in = new DataInputStream(fstream);
+                final BufferedReader br = new BufferedReader(new InputStreamReader(in));
+
+                String temp = "";
+
+                while ((temp = br.readLine()) != null) {
+
+                    final String[] tempData = temp.split("=");
+                    if (tempData.length < 2 || temp.charAt(0) == '#') {
+                        continue;
+                    }
+
+                    final String categoryName = tempData[0].toLowerCase();
+                    final String categoryValue = tempData[1];
+
+                    if (categoryName.equals("humanlife"))                   humanLife = Integer.parseInt(categoryValue);
+                    else if (categoryName.equals("ailife"))                 computerLife = Integer.parseInt(categoryValue);
+
+                    else if (categoryName.equals("activeplayer"))           tChangePlayer = categoryValue.trim().toLowerCase();
+                    else if (categoryName.equals("activephase"))            tChangePhase = categoryValue;
+
+                    else if (categoryName.equals("humancardsinplay"))       humanCardTexts.put(ZoneType.Battlefield, categoryValue);
+                    else if (categoryName.equals("aicardsinplay"))          aiCardTexts.put(ZoneType.Battlefield, categoryValue);
+                    else if (categoryName.equals("humancardsinhand"))       humanCardTexts.put(ZoneType.Hand, categoryValue);
+                    else if (categoryName.equals("aicardsinhand"))          aiCardTexts.put(ZoneType.Hand, categoryValue);
+                    else if (categoryName.equals("humancardsingraveyard"))  humanCardTexts.put(ZoneType.Graveyard, categoryValue);
+                    else if (categoryName.equals("aicardsingraveyard"))     aiCardTexts.put(ZoneType.Graveyard, categoryValue);
+                    else if (categoryName.equals("humancardsinlibrary"))    humanCardTexts.put(ZoneType.Library, categoryValue);
+                    else if (categoryName.equals("aicardsinlibrary"))       aiCardTexts.put(ZoneType.Library, categoryValue);
+                    else if (categoryName.equals("humancardsinexile"))      humanCardTexts.put(ZoneType.Exile, categoryValue);
+                    else if (categoryName.equals("aicardsinexile"))         aiCardTexts.put(ZoneType.Exile, categoryValue);
+                }
+
+                in.close();
             }
             catch (final FileNotFoundException fnfe) {
-                SOptionPane.showErrorDialog("File not found: " + filename);
+                SOptionPane.showErrorDialog(getGui(), "File not found: " + filename);
             }
             catch (final Exception e) {
-                SOptionPane.showErrorDialog("Error loading battle setup file!");
+                SOptionPane.showErrorDialog(getGui(), "Error loading battle setup file!");
                 return;
             }
+
+            setupGameState(humanLife, computerLife, humanCardTexts, aiCardTexts, tChangePlayer, tChangePhase);
+        }
+
+        private void setupGameState(final int humanLife, final int computerLife, final Map<ZoneType, String> humanCardTexts,
+                final Map<ZoneType, String> aiCardTexts, final String tChangePlayer, final String tChangePhase) {
 
             Player pPriority = game.getPhaseHandler().getPriorityPlayer();
             if (pPriority == null) {
-                SGuiDialog.message("No player has priority at the moment, so game state cannot be setup.");
+                SGuiDialog.message(getGui(), "No player has priority at the moment, so game state cannot be setup.");
                 return;
             }
-            state.applyToGame(game);
+            game.getAction().invoke(new Runnable() {
+                @Override
+                public void run() {
+                    final Player human = game.getPlayers().get(0);
+                    final Player ai = game.getPlayers().get(1);
+
+                    Player newPlayerTurn = tChangePlayer.equals("human") ? newPlayerTurn = human : tChangePlayer.equals("ai") ? newPlayerTurn = ai : null;
+                    PhaseType newPhase = tChangePhase.trim().equalsIgnoreCase("none") ? null : PhaseType.smartValueOf(tChangePhase);
+
+                    game.getPhaseHandler().devModeSet(newPhase, newPlayerTurn);
+
+                    game.getTriggerHandler().suppressMode(TriggerType.ChangesZone);
+
+                    setupPlayerState(humanLife, humanCardTexts, human);
+                    setupPlayerState(computerLife, aiCardTexts, ai);
+
+                    game.getTriggerHandler().clearSuppression(TriggerType.ChangesZone);
+
+                    game.getAction().checkStaticAbilities(true);
+                }
+            });
         }
 
+        private void setupPlayerState(int life, Map<ZoneType, String> cardTexts, final Player p) {
+            Map<ZoneType, List<Card>> humanCards = new EnumMap<ZoneType, List<Card>>(ZoneType.class);
+            for(Entry<ZoneType, String> kv : cardTexts.entrySet()) {
+                humanCards.put(kv.getKey(), processCardsForZone(kv.getValue().split(";"), p));
+            }
+
+            if (life > 0) p.setLife(life, null);
+            for (Entry<ZoneType, List<Card>> kv : humanCards.entrySet()) {
+                if (kv.getKey() == ZoneType.Battlefield) {
+                    for (final Card c : kv.getValue()) {
+                        p.getZone(ZoneType.Hand).add(c);
+                        p.getGame().getAction().moveToPlay(c);
+                        c.setSickness(false);
+                    }
+                } else {
+                    p.getZone(kv.getKey()).setCards(kv.getValue());
+                }
+            }
+        }
+
+        /**
+         * <p>
+         * processCardsForZone.
+         * </p>
+         * 
+         * @param data
+         *            an array of {@link java.lang.String} objects.
+         * @param player
+         *            a {@link forge.game.player.Player} object.
+         * @return a {@link forge.CardList} object.
+         */
+        private List<Card> processCardsForZone(final String[] data, final Player player) {
+            final List<Card> cl = new ArrayList<Card>();
+            for (final String element : data) {
+                final String[] cardinfo = element.trim().split("\\|");
+
+                final Card c = Card.fromPaperCard(FModel.getMagicDb().getCommonCards().getCard(cardinfo[0]), player);
+
+                boolean hasSetCurSet = false;
+                for (final String info : cardinfo) {
+                    if (info.startsWith("Set:")) {
+                        c.setCurSetCode(info.substring(info.indexOf(':') + 1));
+                        hasSetCurSet = true;
+                    } else if (info.equalsIgnoreCase("Tapped:True")) {
+                        c.tap();
+                    } else if (info.startsWith("Counters:")) {
+                        final String[] counterStrings = info.substring(info.indexOf(':') + 1).split(",");
+                        for (final String counter : counterStrings) {
+                            c.addCounter(CounterType.valueOf(counter), 1, true);
+                        }
+                    } else if (info.equalsIgnoreCase("SummonSick:True")) {
+                        c.setSickness(true);
+                    } else if (info.equalsIgnoreCase("FaceDown:True")) {
+                        c.setState(CardCharacteristicName.FaceDown);
+                    }
+                }
+
+                if (!hasSetCurSet) {
+                    c.setCurSetCode(c.getMostRecentSet());
+                }
+
+                cl.add(c);
+            }
+            return cl;
+        }
+
+        /**
+         * <p>
+         * Tutor.
+         * </p>
+         * 
+         * @since 1.0.15
+         */
         public void tutorForCard() {
             Player pPriority = game.getPhaseHandler().getPriorityPlayer();
             if (pPriority == null) {
-                SGuiDialog.message("No player has priority at the moment, so their deck can't be tutored from.");
+                SGuiDialog.message(getGui(), "No player has priority at the moment, so their deck can't be tutored from.");
                 return;
             }
 
-            final CardCollection lib = (CardCollection)pPriority.getCardsIn(ZoneType.Library);
+            final List<Card> lib = pPriority.getCardsIn(ZoneType.Library);
             final List<ZoneType> origin = new ArrayList<ZoneType>();
             origin.add(ZoneType.Library);
-            SpellAbility sa = new SpellAbility.EmptySa(new Card(-1, game));
+            SpellAbility sa = new SpellAbility.EmptySa(new Card(-1));
             final Card card = chooseSingleCardForZoneChange(ZoneType.Hand, origin, sa, lib, null, "Choose a card", true, pPriority);
             if (card == null) { return; }
 
@@ -1519,15 +1924,23 @@ public class PlayerControllerHuman extends PlayerController {
             });
         }
 
+        /**
+         * <p>
+         * AddCounter.
+         * </p>
+         * 
+         * @since 1.0.15
+         */
         public void addCountersToPermanent() {
-            final CardCollectionView cards = game.getCardsIn(ZoneType.Battlefield);
-            final Card card = game.getCard(SGuiChoose.oneOrNone("Add counters to which card?", CardView.getCollection(cards)));
+            final List<Card> cards = game.getCardsIn(ZoneType.Battlefield);
+            final CardView cardView = SGuiChoose.oneOrNone(getGui(), "Add counters to which card?", getCardViews(cards));
+            final Card card = getCard(cardView);
             if (card == null) { return; }
 
-            final CounterType counter = SGuiChoose.oneOrNone("Which type of counter?", CounterType.values());
+            final CounterType counter = SGuiChoose.oneOrNone(getGui(), "Which type of counter?", CounterType.values());
             if (counter == null) { return; }
 
-            final Integer count = SGuiChoose.getInteger("How many counters?", 1, Integer.MAX_VALUE, 10);
+            final Integer count = SGuiChoose.getInteger(getGui(), "How many counters?", 1, Integer.MAX_VALUE, 10);
             if (count == null) { return; }
             
             card.addCounter(counter, count, false);
@@ -1537,7 +1950,7 @@ public class PlayerControllerHuman extends PlayerController {
             game.getAction().invoke(new Runnable() {
                 @Override
                 public void run() {
-                    final CardCollectionView untapped = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), Predicates.not(CardPredicates.Presets.TAPPED));
+                    final List<Card> untapped = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), Predicates.not(CardPredicates.Presets.TAPPED));
                     InputSelectCardsFromList inp = new InputSelectCardsFromList(PlayerControllerHuman.this, 0, Integer.MAX_VALUE, untapped);
                     inp.setCancelAllowed(true);
                     inp.setMessage("Choose permanents to tap");
@@ -1555,40 +1968,40 @@ public class PlayerControllerHuman extends PlayerController {
             game.getAction().invoke(new Runnable() {
                 @Override
                 public void run() {
-                    final CardCollectionView tapped = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.TAPPED);
+                    final List<Card> tapped = CardLists.filter(game.getCardsIn(ZoneType.Battlefield), CardPredicates.Presets.TAPPED);
                     InputSelectCardsFromList inp = new InputSelectCardsFromList(PlayerControllerHuman.this, 0, Integer.MAX_VALUE, tapped);
                     inp.setCancelAllowed(true);
                     inp.setMessage("Choose permanents to untap");
                     inp.showAndWait();
-                    if (!inp.hasCancelled()) {
-                        for (Card c : inp.getSelected()) {
+                    if( !inp.hasCancelled() )
+                        for(Card c : inp.getSelected())
                             c.untap();
-                        }
-                    }
                 }
             });
         }
 
         public void setPlayerLife() {
-            final Player player = game.getPlayer(SGuiChoose.oneOrNone("Set life for which player?", PlayerView.getCollection(game.getPlayers())));
+            final List<Player> players = game.getPlayers();
+            final PlayerView playerView = SGuiChoose.oneOrNone(getGui(), "Set life for which player?", getPlayerViews(players));
+            final Player player = getPlayer(playerView);
             if (player == null) { return; }
 
-            final Integer life = SGuiChoose.getInteger("Set life to what?", 0);
+            final Integer life = SGuiChoose.getInteger(getGui(), "Set life to what?", 0);
             if (life == null) { return; }
 
             player.setLife(life, null);
         }
 
         public void winGame() {
-            Input input = inputQueue.getInput();
+            Input input = gameView.getInputQueue().getInput();
             if (!(input instanceof InputPassPriority)) {
-                SOptionPane.showMessageDialog("You must have priority to use this feature.", "Win Game", SOptionPane.INFORMATION_ICON);
+                SOptionPane.showMessageDialog(getGui(), "You must have priority to use this feature.", "Win Game", SOptionPane.INFORMATION_ICON);
                 return;
             }
 
             //set life of all other players to 0
             final LobbyPlayer guiPlayer = getLobbyPlayer();
-            final FCollectionView<Player> players = game.getPlayers();
+            final List<Player> players = game.getPlayers();
             for (Player player : players) {
                 if (player.getLobbyPlayer() != guiPlayer) {
                     player.setLife(0, null);
@@ -1600,8 +2013,10 @@ public class PlayerControllerHuman extends PlayerController {
         }
 
         public void addCardToHand() {
-            final Player p = game.getPlayer(SGuiChoose.oneOrNone("Put card in hand for which player?", PlayerView.getCollection(game.getPlayers())));
-            if (p == null) {
+            final List<Player> players = game.getPlayers();
+            final PlayerView pView = SGuiChoose.oneOrNone(getGui(), "Put card in hand for which player?", getPlayerViews(players));
+            final Player p = getPlayer(pView);
+            if (null == p) {
                 return;
             }
 
@@ -1609,7 +2024,7 @@ public class PlayerControllerHuman extends PlayerController {
             Collections.sort(cards);
 
             // use standard forge's list selection dialog
-            final IPaperCard c = SGuiChoose.oneOrNone("Name the card", cards);
+            final IPaperCard c = SGuiChoose.oneOrNone(getGui(), "Name the card", cards);
             if (c == null) {
                 return;
             }
@@ -1620,8 +2035,10 @@ public class PlayerControllerHuman extends PlayerController {
         }
 
         public void addCardToBattlefield() {
-            final Player p = game.getPlayer(SGuiChoose.oneOrNone("Put card in play for which player?", PlayerView.getCollection(game.getPlayers())));
-            if (p == null) {
+            final List<Player> players = game.getPlayers();
+            final PlayerView pView = SGuiChoose.oneOrNone(getGui(), "Put card in play for which player?", getPlayerViews(players));
+            final Player p = getPlayer(pView);
+            if (null == p) {
                 return;
             }
 
@@ -1629,7 +2046,7 @@ public class PlayerControllerHuman extends PlayerController {
             Collections.sort(cards);
 
             // use standard forge's list selection dialog
-            final IPaperCard c = SGuiChoose.oneOrNone("Name the card", cards);
+            final IPaperCard c = SGuiChoose.oneOrNone(getGui(), "Name the card", cards);
             if (c == null) {
                 return;
             }
@@ -1639,12 +2056,9 @@ public class PlayerControllerHuman extends PlayerController {
                     final Card forgeCard = Card.fromPaperCard(c, p);
 
                     if (c.getRules().getType().isLand()) {
-                        game.getAction().moveToHand(forgeCard); //this is needed to ensure land abilities fire
                         game.getAction().moveToPlay(forgeCard);
-                        game.getTriggerHandler().runWaitingTriggers(); //ensure triggered abilities fire
-                    }
-                    else {
-                        final FCollectionView<SpellAbility> choices = forgeCard.getBasicSpells();
+                    } else {
+                        final List<SpellAbility> choices = forgeCard.getBasicSpells();
                         if (choices.isEmpty()) {
                             return; // when would it happen?
                         }
@@ -1652,10 +2066,11 @@ public class PlayerControllerHuman extends PlayerController {
                         final SpellAbility sa;
                         if (choices.size() == 1) {
                             sa = choices.iterator().next();
+                        } else {
+                            final SpellAbilityView saView = SGuiChoose.oneOrNone(getGui(), "Choose", getSpellAbilityViews(choices));
+                            sa = getSpellAbility(saView);
                         }
-                        else {
-                            sa = SGuiChoose.oneOrNone("Choose", (FCollection<SpellAbility>)choices);
-                        }
+
                         if (sa == null) {
                             return; // happens if cancelled
                         }
@@ -1671,10 +2086,12 @@ public class PlayerControllerHuman extends PlayerController {
         }
 
         public void riggedPlanarRoll() {
-            final Player player = game.getPlayer(SGuiChoose.oneOrNone("Which player should roll?", PlayerView.getCollection(game.getPlayers())));
+            final List<Player> players = game.getPlayers();
+            final PlayerView playerView = SGuiChoose.oneOrNone(getGui(), "Which player should roll?", getPlayerViews(players));
+            final Player player = getPlayer(playerView);
             if (player == null) { return; }
 
-            final PlanarDice res = SGuiChoose.oneOrNone("Choose result", PlanarDice.values());
+            final PlanarDice res = SGuiChoose.oneOrNone(getGui(), "Choose result", PlanarDice.values());
             if (res == null) { return; }
 
             System.out.println("Rigging planar dice roll: " + res.toString());
@@ -1700,7 +2117,7 @@ public class PlayerControllerHuman extends PlayerController {
             Collections.sort(allPlanars);
 
             // use standard forge's list selection dialog
-            final IPaperCard c = SGuiChoose.oneOrNone("Name the card", allPlanars);
+            final IPaperCard c = SGuiChoose.oneOrNone(getGui(), "Name the card", allPlanars);
             if (c == null) { return; }
             final Card forgeCard = Card.fromPaperCard(c, p);
 

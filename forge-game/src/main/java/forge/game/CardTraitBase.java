@@ -3,7 +3,6 @@ package forge.game;
 import forge.card.MagicColor;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
@@ -165,10 +164,6 @@ public abstract class CardTraitBase extends GameObject {
         return (this.suppressed || this.temporarilySuppressed);
     }
 
-    protected final boolean isNonTempSuppressed() {
-        return this.suppressed;
-    }
-
     protected boolean meetsCommonRequirements(Map<String, String> params) {
         final Player hostController = this.getHostCard().getController();
         final Game game = hostController.getGame();
@@ -228,7 +223,7 @@ public abstract class CardTraitBase extends GameObject {
             if (params.containsKey("PresentPlayer")) {
                 presentPlayer = params.get("PresentPlayer");
             }
-            CardCollection list = new CardCollection();
+            List<Card> list = new ArrayList<Card>();
             if (presentPlayer.equals("You") || presentPlayer.equals("Any")) {
                 list.addAll(this.getHostCard().getController().getCardsIn(presentZone));
             }
@@ -269,7 +264,7 @@ public abstract class CardTraitBase extends GameObject {
             if (params.containsKey("PresentPlayer2")) {
                 presentPlayer = params.get("PresentPlayer2");
             }
-            CardCollection list = new CardCollection();
+            List<Card> list = new ArrayList<Card>();
             if (presentPlayer.equals("You") || presentPlayer.equals("Any")) {
                 list.addAll(this.getHostCard().getController().getCardsIn(presentZone));
             }

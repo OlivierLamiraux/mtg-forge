@@ -17,12 +17,7 @@
  */
 package forge.game.phase;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import forge.game.player.Player;
-import forge.game.trigger.Trigger;
 
 /**
  * <p>
@@ -36,7 +31,7 @@ import forge.game.trigger.Trigger;
 public class ExtraTurn {
 
     private Player player = null;
-    private List<Trigger> delTrig = Collections.synchronizedList(new ArrayList<Trigger>());
+    private boolean loseAtEndStep = false;
     private boolean skipUntap = false;
     private boolean cantSetSchemesInMotion = false;
     /**
@@ -62,17 +57,17 @@ public class ExtraTurn {
     }
 
     /**
-     * @param deltrigger the Trigger to add
+     * @return the loseAtEndStep
      */
-    public void addTrigger(Trigger deltrigger) {
-        this.delTrig.add(deltrigger);
+    public boolean isLoseAtEndStep() {
+        return loseAtEndStep;
     }
 
     /**
-     * @return the delTrig
+     * @param loseAtEndStep the loseAtEndStep to set
      */
-    public List<Trigger> getDelayedTriggers() {
-        return delTrig;
+    public void setLoseAtEndStep(boolean loseAtEndStep) {
+        this.loseAtEndStep = loseAtEndStep;
     }
 
     /**

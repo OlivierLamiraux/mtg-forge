@@ -6,8 +6,8 @@ import forge.properties.ForgeConstants;
 import forge.properties.ForgePreferences.FPref;
 import forge.util.XmlUtil;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -41,10 +41,6 @@ public enum ItemManagerConfig {
     QUEST_EDITOR_POOL(SColumnUtil.getQuestEditorPoolDefaultColumns(), false, false, false,
             null, null, 4, 0),
     QUEST_DECK_EDITOR(SColumnUtil.getQuestDeckEditorDefaultColumns(), false, false, false,
-            GroupDef.DEFAULT, ColumnDef.CMC, 4, 1),
-    CONQUEST_COLLECTION(SColumnUtil.getConquestCollectionDefaultColumns(), false, false, false,
-            null, null, 4, 0),
-    CONQUEST_DECK_EDITOR(SColumnUtil.getConquestDeckEditorDefaultColumns(), false, false, false,
             GroupDef.DEFAULT, ColumnDef.CMC, 4, 1),
     AVATAR_POOL(SColumnUtil.getSpecialCardPoolDefaultColumns(), true, false, false,
             null, null, 4, 0),
@@ -87,8 +83,6 @@ public enum ItemManagerConfig {
     PRECON_DECKS(SColumnUtil.getDecksDefaultColumns(false, false), false, false, false,
             null, null, 3, 0),
     QUEST_EVENT_DECKS(SColumnUtil.getDecksDefaultColumns(false, false), false, false, false,
-            null, null, 3, 0),
-    NET_DECKS(SColumnUtil.getDecksDefaultColumns(false, false), false, false, false,
             null, null, 3, 0),
     SIDEBOARD(SColumnUtil.getDeckEditorDefaultColumns(), false, false, true,
             GroupDef.DEFAULT, ColumnDef.CMC, 3, 0);
@@ -217,7 +211,7 @@ public enum ItemManagerConfig {
     public static void load() {
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            final Document document = builder.parse(new File(ForgeConstants.ITEM_VIEW_PREFS_FILE));
+            final Document document = builder.parse(ForgeConstants.ITEM_VIEW_PREFS_FILE);
             final NodeList configs = document.getElementsByTagName("config");
             for (int i = 0; i < configs.getLength(); i++) {
                 try { //capture enum parse errors without losing other preferences
@@ -288,6 +282,9 @@ public enum ItemManagerConfig {
             }
         }
         catch (FileNotFoundException e) {
+            //ok if file not found
+        }
+        catch (MalformedURLException e) {
             //ok if file not found
         }
         catch (Exception e) {

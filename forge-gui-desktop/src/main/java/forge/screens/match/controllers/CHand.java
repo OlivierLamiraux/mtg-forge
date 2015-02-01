@@ -31,15 +31,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import forge.FThreads;
+import forge.GuiBase;
 import forge.Singletons;
 import forge.UiCommand;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
-import forge.gui.framework.FScreen;
 import forge.gui.framework.ICDoc;
 import forge.screens.match.CMatchUI;
 import forge.screens.match.views.VField;
 import forge.screens.match.views.VHand;
+import forge.view.CardView;
+import forge.view.PlayerView;
 import forge.view.arcane.CardPanel;
 import forge.view.arcane.HandArea;
 import forge.view.arcane.util.Animation;
@@ -47,6 +47,7 @@ import forge.view.arcane.util.CardPanelMouseAdapter;
 
 /**
  * Controls Swing components of a player's hand instance.
+ * 
  */
 public class CHand implements ICDoc {
     private final PlayerView player;
@@ -80,7 +81,7 @@ public class CHand implements ICDoc {
     }
 
     public void update(final Observable a, final Object b) {
-        FThreads.invokeInEdtNowOrLater(updateRoutine);
+        FThreads.invokeInEdtNowOrLater(GuiBase.getInterface(), updateRoutine);
     }
 
     private final Runnable updateRoutine = new Runnable() {
@@ -88,7 +89,7 @@ public class CHand implements ICDoc {
     };
 
     public void updateHand() {
-        FThreads.assertExecutedByEdt(true);
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
 
         final HandArea p = view.getHandArea();
 
@@ -104,16 +105,11 @@ public class CHand implements ICDoc {
             return;
         }
 
-        // Don't perform animations if the user's in another tab.
-        if (!FScreen.MATCH_SCREEN.equals(Singletons.getControl().getCurrentScreen())) {
-            return;
-        }
-
         //update card panels in hand area
         
         final List<CardView> cards;
         synchronized (player) {
-            cards = ImmutableList.copyOf(player.getHand());
+            cards = ImmutableList.copyOf(player.getHandCards());
         }
 
         synchronized (ordering) {

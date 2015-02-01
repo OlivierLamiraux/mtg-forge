@@ -2,10 +2,11 @@ package forge.match.input;
 
 import forge.control.FControlGamePlayback;
 import forge.game.Game;
-import forge.game.card.Card;
 import forge.game.phase.PhaseHandler;
-import forge.game.player.PlayerView;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
 
 public class InputPlaybackControl extends InputSyncronizedBase implements InputSynchronized {
     private static final long serialVersionUID = 7979208993306642072L;
@@ -15,19 +16,32 @@ public class InputPlaybackControl extends InputSyncronizedBase implements InputS
     private boolean isPaused = false;
     private boolean isFast = false;
 
+    private final IGuiBase gui;
     private final Game game;
-    public InputPlaybackControl(final Game game0, final FControlGamePlayback fControlGamePlayback) {
+    public InputPlaybackControl(final IGuiBase gui, final Game game, final FControlGamePlayback fControlGamePlayback) {
         super(null);
-        game = game0;
+        this.gui = gui;
+        this.game = game;
         control = fControlGamePlayback;
         setPause(false);
     }
 
     @Override
+    public LocalGameView getGameView() {
+        return MatchUtil.getGameView();
+    }
+    @Override
     public PlayerView getOwner() {
-        return MatchUtil.getHumanController().getLocalPlayerView();
+        return getGameView().getLocalPlayerView();
+    }
+    @Override
+    public IGuiBase getGui() {
+        return gui;
     }
 
+    /* (non-Javadoc)
+     * @see forge.gui.input.InputBase#showMessage()
+     */
     @Override
     protected void showMessage() {
         setPause(false);
@@ -87,10 +101,5 @@ public class InputPlaybackControl extends InputSyncronizedBase implements InputS
             control.setSpeed(isFast);
             setPause(isPaused); // update message
         }
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        return null;
     }
 }

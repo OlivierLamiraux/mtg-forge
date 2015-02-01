@@ -1,13 +1,13 @@
 package forge.game.ability.effects;
 
 import forge.GameCommand;
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardState;
+import forge.game.card.CardCharacteristics;
 import forge.game.card.CardFactory;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardUtil;
@@ -57,7 +57,7 @@ public class CloneEffect extends SpellAbilityEffect {
     public void resolve(SpellAbility sa) {
         final Card host = sa.getHostCard();
         Card tgtCard = host;
-        final Map<String, String> origSVars = host.getSVars();
+        Map<String, String> origSVars = host.getSVars();
         final Game game = sa.getActivatingPlayer().getGame();
 
         // find cloning source i.e. thing to be copied
@@ -75,16 +75,15 @@ public class CloneEffect extends SpellAbilityEffect {
             return;
         }
 
-        final boolean optional = sa.hasParam("Optional");
+        boolean optional = sa.hasParam("Optional");
         if (optional && !host.getController().getController().confirmAction(sa, null, "Do you want to copy " + cardToCopy + "?")) {
             return;
         }
 
         // find target of cloning i.e. card becoming a clone
-        final List<Card> cloneTargets = AbilityUtils.getDefinedCards(host, sa.getParam("CloneTarget"), sa);
+        List<Card> cloneTargets = AbilityUtils.getDefinedCards(host, sa.getParam("CloneTarget"), sa);
         if (!cloneTargets.isEmpty()) {
             tgtCard = cloneTargets.get(0);
-            game.getTriggerHandler().clearInstrinsicActiveTriggers(tgtCard);
         }
 
         // determine the image to be used for the clone
@@ -96,31 +95,37 @@ public class CloneEffect extends SpellAbilityEffect {
             }
         }
 
-        final boolean keepName = sa.hasParam("KeepName");
-        final String originalName = tgtCard.getName();
-        final boolean copyingSelf = (tgtCard == cardToCopy);
-        final CardStateName origState = cardToCopy.getCurrentStateName();
+        boolean keepName = sa.hasParam("KeepName");
+        String originalName = tgtCard.getName();
+        boolean copyingSelf = (tgtCard == cardToCopy);
 
         if (!copyingSelf) {
             if (tgtCard.isCloned()) { // cloning again
-                tgtCard.switchStates(CardStateName.Cloner, origState, false);
-                tgtCard.setState(origState, false);
-                tgtCard.clearStates(CardStateName.Cloner, false);
+                tgtCard.switchStates(CardCharacteristicName.Cloner, CardCharacteristicName.Original);
+                tgtCard.setState(CardCharacteristicName.Original);
+                tgtCard.clearStates(CardCharacteristicName.Cloner);
             }
             // add "Cloner" state to clone
-            tgtCard.addAlternateState(CardStateName.Cloner, false);
-            tgtCard.switchStates(origState, CardStateName.Cloner, false);
-            tgtCard.setState(origState, false);
+            tgtCard.addAlternateState(CardCharacteristicName.Cloner);
+            tgtCard.switchStates(CardCharacteristicName.Original, CardCharacteristicName.Cloner);
+            tgtCard.setState(CardCharacteristicName.Original);
         } else {
             //copy Original state to Cloned
-            tgtCard.addAlternateState(CardStateName.Cloned, false);
-            tgtCard.switchStates(origState, CardStateName.Cloned, false);
+            tgtCard.addAlternateState(CardCharacteristicName.Cloned);
+            tgtCard.switchStates(CardCharacteristicName.Original, CardCharacteristicName.Cloned);
             if (tgtCard.isFlipCard()) {
-                tgtCard.setState(CardStateName.Original, false);
+                tgtCard.setState(CardCharacteristicName.Original);
             }
         }
-
+        
+        final CardCharacteristicName origState = cardToCopy.getCurState();
+        if (copyingSelf) {
+        	cardToCopy.setState(CardCharacteristicName.Cloned);
+        }
         CardFactory.copyCopiableCharacteristics(cardToCopy, tgtCard);
+        if (copyingSelf) {
+        	cardToCopy.setState(origState);
+        }
 
         // must copy abilities before first so cloned added abilities are handled correctly
         CardFactory.copyCopiableAbilities(cardToCopy, tgtCard);
@@ -136,7 +141,7 @@ public class CloneEffect extends SpellAbilityEffect {
         // If target is a flip card, also set characteristics of the flipped
         // state.
         if (cardToCopy.isFlipCard()) {
-        	final CardState flippedState = tgtCard.getState(CardStateName.Flipped);
+        	final CardCharacteristics flippedState = tgtCard.getState(CardCharacteristicName.Flipped);
             if (keepName) {
                 flippedState.setName(originalName);
             }
@@ -146,19 +151,15 @@ public class CloneEffect extends SpellAbilityEffect {
 
         //Clean up copy of cloned state
         if (copyingSelf) {
-            tgtCard.clearStates(CardStateName.Cloned, false);
+            tgtCard.clearStates(CardCharacteristicName.Cloned);
         }
-
-        //game.getTriggerHandler().registerActiveTrigger(tgtCard, false);
-
-        //keep the Clone card image for the cloned card
-        tgtCard.setImageKey(imageFileName);
-
-        tgtCard.updateStateForView();
 
         //Clear Remembered and Imprint lists
         tgtCard.clearRemembered();
-        tgtCard.clearImprintedCards();
+        tgtCard.clearImprinted();
+
+        //keep the Clone card image for the cloned card
+        tgtCard.setImageKey(imageFileName);
 
         // check if clone is now an Aura that needs to be attached
         if (tgtCard.isAura()) {
@@ -173,32 +174,31 @@ public class CloneEffect extends SpellAbilityEffect {
                 @Override
                 public void run() {
                     if (cloneCard.isCloned()) {
-                        cloneCard.setState(CardStateName.Cloner, false);
-                        cloneCard.switchStates(CardStateName.Cloner, origState, false);
-                        cloneCard.clearStates(CardStateName.Cloner, false);
-                        cloneCard.updateStateForView();
-                        game.fireEvent(new GameEventCardStatsChanged(cloneCard));
+                      cloneCard.switchStates(CardCharacteristicName.Cloner, CardCharacteristicName.Original);
+                      cloneCard.setState(CardCharacteristicName.Original);
+                      cloneCard.clearStates(CardCharacteristicName.Cloner);
                     }
                 }
             };
 
-            final String duration = sa.getParam("Duration");
+            
+            String duration = sa.getParam("Duration");
             if (duration.equals("UntilEndOfTurn")) {
                 game.getEndOfTurn().addUntil(unclone);
-            }
-            else if (duration.equals("UntilYourNextTurn")) {
+            } else if (duration.equals("UntilYourNextTurn")) {
                 game.getCleanup().addUntil(host.getController(), unclone);
             }
         }
+
         game.fireEvent(new GameEventCardStatsChanged(tgtCard));
     } // cloneResolve
 
-    private static void addExtraCharacteristics(final Card tgtCard, final SpellAbility sa, final Map<String, String> origSVars) {
+    private void addExtraCharacteristics(final Card tgtCard, final SpellAbility sa, final Map<String, String> origSVars) {
         // additional types to clone
         if (sa.hasParam("AddTypes")) {
-            for (final String type : Arrays.asList(sa.getParam("AddTypes").split(","))) {
-                tgtCard.addType(type);
-            }
+           for (final String type : Arrays.asList(sa.getParam("AddTypes").split(","))) {
+               tgtCard.addType(type);
+           }
         }
 
         // triggers to add to clone
@@ -231,7 +231,7 @@ public class CloneEffect extends SpellAbilityEffect {
                     final String actualAbility = origSVars.get(s);
                     final SpellAbility grantedAbility = AbilityFactory.getAbility(actualAbility, tgtCard);
                     tgtCard.addSpellAbility(grantedAbility);
-                    tgtCard.getCurrentState().addUnparsedAbility(actualAbility);
+                    tgtCard.getUnparsedAbilities().add(actualAbility);
                 }
             }
         }
@@ -265,7 +265,7 @@ public class CloneEffect extends SpellAbilityEffect {
             } catch (final NumberFormatException e) {
                 power = CardFactoryUtil.xCount(tgtCard, tgtCard.getSVar(rhs));
             }
-            tgtCard.setBasePower(power);
+            tgtCard.setBaseAttack(power);
         }
 
         // set toughness of clone
@@ -277,7 +277,7 @@ public class CloneEffect extends SpellAbilityEffect {
             } catch (final NumberFormatException e) {
                 toughness = CardFactoryUtil.xCount(tgtCard, tgtCard.getSVar(rhs));
             }
-            tgtCard.setBaseToughness(toughness);
+            tgtCard.setBaseDefense(toughness);
         }
 
         // colors to be added or changed to
@@ -285,12 +285,12 @@ public class CloneEffect extends SpellAbilityEffect {
         if (sa.hasParam("Colors")) {
             final String colors = sa.getParam("Colors");
             if (colors.equals("ChosenColor")) {
-                shortColors = CardUtil.getShortColorsString(tgtCard.getChosenColors());
+                shortColors = CardUtil.getShortColorsString(tgtCard.getChosenColor());
             } else {
                 shortColors = CardUtil.getShortColorsString(Arrays.asList(colors.split(",")));
             }
         }
-        tgtCard.addColor(shortColors, !sa.hasParam("OverwriteColors"), tgtCard.getTimestamp());
+        tgtCard.addColor(shortColors, !sa.hasParam("OverwriteColors"), true);
     }
 
 }

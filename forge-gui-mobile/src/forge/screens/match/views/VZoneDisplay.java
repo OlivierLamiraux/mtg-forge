@@ -2,10 +2,12 @@ package forge.screens.match.views;
 
 import java.util.ArrayList;
 
-import forge.game.player.PlayerView;
+import forge.FThreads;
+import forge.GuiBase;
 import forge.game.zone.ZoneType;
 import forge.toolbox.FCardPanel;
 import forge.toolbox.FDisplayObject;
+import forge.view.PlayerView;
 
 public class VZoneDisplay extends VCardDisplayArea {
     private final PlayerView player;
@@ -23,8 +25,15 @@ public class VZoneDisplay extends VCardDisplayArea {
 
     @Override
     public void update() {
-        refreshCardPanels(player.getCards(zoneType));
+        FThreads.invokeInEdtNowOrLater(GuiBase.getInterface(), updateRoutine);
     }
+
+    private final Runnable updateRoutine = new Runnable() {
+        @Override
+        public void run() {
+            refreshCardPanels(player.getCards(zoneType));
+        }
+    };
 
     @Override
     public void buildTouchListeners(float screenX, float screenY, ArrayList<FDisplayObject> listeners) {
@@ -82,10 +91,6 @@ public class VZoneDisplay extends VCardDisplayArea {
 
     @Override
     protected ScrollBounds layoutAndGetScrollBounds(float visibleWidth, float visibleHeight) {
-        if (!isVisible()) { //if zone not visible, don't spend time laying out cards
-            return new ScrollBounds(visibleWidth, visibleHeight);
-        }
-
         orderedCards.clear();
 
         float x = 0;

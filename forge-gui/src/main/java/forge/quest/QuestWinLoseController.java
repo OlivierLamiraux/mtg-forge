@@ -8,12 +8,11 @@ import forge.card.UnOpenedProduct;
 import forge.game.GameEndReason;
 import forge.game.GameFormat;
 import forge.game.GameOutcome;
-import forge.game.GameView;
 import forge.game.player.GameLossReason;
 import forge.game.player.PlayerOutcome;
 import forge.game.player.PlayerStatistics;
-import forge.game.player.PlayerView;
 import forge.interfaces.IButton;
+import forge.interfaces.IGuiBase;
 import forge.interfaces.IWinLoseView;
 import forge.item.*;
 import forge.model.FModel;
@@ -25,37 +24,40 @@ import forge.quest.data.QuestPreferences.DifficultyPrefs;
 import forge.quest.data.QuestPreferences.QPref;
 import forge.util.MyRandom;
 import forge.util.gui.SGuiChoose;
+import forge.view.IGameView;
+import forge.view.PlayerView;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 
-public class QuestWinLoseController {
-    private final GameView lastGame;
-    private final IWinLoseView<? extends IButton> view;
+public abstract class QuestWinLoseController {
+    private final IGameView lastGame;
+    protected final IGuiBase gui;
     private final transient boolean wonMatch;
     private final transient boolean isAnte;
     private final transient QuestController qData;
     private final transient QuestEvent qEvent;
 
-    public QuestWinLoseController(final GameView game0, final IWinLoseView<? extends IButton> view0) {
+    public QuestWinLoseController(final IGameView game0, final IGuiBase gui) {
         lastGame = game0;
-        view = view0;
+        this.gui = gui;
         qData = FModel.getQuest();
         qEvent = qData.getCurrentEvent();
         wonMatch = lastGame.isMatchWonBy(GamePlayerUtil.getQuestPlayer());
         isAnte = FModel.getPreferences().getPrefBoolean(FPref.UI_ANTE);
     }
 
-    public void showRewards() {
+    public void showRewards(final IWinLoseView<? extends IButton> view) {
         view.getBtnRestart().setVisible(false);
         final QuestController qc = FModel.getQuest();
 
         // After the first game, reset the card shop pool to be able to buy back anted cards
-        if (lastGame.getNumPlayedGamesInMatch() == 0) {
+        if (lastGame.getNumPlayedGamesInMatch() == 1) {
             qc.getCards().clearShopList();
             qc.getCards().getShopList();
         }
@@ -63,7 +65,7 @@ public class QuestWinLoseController {
         final LobbyPlayer questLobbyPlayer = GamePlayerUtil.getQuestPlayer();
         PlayerView player = null;
         for (final PlayerView p : lastGame.getPlayers()) {
-            if (p.isLobbyPlayer(questLobbyPlayer)) {
+            if (p.getLobbyPlayer().equals(questLobbyPlayer)) {
                 player = p;
             }
         }
@@ -84,12 +86,12 @@ public class QuestWinLoseController {
         }
 
         //give controller a chance to run remaining logic on a separate thread
-        view.showRewards(new Runnable() {
+        showRewards(new Runnable() {
             @Override
             public void run() {
                 if (isAnte) {
                     // Won/lost cards should already be calculated (even in a draw)
-                    GameOutcome.AnteResult anteResult = lastGame.getAnteResult(questPlayer);
+                    GameOutcome.AnteResult anteResult = lastGame.getAnteResult();
                     if (anteResult != null) {
                         if (anteResult.wonCards != null) {
                             qc.getCards().addAllCards(anteResult.wonCards);
@@ -97,7 +99,7 @@ public class QuestWinLoseController {
                         if (anteResult.lostCards != null) {
                             qc.getCards().loseCards(anteResult.lostCards);
                         }
-                        anteReport(anteResult.wonCards, anteResult.lostCards, questPlayer.isLobbyPlayer(lastGame.getWinningPlayer()));
+                        anteReport(anteResult.wonCards, anteResult.lostCards, questPlayer.getLobbyPlayer().equals(lastGame.getWinningPlayer()));
                     }
                 }
 
@@ -159,10 +161,10 @@ public class QuestWinLoseController {
     private void anteReport(final List<PaperCard> cardsWon, List<PaperCard> cardsLost, boolean hasWon) {
         // Generate Swing components and attach.
         if (cardsWon != null && !cardsWon.isEmpty()) {
-            view.showCards("Spoils! Cards won from ante.", cardsWon);
+            showCards("Spoils! Cards won from ante.", cardsWon);
         }
         if (cardsLost != null && !cardsLost.isEmpty()) {
-            view.showCards("Looted! Cards lost to ante.", cardsLost);
+            showCards("Looted! Cards lost to ante.", cardsLost);
         }
     }
 
@@ -376,7 +378,7 @@ public class QuestWinLoseController {
         sb.append(String.format("%s %d credits in total.", congrats, credTotal));
         qData.getAssets().addCredits(credTotal);
 
-        view.showMessage(sb.toString(), "Gameplay Results", FSkinProp.ICO_QUEST_GOLD);
+        showMessage(sb.toString(), "Gameplay Results", FSkinProp.ICO_QUEST_GOLD);
     }
 
     /**
@@ -391,7 +393,7 @@ public class QuestWinLoseController {
         final List<PaperCard> cardsWon = new ArrayList<PaperCard>();
         cardsWon.add(c);
 
-        view.showCards(message, cardsWon);
+        showCards(message, cardsWon);
     }
     
     /**
@@ -459,12 +461,12 @@ public class QuestWinLoseController {
         }
 
         if (addDraftToken) {
-            view.showMessage("For achieving a 25 win streak, you have been awarded a draft token!\nUse these tokens to generate new tournaments.", "Bonus Draft Token Reward", FSkinProp.ICO_QUEST_COIN);
+            showMessage("For achieving a 25 win streak, you have been awarded a draft token!\nUse these tokens to generate new tournaments.", "Bonus Draft Token Reward", FSkinProp.ICO_QUEST_COIN);
             qData.getAchievements().addDraftToken();
         }
 
         if (cardsWon.size() > 0) {
-            view.showCards("You have achieved a " + (currentStreak == 0 ? "50" : currentStreak) + " win streak and won " + cardsWon.size() + " " + typeWon + " card" + ((cardsWon.size() != 1) ? "s" : "") + "!", cardsWon);
+            showCards("You have achieved a " + (currentStreak == 0 ? "50" : currentStreak) + " win streak and won " + cardsWon.size() + " " + typeWon + " card" + ((cardsWon.size() != 1) ? "s" : "") + "!", cardsWon);
         }
     }
 
@@ -477,7 +479,7 @@ public class QuestWinLoseController {
      */
     private void awardJackpot() {
         final List<PaperCard> cardsWon = qData.getCards().addRandomRare(10);
-        view.showCards("You just won 10 random rares!", cardsWon);
+        showCards("You just won 10 random rares!", cardsWon);
     }
 
     /**
@@ -505,7 +507,7 @@ public class QuestWinLoseController {
 
             Collections.sort(formats);
 
-            final GameFormat selected = SGuiChoose.getChoices("Choose bonus booster format", 1, 1, formats, pref, null).get(0);
+            final GameFormat selected = SGuiChoose.getChoices(gui, "Choose bonus booster format", 1, 1, formats, pref, null).get(0);
             FModel.getQuestPreferences().setPref(QPref.BOOSTER_FORMAT, selected.toString());
 
             cardsWon = qData.getCards().generateQuestBooster(selected.getFilterPrinted());
@@ -542,7 +544,7 @@ public class QuestWinLoseController {
                 maxChoices--;
             }
 
-            final CardEdition chooseEd = SGuiChoose.one("Choose bonus booster set", options);
+            final CardEdition chooseEd = SGuiChoose.one(gui, "Choose bonus booster set", options);
 
             IUnOpenedProduct product = new UnOpenedProduct(FModel.getMagicDb().getBoosters().get(chooseEd.getCode()));
             cardsWon = product.get();
@@ -551,8 +553,26 @@ public class QuestWinLoseController {
         }
 
         if (cardsWon != null) {
-            BoosterUtils.sort(cardsWon);
-            view.showCards(title, cardsWon);
+            //sort cards alphabetically so colors appear together and rares appear on top
+            Collections.sort(cardsWon, new Comparator<PaperCard>() {
+                @Override
+                public int compare(PaperCard c1, PaperCard c2) {
+                    return c1.getName().compareTo(c2.getName());
+                }
+            });
+            Collections.sort(cardsWon, new Comparator<PaperCard>() {
+                @Override
+                public int compare(PaperCard c1, PaperCard c2) {
+                    return c1.getRules().getColor().compareTo(c2.getRules().getColor());
+                }
+            });
+            Collections.sort(cardsWon, new Comparator<PaperCard>() {
+                @Override
+                public int compare(PaperCard c1, PaperCard c2) {
+                    return c2.getRarity().compareTo(c1.getRarity());
+                }
+            });
+            showCards(title, cardsWon);
         }
     }
 
@@ -572,7 +592,7 @@ public class QuestWinLoseController {
 
         qData.getAssets().addCredits(questRewardCredits);
 
-        view.showMessage(sb.toString(), "Challenge Rewards for \"" + ((QuestEventChallenge) qEvent).getTitle() + "\"", FSkinProp.ICO_QUEST_BOX);
+        showMessage(sb.toString(), "Challenge Rewards for \"" + ((QuestEventChallenge) qEvent).getTitle() + "\"", FSkinProp.ICO_QUEST_BOX);
 
         awardSpecialReward(null);
     }
@@ -610,12 +630,12 @@ public class QuestWinLoseController {
                 }
                 if (!boosterCards.isEmpty()) {
                     qData.getCards().addAllCards(boosterCards);
-                    view.showCards("Extra " + ii.getName() + "!", boosterCards);
+                    showCards("Extra " + ii.getName() + "!", boosterCards);
                 }
             }
             else if (ii instanceof IQuestRewardCard) {
                 final List<PaperCard> cardChoices = ((IQuestRewardCard) ii).getChoices();
-                final PaperCard chosenCard = (null == cardChoices ? null : SGuiChoose.one("Choose " + ((IQuestRewardCard) ii).getName(), cardChoices));
+                final PaperCard chosenCard = (null == cardChoices ? null : SGuiChoose.one(gui, "Choose " + ((IQuestRewardCard) ii).getName(), cardChoices));
                 if (null != chosenCard) {
                     cardsWon.add(chosenCard);
                 }
@@ -625,14 +645,14 @@ public class QuestWinLoseController {
             if (message == null) {
                 message = "Cards Won";
             }
-            view.showCards(message, cardsWon);
+            showCards(message, cardsWon);
             qData.getCards().addAllCards(cardsWon);
         }
     }
 
     private void penalizeLoss() {
         final int x = FModel.getQuestPreferences().getPrefInt(QPref.PENALTY_LOSS);
-        view.showMessage("You lose! You have lost " + x + " credits.", "Gameplay Results", FSkinProp.ICO_QUEST_HEART);
+        showMessage("You lose! You have lost " + x + " credits.", "Gameplay Results", FSkinProp.ICO_QUEST_HEART);
     }
 
     /**
@@ -708,4 +728,8 @@ public class QuestWinLoseController {
 
         return credits;
     }
+
+    protected abstract void showRewards(Runnable runnable);
+    protected abstract void showCards(String title, List<PaperCard> cards);
+    protected abstract void showMessage(String message, String title, FSkinProp icon);
 }

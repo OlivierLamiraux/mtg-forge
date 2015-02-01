@@ -12,7 +12,6 @@ import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.combat.CombatUtil;
 import forge.game.phase.PhaseHandler;
@@ -82,12 +81,6 @@ public class EffectAi extends SpellAbilityAi {
                     sa.getTargets().add(target);
                 }
                 randomReturn = true;
-            } else if (logic.equals("ChainVeil")) {
-                if (!phase.isPlayerTurn(ai) || !phase.getPhase().equals(PhaseType.MAIN2) 
-                		|| CardLists.getType(ai.getCardsIn(ZoneType.Battlefield), "Planeswalker").isEmpty()) {
-                    return false;
-                }
-                randomReturn = true;
             } else if (logic.equals("Always")) {
                 randomReturn = true;
             } else if (logic.equals("Main2")) {
@@ -111,47 +104,41 @@ public class EffectAi extends SpellAbilityAi {
                         return CombatUtil.canAttack(c, opp);
                     }
                 });
-                if (comp.size() < 2) {
-                	return false;
-                }
-                final List<Card> attackers = comp;
                 human = CardLists.filter(human, new Predicate<Card>() {
                     @Override
                     public boolean apply(final Card c) {
-                        return CombatUtil.canBlockAtLeastOne(c, attackers);
+                        return CombatUtil.canBlock(c);
                     }
                 });
-                if (human.isEmpty()) {
-                	return false;
+                if (comp.size() < 2 || human.size() < 1) {
+                    randomReturn = false;
                 }
             } else if (logic.equals("RedirectSpellDamageFromPlayer")) {
                 if (game.getStack().isEmpty()) {
                     return false;
                 }
                 boolean threatened = false;
-                for (final SpellAbilityStackInstance stackInst : game.getStack()) {
-                    if (!stackInst.isSpell()) { continue; }
-                    SpellAbility stackSpellAbility = stackInst.getSpellAbility(true);
-                    if (stackSpellAbility.getApi() == ApiType.DealDamage) {
-                        final SpellAbility saTargeting = stackSpellAbility.getSATargetingPlayer();
+                for (final SpellAbilityStackInstance stackSA : game.getStack()) {
+                    if (!stackSA.isSpell()) { continue; }
+                    if (stackSA.getSpellAbility().getApi() == ApiType.DealDamage) {
+                        final SpellAbility saTargeting = stackSA.getSpellAbility().getSATargetingPlayer();
                         if (saTargeting != null && Iterables.contains(saTargeting.getTargets().getTargetPlayers(), ai)) {
                             threatened = true;
                         }
                     }
                 }
                 randomReturn = threatened;
-            }
-            else if (logic.equals("Fight")) {
-                CardCollection humCreatures = ai.getOpponent().getCreaturesInPlay();
+            } else if (logic.equals("Fight")) {
+            	List<Card> humCreatures = ai.getOpponent().getCreaturesInPlay();
                 humCreatures = CardLists.getTargetableCards(humCreatures, sa);
                 ComputerUtilCard.sortByEvaluateCreature(humCreatures);
-
+                
                 final AbilitySub tgtFight = sa.getSubAbility();
-                CardCollection aiCreatures = ai.getCreaturesInPlay();
+                List<Card> aiCreatures = ai.getCreaturesInPlay();
                 aiCreatures = CardLists.getTargetableCards(aiCreatures, tgtFight);
-                aiCreatures = ComputerUtil.getSafeTargets(ai, tgtFight, aiCreatures);
+                aiCreatures =  ComputerUtil.getSafeTargets(ai, tgtFight, aiCreatures);
                 ComputerUtilCard.sortByEvaluateCreature(aiCreatures);
-
+                
                 if (humCreatures.isEmpty() || aiCreatures.isEmpty()) {
                 	return false;
                 }
@@ -194,7 +181,8 @@ public class EffectAi extends SpellAbilityAi {
             if (name == null) {
                 name = sa.getHostCard().getName() + "'s Effect";
             }
-            if (sa.getActivatingPlayer().isCardInCommand(name)) {
+            final List<Card> list = sa.getActivatingPlayer().getCardsIn(ZoneType.Command, name);
+            if (!list.isEmpty()) {
                 return false;
             }
         }

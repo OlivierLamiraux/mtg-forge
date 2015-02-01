@@ -19,18 +19,16 @@ package forge.ai.ability;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-
 import forge.ai.AiCardMemory;
+
 import forge.ai.ComputerUtilCard;
-import forge.ai.ComputerUtilCombat;
 import forge.ai.PlayerControllerAi;
 import forge.ai.SpellAbilityAi;
 import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
+import forge.game.combat.CombatUtil;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
@@ -40,6 +38,7 @@ import forge.util.Aggregates;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -83,7 +82,7 @@ public class ControlGainAi extends SpellAbilityAi {
         // if Defined, then don't worry about targeting
         if (tgt == null) {
             if (sa.hasParam("AllValid")) {
-                CardCollectionView tgtCards = ai.getOpponent().getCardsIn(ZoneType.Battlefield);
+                List<Card> tgtCards = ai.getOpponent().getCardsIn(ZoneType.Battlefield);
                 tgtCards = AbilityUtils.filterListByType(tgtCards, sa.getParam("AllValid"), sa);
                 if (tgtCards.isEmpty()) {
                     return false;
@@ -117,7 +116,7 @@ public class ControlGainAi extends SpellAbilityAi {
             return false;
         }
 
-        CardCollection list =
+        List<Card> list =
                 CardLists.getValidCards(opp.getCardsIn(ZoneType.Battlefield), tgt.getValidTgts(), sa.getActivatingPlayer(), sa.getHostCard());
         
         // AI won't try to grab cards that are filtered out of AI decks on purpose
@@ -131,7 +130,7 @@ public class ControlGainAi extends SpellAbilityAi {
                 if (sa.isTrigger()) {
                     return true;
                 }
-                if (c.isCreature() && (!ComputerUtilCombat.canAttackNextTurn(c, ai.getOpponent()) || c.getNetCombatDamage() == 0)) {
+                if (c.isCreature() && (!CombatUtil.canAttackNextTurn(c, ai.getOpponent()) || c.getNetCombatDamage() == 0)) {
                     return false;
                 }
                 return !vars.containsKey("RemAIDeck");
@@ -223,7 +222,7 @@ public class ControlGainAi extends SpellAbilityAi {
         final Game game = ai.getGame();
         if ((sa.getTargetRestrictions() == null) || !sa.getTargetRestrictions().doesTarget()) {
             if (sa.hasParam("AllValid")) {
-                CardCollectionView tgtCards = CardLists.filterControlledBy(game.getCardsIn(ZoneType.Battlefield), ai.getOpponent());
+                List<Card> tgtCards = CardLists.filterControlledBy(game.getCardsIn(ZoneType.Battlefield), ai.getOpponent());
                 tgtCards = AbilityUtils.filterListByType(tgtCards, sa.getParam("AllValid"), sa);
                 if (tgtCards.isEmpty()) {
                     return false;
@@ -243,7 +242,7 @@ public class ControlGainAi extends SpellAbilityAi {
     } // pumpDrawbackAI()
 
     @Override
-    protected Player chooseSinglePlayer(Player ai, SpellAbility sa, Iterable<Player> options) {
+    protected Player chooseSinglePlayer(Player ai, SpellAbility sa, Collection<Player> options) {
         final List<Card> cards = new ArrayList<Card>();
         for (Player p : options) {
             cards.addAll(p.getCreaturesInPlay());

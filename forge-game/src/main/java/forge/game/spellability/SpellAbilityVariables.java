@@ -59,7 +59,6 @@ public class SpellAbilityVariables {
         this.instantSpeed = sav.isInstantSpeed();
         this.anyPlayer = sav.isAnyPlayer();
         this.opponentOnly = sav.isOpponentOnly();
-        this.enchantedControllerOnly = sav.isEnchantedControllerOnly();
         this.ownerOnly = sav.isOwnerOnly();
         this.opponentTurn = sav.isOpponentTurn();
         this.playerTurn = sav.isPlayerTurn();
@@ -110,9 +109,6 @@ public class SpellAbilityVariables {
 
     /** The b opponent only. */
     private boolean opponentOnly = false;
-
-    /** The b opponent only. */
-    private boolean enchantedControllerOnly = false;
 
     /** The b owner only. */
     private boolean ownerOnly = false;
@@ -968,19 +964,6 @@ public class SpellAbilityVariables {
         this.opponentOnly = opponentOnly;
     }
 
-    /**
-     * @return the opponentOnly
-     */
-    public boolean isEnchantedControllerOnly() {
-        return enchantedControllerOnly;
-    }
-
-    /**
-     * @param opponentOnly the opponentOnly to set
-     */
-    public void setEnchantedControllerOnly(boolean enchantedControllerOnly) {
-        this.enchantedControllerOnly = enchantedControllerOnly;
-    }
     /**
      * @return the ownerOnly
      */

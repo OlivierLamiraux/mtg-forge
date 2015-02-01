@@ -12,6 +12,7 @@ import forge.card.CardRenderer;
 import forge.card.CardRenderer.CardStackPosition;
 import forge.card.CardZoom;
 import forge.deck.DeckProxy;
+import forge.item.IPaperCard;
 import forge.item.InventoryItem;
 import forge.item.PaperCard;
 import forge.itemmanager.ColumnDef;
@@ -31,6 +32,7 @@ import forge.toolbox.FEvent.FEventHandler;
 import forge.toolbox.FLabel;
 import forge.toolbox.FScrollPane;
 import forge.util.Utils;
+import forge.view.ViewUtil;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -550,7 +552,7 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
         ItemInfo item = getItemAtPoint(x, y);
         if (count == 1) {
             selectItem(item);
-            itemManager.showMenu(false);
+            itemManager.showMenu();
         }
         else if (count == 2) {
             if (item != null && item.selected) {
@@ -871,8 +873,8 @@ public class ImageView<T extends InventoryItem> extends ItemView<T> {
         @Override
         public boolean longPress(float x, float y) {
             ItemInfo item = getItemAtPoint(x + getLeft(), y + getTop());
-            if (item != null) {
-                CardZoom.show(orderedItems, orderedItems.indexOf(item), itemManager);
+            if (item != null && item.item instanceof IPaperCard) {
+                CardZoom.show(ViewUtil.getCardForUi((IPaperCard) item.item));
                 return true;
             }
             return false;

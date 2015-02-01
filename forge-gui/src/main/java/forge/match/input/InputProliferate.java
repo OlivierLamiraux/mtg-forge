@@ -44,7 +44,7 @@ public final class InputProliferate extends InputSelectManyBase<GameEntity> {
     }
 
     @Override
-    protected boolean onCardSelected(final Card card, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    protected boolean onCardSelected(final Card card, final ITriggerEvent triggerEvent) {
         if (!card.hasCounters()) {
             return false;
         }
@@ -61,20 +61,12 @@ public final class InputProliferate extends InputSelectManyBase<GameEntity> {
                 }
             }
 
-            CounterType toAdd = choices.size() == 1 ? choices.get(0) : SGuiChoose.one("Select counter type", choices);
+            CounterType toAdd = choices.size() == 1 ? choices.get(0) : SGuiChoose.one(getGui(), "Select counter type", choices);
             chosenCounters.put(card, toAdd);
         }
 
         refresh();
         return true;
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        if (card.hasCounters() && !chosenCounters.containsKey(card)) {
-            return "add counter to card";
-        }
-        return null;
     }
 
     @Override

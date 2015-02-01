@@ -1,35 +1,38 @@
 package forge.game.cost;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CounterType;
 import forge.game.mana.Mana;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-
+/** 
+ * TODO: Write javadoc for this type.
+ *
+ */
 public class PaymentDecision {
     public int c = 0;
     public String type;
     public CounterType ct;
-
-    public final CardCollection cards = new CardCollection();
+    
+    public final List<Card> cards = new ArrayList<Card>();
     public final List<Mana> mana;
     public final List<Player> players;
     public final List<SpellAbility> sp;
-
+    
     public PaymentDecision(int cnt) {
         this(null, null, null, null);
         c = cnt;
     }
 
-    private PaymentDecision(Iterable<Card> chosen, List<Mana> manaProduced, List<Player> players,
+    private PaymentDecision(Collection<Card> chosen, List<Mana> manaProduced, List<Player> players,
                 List<SpellAbility> sp) {
-        if (chosen != null) {
+        if(chosen != null)
             cards.addAll(chosen);
-        }
         mana = manaProduced;
         this.players = players;
         this.sp = sp;
@@ -60,11 +63,11 @@ public class PaymentDecision {
         return new PaymentDecision(c);
     }
 
-    public static PaymentDecision card(Iterable<Card> chosen) {
+    public static PaymentDecision card(Collection<Card> chosen) {
         return new PaymentDecision(chosen, null, null, null);
     }
     
-    public static PaymentDecision card(Iterable<Card> chosen, int n) {
+    public static PaymentDecision card(Collection<Card> chosen, int n) {
         PaymentDecision res = new PaymentDecision(chosen, null, null, null);
         res.c = n;
         return res;

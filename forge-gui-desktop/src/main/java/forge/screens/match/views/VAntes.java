@@ -25,8 +25,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import net.miginfocom.swing.MigLayout;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
 import forge.gui.CardPicturePanel;
 import forge.gui.WrapLayout;
 import forge.gui.framework.DragCell;
@@ -37,6 +35,8 @@ import forge.match.MatchUtil;
 import forge.screens.match.controllers.CAntes;
 import forge.toolbox.FLabel;
 import forge.toolbox.FScrollPane;
+import forge.view.CardView;
+import forge.view.PlayerView;
 
 /** 
  * Assembles Swing components of card ante area.
@@ -121,14 +121,14 @@ public enum VAntes implements IVDoc<CAntes> {
         pnl.removeAll();
 
         for (final PlayerView p : MatchUtil.getGameView().getPlayers()) {
-            Iterable<CardView> ante = p.getAnte();
-            if (ante != null) {
-                for (final CardView c : ante) {
-                    final AntePanel pnlTemp = new AntePanel(c);
-                    allAntes.add(pnlTemp);
-                    pnl.add(pnlTemp);
-                }
+            for (final CardView c : p.getAnteCards()) {
+                final AntePanel pnlTemp = new AntePanel(c);
+                allAntes.add(pnlTemp);
             }
+        }
+
+        for(AntePanel ap : allAntes) {
+            pnl.add(ap);
         }
     }
 
@@ -156,7 +156,7 @@ public enum VAntes implements IVDoc<CAntes> {
                 .fontAlign(SwingConstants.CENTER).build(), "w 160px, h 20px");
             CardPicturePanel picPanel = new CardPicturePanel();
             add(picPanel, "w 160px, h 230px");
-            picPanel.setCard(c.getCurrentState());
+            picPanel.setCard(c.getOriginal());
         }
 
         @Override

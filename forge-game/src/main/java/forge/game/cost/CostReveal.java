@@ -18,20 +18,34 @@
 package forge.game.cost;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
+
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * The Class CostReveal.
  */
 public class CostReveal extends CostPartWithList {
     // Reveal<Num/Type/TypeDescription>
-
+    
+    /**
+     * Instantiates a new cost reveal.
+     * 
+     * @param amount
+     *            the amount
+     * @param type
+     *            the type
+     * @param description
+     *            the description
+     */
     public CostReveal(final String amount, final String type, final String description) {
         super(amount, type, description);
     }
@@ -41,13 +55,20 @@ public class CostReveal extends CostPartWithList {
 
     @Override
     public boolean isRenewable() { return true; }
-
+    
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * forge.card.cost.CostPart#canPay(forge.card.spellability.SpellAbility,
+     * forge.Card, forge.Player, forge.card.cost.Cost)
+     */
     @Override
     public final boolean canPay(final SpellAbility ability) {
         final Player activator = ability.getActivatingPlayer();
         final Card source = ability.getHostCard();
-
-        CardCollectionView handList = activator.getCardsIn(ZoneType.Hand);
+        
+        List<Card> handList = new ArrayList<Card>(activator.getCardsIn(ZoneType.Hand));
         final String type = this.getType();
         final Integer amount = this.convertAmount();
 
@@ -75,9 +96,7 @@ public class CostReveal extends CostPartWithList {
             }
         } else {
             if (ability.isSpell()) {
-                CardCollection modifiedHand = new CardCollection(handList);
-                modifiedHand.remove(source); // can't pay for itself
-                handList = modifiedHand;
+                handList.remove(source); // can't pay for itself
             }
             handList = CardLists.getValidCards(handList, type.split(";"), activator, source);
             if ((amount != null) && (amount > handList.size())) {
@@ -90,6 +109,11 @@ public class CostReveal extends CostPartWithList {
         return true;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see forge.card.cost.CostPart#toString()
+     */
     @Override
     public final String toString() {
         final StringBuilder sb = new StringBuilder();
@@ -120,23 +144,26 @@ public class CostReveal extends CostPartWithList {
         return sb.toString();
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.cost.CostPartWithList#executePayment(forge.card.spellability.SpellAbility, forge.Card)
+     */
     @Override
     protected Card doPayment(SpellAbility ability, Card targetCard) {
-        targetCard.getGame().getAction().reveal(new CardCollection(targetCard), ability.getActivatingPlayer());
+        targetCard.getGame().getAction().reveal(Lists.newArrayList(targetCard), ability.getActivatingPlayer());
         return targetCard;
     }
 
+    
+    @Override protected boolean canPayListAtOnce() { return true; }
     @Override
-    protected boolean canPayListAtOnce() {
-        return true;
-    }
-
-    @Override
-    protected CardCollectionView doListPayment(SpellAbility ability, CardCollectionView targetCards) {
+    protected Collection<Card> doListPayment(SpellAbility ability, Collection<Card> targetCards) {
         ability.getActivatingPlayer().getGame().getAction().reveal(targetCards, ability.getActivatingPlayer());
         return targetCards;
     }    
-
+    
+    /* (non-Javadoc)
+     * @see forge.card.cost.CostPartWithList#getHashForList()
+     */
     @Override
     public String getHashForLKIList() {
         return "Revealed";
@@ -150,4 +177,6 @@ public class CostReveal extends CostPartWithList {
     public <T> T accept(ICostVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+
 }

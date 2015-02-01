@@ -68,11 +68,6 @@ public final class FileUtil {
         return f.exists();
     }
 
-    public static boolean isDirectoryWithFiles(final String path) {
-        final File f = new File(path);
-        return f.exists() && f.isDirectory() && f.list().length > 0;
-    }
-
     /**
      * <p>
      * ensureDirectoryExists.

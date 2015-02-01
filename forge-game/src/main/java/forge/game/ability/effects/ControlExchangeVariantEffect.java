@@ -3,7 +3,6 @@ package forge.game.ability.effects;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
@@ -14,11 +13,18 @@ import org.apache.commons.lang3.StringUtils;
 
 
 public class ControlExchangeVariantEffect extends SpellAbilityEffect {
+
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#getStackDescription(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     protected String getStackDescription(SpellAbility sa) {
         return "Exchange cards controlled by " + StringUtils.join(getTargetPlayers(sa), ",");
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#resolve(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     public void resolve(SpellAbility sa) {
         final Player activator = sa.getActivatingPlayer();
@@ -31,13 +37,13 @@ public class ControlExchangeVariantEffect extends SpellAbilityEffect {
         final ZoneType zone = ZoneType.smartValueOf(sa.getParamOrDefault("Zone", "Battlefield"));
         final String type = sa.getParamOrDefault("Type", "Card");
         // get valid lists
-        CardCollectionView list1 = AbilityUtils.filterListByType(player1.getCardsIn(zone), type, sa);
-        CardCollectionView list2 = AbilityUtils.filterListByType(player2.getCardsIn(zone), type, sa);
+        List<Card> list1 = AbilityUtils.filterListByType(player1.getCardsIn(zone), type, sa);
+        List<Card> list2 = AbilityUtils.filterListByType(player2.getCardsIn(zone), type, sa);
         int max = Math.min(list1.size(), list2.size());
         // choose the same number of cards
-        CardCollectionView chosen1 = activator.getController().chooseCardsForEffect(list1, sa, "Choose cards: " + player1, 0, max, true);
+        List<Card> chosen1 = activator.getController().chooseCardsForEffect(list1, sa, "Choose cards: " + player1, 0, max, true);
         int num = chosen1.size();
-        CardCollectionView chosen2 = activator.getController().chooseCardsForEffect(list2, sa, "Choose cards: " + player2, num, num, true);
+        List<Card> chosen2 = activator.getController().chooseCardsForEffect(list2, sa, "Choose cards: " + player2, num, num, true);
         // check all cards can be controlled by the other player
         for (final Card c : chosen1) {
             if (!c.canBeControlledBy(player2)) {
@@ -58,4 +64,5 @@ public class ControlExchangeVariantEffect extends SpellAbilityEffect {
             c.setController(player1, tStamp);
         }
     }
+
 }

@@ -37,9 +37,6 @@ import net.miginfocom.swing.MigLayout;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import forge.game.GameEntityView;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
 import forge.gui.SOverlayUtils;
 import forge.match.MatchUtil;
 import forge.toolbox.FButton;
@@ -47,7 +44,10 @@ import forge.toolbox.FLabel;
 import forge.toolbox.FScrollPane;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinnedPanel;
+import forge.view.CardView;
 import forge.view.FDialog;
+import forge.view.GameEntityView;
+import forge.view.PlayerView;
 import forge.view.arcane.CardPanel;
 
 /**
@@ -145,16 +145,16 @@ public class VAssignDamage {
      * @param overrideOrder override combatant order
 
      */
-    public VAssignDamage(final CardView attacker, final List<CardView> blockers, final int damage0, final GameEntityView defender0, boolean overrideOrder) {
+    public VAssignDamage(final CardView attacker, final List<CardView> blockers, final int damage0, final GameEntityView defender, boolean overrideOrder) {
         dlg.setTitle("Assign damage dealt by " + attacker);
 
         // Set damage storage vars
-        totalDamageToAssign = damage0;
-        defender = defender0;
-        attackerHasDeathtouch = attacker.getCurrentState().hasDeathtouch();
-        attackerHasInfect = attacker.getCurrentState().hasInfect();
-        attackerHasTrample = defender != null && attacker.getCurrentState().hasTrample();
-        overrideCombatantOrder = overrideOrder;
+        this.totalDamageToAssign = damage0;
+        this.defender = defender;
+        this.attackerHasDeathtouch = attacker.getOriginal().hasDeathtouch();
+        this.attackerHasInfect = attacker.getOriginal().hasInfect();
+        this.attackerHasTrample = defender != null && attacker.getOriginal().hasTrample();
+        this.overrideCombatantOrder = overrideOrder;
 
         // Top-level UI stuff
         final JPanel overlay = SOverlayUtils.genericOverlay();
@@ -184,23 +184,28 @@ public class VAssignDamage {
         // Top row of cards...
         for (final CardView c : blockers) {
             DamageTarget dt = new DamageTarget(c, new FLabel.Builder().text("0").fontSize(18).fontAlign(SwingConstants.CENTER).build());
-            damage.put(c, dt);
-            defenders.add(dt);
+            this.damage.put(c, dt);
+            this.defenders.add(dt);
             addPanelForDefender(pnlDefenders, c);
         }
 
         if (attackerHasTrample) {
             DamageTarget dt = new DamageTarget(null, new FLabel.Builder().text("0").fontSize(18).fontAlign(SwingConstants.CENTER).build());
-            damage.put(null, dt);
-            defenders.add(dt);
+            this.damage.put(null, dt);
+            this.defenders.add(dt);
             CardView fakeCard = null;
             if (defender instanceof CardView) {
                 fakeCard = (CardView)defender;
             }
             else if (defender instanceof PlayerView) { 
+                fakeCard = new CardView(-1);
+                fakeCard.getOriginal().setName(this.defender.toString());
                 final PlayerView p = (PlayerView)defender;
-                fakeCard = new CardView(-1, null, defender.toString(), p, CMatchUI.SINGLETON_INSTANCE.avatarImages.get(p.getLobbyPlayerName()));
+                fakeCard.setOwner(p);
+                fakeCard.setController(p);
+                fakeCard.getOriginal().setImageKey(CMatchUI.SINGLETON_INSTANCE.avatarImages.get(p.getLobbyPlayer()));
             }
+
             addPanelForDefender(pnlDefenders, fakeCard);
         }        
 
@@ -246,12 +251,12 @@ public class VAssignDamage {
         initialAssignDamage(false);
         SOverlayUtils.showOverlay();
 
-        dlg.setUndecorated(true);
-        dlg.setContentPane(pnlMain);
-        dlg.setSize(new Dimension(wDlg, hDlg));
-        dlg.setLocation((overlay.getWidth() - wDlg) / 2, (overlay.getHeight() - hDlg) / 2);
-        dlg.setModalityType(ModalityType.APPLICATION_MODAL);
-        dlg.setVisible(true);
+        this.dlg.setUndecorated(true);
+        this.dlg.setContentPane(pnlMain);
+        this.dlg.setSize(new Dimension(wDlg, hDlg));
+        this.dlg.setLocation((overlay.getWidth() - wDlg) / 2, (overlay.getHeight() - hDlg) / 2);
+        this.dlg.setModalityType(ModalityType.APPLICATION_MODAL);
+        this.dlg.setVisible(true);
     }
 
     /**
@@ -279,7 +284,7 @@ public class VAssignDamage {
 
         // If trying to assign to the defender, follow the normal assignment rules
         // No need to check for "active" creature assignee when overiding combatant order
-        if ((source == null || source == defender || !overrideCombatantOrder) && isAdding && 
+        if ((source == null || source == this.defender || !this.overrideCombatantOrder) && isAdding && 
                 !VAssignDamage.this.canAssignTo(source)) {
             return;
         }
@@ -307,7 +312,7 @@ public class VAssignDamage {
         
         // cannot assign first blocker less than lethal damage except when overriding order
         boolean isFirstBlocker = defenders.get(0).card == source;
-        if (!overrideCombatantOrder && isFirstBlocker && damageToAdd + damageItHad < lethalDamage )
+        if (!this.overrideCombatantOrder && isFirstBlocker && damageToAdd + damageItHad < lethalDamage )
             return;
 
         if ( 0 == damageToAdd || damageToAdd + damageItHad < 0) 
@@ -326,7 +331,7 @@ public class VAssignDamage {
             int damage = dt.damage;
             // If overriding combatant order, make sure everything has lethal if defender has damage assigned to it
             // Otherwise, follow normal combatant order
-            if ( hasAliveEnemy && (!overrideCombatantOrder || dt.card == null || dt.card == defender))
+            if ( hasAliveEnemy && (!this.overrideCombatantOrder || dt.card == null || dt.card == this.defender))
                 dt.damage = 0;
             else
                 hasAliveEnemy |= damage < lethal;
@@ -335,7 +340,7 @@ public class VAssignDamage {
 
     // will assign all damage to defenders and rest to player, if present
     private void initialAssignDamage(boolean toAllBlockers) {
-        if (!toAllBlockers && overrideCombatantOrder) {
+        if (!toAllBlockers && this.overrideCombatantOrder) {
             // Don't auto assign the first damage when overriding combatant order
             updateLabels();
             return;
@@ -415,7 +420,7 @@ public class VAssignDamage {
             dt.label.setText(sb.toString());
         }
 
-        lblTotalDamage.setText(String.format("Available damage points: %d (of %d)", damageLeft, totalDamageToAssign));
+        this.lblTotalDamage.setText(String.format("Available damage points: %d (of %d)", damageLeft, this.totalDamageToAssign));
         btnOK.setEnabled(damageLeft == 0);
         lblAssignRemaining.setVisible(allHaveLethal && damageLeft > 0);
     }
@@ -430,20 +435,23 @@ public class VAssignDamage {
         dlg.dispose();
         SOverlayUtils.hideOverlay();
     }
-
+    
+    /**
+     * TODO: Write javadoc for this method.
+     * @param card
+     * @return
+     */
     private int getDamageToKill(final CardView card) {
         int lethalDamage = 0;
         if (card == null) {
             if (defender instanceof PlayerView) {
                 final PlayerView p = (PlayerView)defender;
                 lethalDamage = attackerHasInfect ? MatchUtil.getGameView().getPoisonCountersToLose() - p.getPoisonCounters() : p.getLife();
-            }
-            else if (defender instanceof CardView) { // planeswalker
+            } else if (defender instanceof CardView) { // planeswalker
                 final CardView pw = (CardView)defender;
-                lethalDamage = pw.getCurrentState().getLoyalty();
+                lethalDamage = pw.getOriginal().getLoyalty();
             }
-        }
-        else {
+        } else {
             lethalDamage = VAssignDamage.this.attackerHasDeathtouch ? 1 : Math.max(0, card.getLethalDamage());
         }
         return lethalDamage;

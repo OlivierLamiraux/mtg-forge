@@ -1,7 +1,6 @@
 package forge.game.ability.effects;
 
 import com.google.common.collect.Iterables;
-
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
@@ -10,19 +9,28 @@ import forge.game.player.Player;
 import forge.game.player.PlayerActionConfirmMode;
 import forge.game.spellability.AbilitySub;
 import forge.game.spellability.SpellAbility;
-import forge.util.FCollection;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BidLifeEffect extends SpellAbilityEffect {
+
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#getStackDescription(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     protected String getStackDescription(SpellAbility sa) {
         return "Bid Life";
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#resolve(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     public void resolve(SpellAbility sa) {
         final Card host = sa.getHostCard();
         final Player activator = sa.getActivatingPlayer();
-        final FCollection<Player> bidPlayers = new FCollection<Player>();
+        final List<Player> bidPlayers = new ArrayList<Player>();
         final int startBidding;
         if (sa.hasParam("StartBidding")) {
             String start = sa.getParam("StartBidding");

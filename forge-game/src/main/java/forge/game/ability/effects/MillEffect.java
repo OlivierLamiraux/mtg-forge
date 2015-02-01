@@ -1,10 +1,9 @@
 package forge.game.ability.effects;
 
-import forge.card.CardStateName;
+import forge.card.CardCharacteristicName;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
@@ -13,13 +12,12 @@ import forge.game.zone.ZoneType;
 import java.util.List;
 
 public class MillEffect extends SpellAbilityEffect {
+
     @Override
     public void resolve(SpellAbility sa) {
         final Card source = sa.getHostCard();
         final int numCards = AbilityUtils.calculateAmount(sa.getHostCard(), sa.getParam("NumCards"), sa);
         final boolean bottom = sa.hasParam("FromBottom");
-        final boolean facedown = sa.hasParam("ExileFaceDown");
-        final boolean reveal = !sa.hasParam("NoReveal");
 
         if (sa.hasParam("ForgetOtherRemembered")) {
             source.clearRemembered();
@@ -40,15 +38,10 @@ public class MillEffect extends SpellAbilityEffect {
                         continue;
                     }
                 }
-                final CardCollectionView milled = p.mill(numCards, destination, bottom);
-                // Reveal the milled cards, so players don't have to manually inspect the
-                // graveyard to figure out which ones were milled.
-                if (!facedown && reveal) { // do not reveal when exiling face down
-                    p.getGame().getAction().reveal(milled, p, false);
-                }
-                if (destination.equals(ZoneType.Exile) && facedown) {
+                final List<Card> milled = p.mill(numCards, destination, bottom);
+                if (destination.equals(ZoneType.Exile) && sa.hasParam("ExileFaceDown")) {
                     for (final Card c : milled) {
-                        c.setState(CardStateName.FaceDown, true);
+                        c.setState(CardCharacteristicName.FaceDown);
                     }
                 }
                 if (sa.hasParam("RememberMilled")) {
@@ -58,7 +51,7 @@ public class MillEffect extends SpellAbilityEffect {
                 }
                 if (sa.hasParam("Imprint")) {
                     for (final Card c : milled) {
-                        source.addImprintedCard(c);
+                        source.addImprinted(c);
                     }
                 }
             }

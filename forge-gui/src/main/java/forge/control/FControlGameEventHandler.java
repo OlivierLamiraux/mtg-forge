@@ -14,8 +14,6 @@ import com.google.common.eventbus.Subscribe;
 import forge.GuiBase;
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardView;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventAnteCardsSelected;
 import forge.game.event.GameEventAttackersDeclared;
@@ -46,7 +44,6 @@ import forge.game.event.GameEventTurnPhase;
 import forge.game.event.GameEventZone;
 import forge.game.event.IGameEventVisitor;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
@@ -55,14 +52,18 @@ import forge.match.MatchUtil;
 import forge.match.input.ButtonUtil;
 import forge.match.input.InputBase;
 import forge.model.FModel;
-import forge.player.PlayerControllerHuman;
 import forge.properties.ForgePreferences.FPref;
 import forge.util.Lang;
 import forge.util.gui.SGuiChoose;
 import forge.util.maps.MapOfLists;
+import forge.view.CardView;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
 
 public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
-    private final PlayerControllerHuman humanController;
+    private final LocalGameView gameView;
+    private final HashSet<CardView> cardsProcessed = new HashSet<CardView>();
+    private final HashSet<PlayerView> playersProcessed = new HashSet<PlayerView>();
     private final HashSet<CardView> cardsUpdate = new HashSet<CardView>();
     private final HashSet<CardView> cardsRefreshDetails = new HashSet<CardView>();
     private final HashSet<PlayerView> livesUpdate = new HashSet<PlayerView>();
@@ -73,8 +74,13 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
     private boolean gameOver, gameFinished;
     private PlayerView turnUpdate;
 
-    public FControlGameEventHandler(final PlayerControllerHuman humanController0) {
-        humanController = humanController0;
+    public FControlGameEventHandler(final LocalGameView gameView0) {
+        gameView = gameView0;
+
+        // aggressively cache a view for each player (also caches cards)
+        for (Player player : gameView.getGame().getRegisteredPlayers()) {
+            gameView.getPlayerView(player, true);
+        }
     }
 
     private final Runnable processEvents = new Runnable() {
@@ -82,19 +88,20 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
         public void run() {
             processEventsQueued = false;
 
+            synchronized (cardsProcessed) {
+                if (!cardsProcessed.isEmpty()) {
+                    gameView.updateCards(cardsProcessed);
+                    cardsProcessed.clear();
+                }
+            }
+            synchronized (playersProcessed) {
+                if (!playersProcessed.isEmpty()) {
+                    gameView.updatePlayers(playersProcessed);
+                    playersProcessed.clear();
+                }
+            }
+
             IMatchController controller = MatchUtil.getController();
-            synchronized (cardsUpdate) {
-                if (!cardsUpdate.isEmpty()) {
-                    MatchUtil.updateCards(cardsUpdate);
-                    cardsUpdate.clear();
-                }
-            }
-            synchronized (cardsRefreshDetails) {
-                if (!cardsRefreshDetails.isEmpty()) {
-                    controller.refreshCardDetails(cardsRefreshDetails);
-                    cardsRefreshDetails.clear();
-                }
-            }
             synchronized (livesUpdate) {
                 if (!livesUpdate.isEmpty()) {
                     controller.updateLives(livesUpdate);
@@ -117,7 +124,8 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
             }
             if (needCombatUpdate) {
                 needCombatUpdate = false;
-                controller.showCombat();
+                gameView.refreshCombat();
+                controller.showCombat(gameView.getCombat());
             }
             if (needStackUpdate) {
                 needStackUpdate = false;
@@ -133,18 +141,30 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
                     zonesUpdate.clear();
                 }
             }
+            synchronized (cardsUpdate) {
+                if (!cardsUpdate.isEmpty()) {
+                    MatchUtil.updateCards(cardsUpdate);
+                    cardsUpdate.clear();
+                }
+            }
+            synchronized (cardsRefreshDetails) {
+                if (!cardsRefreshDetails.isEmpty()) {
+                    controller.refreshCardDetails(cardsRefreshDetails);
+                    cardsRefreshDetails.clear();
+                }
+            }
             if (gameOver) {
                 gameOver = false;
-                MatchUtil.onGameOver(true); // this will unlock any game threads waiting for inputs to complete
+                gameView.getInputQueue().onGameOver(true); // this will unlock any game threads waiting for inputs to complete
             }
             if (gameFinished) {
                 gameFinished = false;
-                PlayerView localPlayer = humanController.getLocalPlayerView();
+                PlayerView localPlayer = gameView.getLocalPlayerView();
                 InputBase.cancelAwaitNextInput(); //ensure "Waiting for opponent..." doesn't appear behind WinLo
                 controller.showPromptMessage(localPlayer, ""); //clear prompt behind WinLose overlay
                 ButtonUtil.update(localPlayer, "", "", false, false, false);
                 controller.finishGame();
-                humanController.updateAchievements();
+                gameView.updateAchievements();
             }
         }
     };
@@ -162,24 +182,38 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
     }
 
     private Void processCard(Card card, HashSet<CardView> list) {
+        CardView view = gameView.getCardView(card, null); //delay update until later to avoid duplicating updates
         synchronized (list) {
-            list.add(card.getView());
+            list.add(view);
+        }
+        synchronized (cardsProcessed) {
+            cardsProcessed.add(view);
         }
         return processEvent();
     }
     private Void processCards(Collection<Card> cards, HashSet<CardView> list) {
         if (cards.isEmpty()) { return null; }
 
+        List<CardView> views = gameView.getCardViews(cards, null); //delay update until later to avoid duplicating updates
         synchronized (list) {
-            for (Card c : cards) {
-                list.add(c.getView());
-            }
+            list.addAll(views);
+        }
+        synchronized (cardsProcessed) {
+            cardsProcessed.addAll(views);
         }
         return processEvent();
     }
+    private PlayerView processPlayer(Player player) {
+        PlayerView view = gameView.getPlayerView(player, null); //delay update until later to avoid duplicating updates
+        synchronized (playersProcessed) {
+            playersProcessed.add(view);
+        }
+        return view;
+    }
     private Void processPlayer(Player player, HashSet<PlayerView> list) {
+        PlayerView view = processPlayer(player);
         synchronized (list) {
-            list.add(player.getView());
+            list.add(view);
         }
         return processEvent();
     }
@@ -191,13 +225,14 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
     private Void updateZone(Player p, ZoneType z) {
         if (p == null || z == null) { return null; }
 
+        PlayerView view = processPlayer(p);
         synchronized (zonesUpdate) {
             for (Pair<PlayerView, ZoneType> pair : zonesUpdate) {
-                if (pair.getLeft() == p.getView() && pair.getRight() == z) {
+                if (pair.getLeft() == view && pair.getRight() == z) {
                     return null; //avoid adding the same pair multiple times
                 }
             }
-            zonesUpdate.add(Pair.of(p.getView(), z));
+            zonesUpdate.add(Pair.of(view, z));
         }
         return processEvent();
     }
@@ -216,7 +251,8 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
 
     @Override
     public Void visit(final GameEventTurnBegan event) {
-        turnUpdate = event.turnOwner.getView();
+        turnUpdate = processPlayer(event.turnOwner);
+
         if (FModel.getPreferences().getPrefBoolean(FPref.UI_STACK_CREATURES) && event.turnOwner != null) {
             // anything except stack will get here
             updateZone(event.turnOwner, ZoneType.Battlefield);
@@ -228,12 +264,12 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
     public Void visit(GameEventAnteCardsSelected ev) {
         final List<CardView> options = Lists.newArrayList();
         for (final Entry<Player, Card> kv : ev.cards.entries()) {
-            //use fake card so real cards appear with proper formatting
-            final CardView fakeCard = new CardView(-1, null, "  -- From " + Lang.getPossesive(kv.getKey().getName()) + " deck --");
+            final CardView fakeCard = new CardView(-1); //use fake card so real cards appear with proper formatting
+            fakeCard.getOriginal().setName("  -- From " + Lang.getPossesive(kv.getKey().getName()) + " deck --");
             options.add(fakeCard);
-            options.add(kv.getValue().getView());
+            options.add(gameView.getCardView(kv.getValue(), true));
         }
-        SGuiChoose.reveal("These cards were chosen to ante", options);
+        SGuiChoose.reveal(gameView.getGui(), "These cards were chosen to ante", options);
         return null;
     }
 
@@ -369,7 +405,7 @@ public class FControlGameEventHandler extends IGameEventVisitor.Base<Void> {
 
     @Override
     public Void visit(GameEventPlayerStatsChanged event) {
-        CardCollection cards = new CardCollection();
+        HashSet<Card> cards = new HashSet<Card>();
         for (final Player p : event.players) {
             cards.addAll(p.getAllCards());
         }

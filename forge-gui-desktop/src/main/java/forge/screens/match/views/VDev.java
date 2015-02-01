@@ -60,7 +60,6 @@ public enum VDev implements IVDoc<CDev> {
     private final DevLabel lblViewAll = new DevLabel("View All Cards");
     private final DevLabel lblGenerateMana = new DevLabel("Generate Mana");
     private final DevLabel lblSetupGame = new DevLabel("Setup Game State");
-    private final DevLabel lblDumpGame = new DevLabel("Dump Game State");
     private final DevLabel lblTutor = new DevLabel("Tutor for Card");
     private final DevLabel lblCounterPermanent = new DevLabel("Add Counters to Permanent");
     private final DevLabel lblTapPermanent = new DevLabel("Tap Permanents");
@@ -86,8 +85,7 @@ public enum VDev implements IVDoc<CDev> {
         viewport.add(this.lblCardToBattlefield, halfConstraints);
         viewport.add(this.lblSetLife, halfConstraintsLeft);
         viewport.add(this.lblWinGame, halfConstraints);
-        viewport.add(this.lblSetupGame, halfConstraintsLeft);
-        viewport.add(this.lblDumpGame, halfConstraints);
+        viewport.add(this.lblSetupGame, constraints);
         viewport.add(this.lblUnlimitedLands, constraints);
         viewport.add(this.lblCounterPermanent, constraints);
         viewport.add(this.lblTapPermanent, halfConstraintsLeft);
@@ -159,11 +157,6 @@ public enum VDev implements IVDoc<CDev> {
         return this.lblSetupGame;
     }
 
-    /** @return {@link forge.screens.match.views.VDev.DevLabel} */
-    public DevLabel getLblDumpGame() {
-        return this.lblDumpGame;
-    }
-    
     /** @return {@link forge.screens.match.views.VDev.DevLabel} */
     public DevLabel getLblTutor() {
         return this.lblTutor;

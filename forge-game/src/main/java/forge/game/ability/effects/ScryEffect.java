@@ -3,22 +3,21 @@ package forge.game.ability.effects;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.event.GameEventScry;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 public class ScryEffect extends SpellAbilityEffect {
+
     @Override
     protected String getStackDescription(SpellAbility sa) {
         final StringBuilder sb = new StringBuilder();
@@ -40,6 +39,7 @@ public class ScryEffect extends SpellAbilityEffect {
 
     @Override
     public void resolve(SpellAbility sa) {
+
         int num = 1;
         if (sa.hasParam("ScryNum")) {
             num = AbilityUtils.calculateAmount(sa.getHostCard(), sa.getParam("ScryNum"), sa);
@@ -54,44 +54,46 @@ public class ScryEffect extends SpellAbilityEffect {
             }
         }
     }
-
-    private static void scry(final Player p, final int numScry) {
-        final CardCollection topN = new CardCollection();
+    
+    /**
+     * <p>
+     * scry.
+     * </p>
+     * 
+     * @param numScry
+     *            a int.
+     */
+    public final void scry(Player p, int numScry) {
+        final List<Card> topN = new ArrayList<Card>();
         final PlayerZone library = p.getZone(ZoneType.Library);
-        final int actualNumScry = Math.min(numScry, library.size());
+        numScry = Math.min(numScry, library.size());
 
-        if (actualNumScry == 0) { return; }
+        if ( numScry == 0 )
+            return;
 
-        for (int i = 0; i < actualNumScry; i++) {
+        for (int i = 0; i < numScry; i++) {
             topN.add(library.get(i));
         }
 
-        final ImmutablePair<CardCollection, CardCollection> lists = p.getController().arrangeForScry(topN);
-        final CardCollection toTop = lists.getLeft();
-        final CardCollection toBottom = lists.getRight();
-
-        int numToBottom = 0;
-        int numToTop = 0;
+        ImmutablePair<List<Card>, List<Card>> lists = p.getController().arrangeForScry(topN);
+        List<Card> toTop = lists.getLeft();
+        List<Card> toBottom = lists.getRight();
         
-        if (toBottom != null) {
+        if ( null != toBottom) {
             for(Card c : toBottom) {
                 p.getGame().getAction().moveToBottomOfLibrary(c);
-                numToBottom++;
             }
         }
 
-        if (toTop != null) {
+        if ( null != toTop ) {
             Collections.reverse(toTop); // the last card in list will become topmost in library, have to revert thus.
             for(Card c : toTop) {
                 p.getGame().getAction().moveToLibrary(c);
-                numToTop++;
             }
         }
-
-        p.getGame().fireEvent(new GameEventScry(p, numToTop, numToBottom));
-
         final HashMap<String, Object> runParams = new HashMap<String, Object>();
         runParams.put("Player", p);
         p.getGame().getTriggerHandler().runTrigger(TriggerType.Scry, runParams, false);
     }
+
 }

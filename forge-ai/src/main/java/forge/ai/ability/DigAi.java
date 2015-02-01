@@ -12,6 +12,7 @@ import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.util.MyRandom;
 
+import java.util.Collection;
 import java.util.Random;
 
 
@@ -86,7 +87,7 @@ public class DigAi extends SpellAbilityAi {
     }
     
     @Override
-    public Card chooseSingleCard(Player ai, SpellAbility sa, Iterable<Card> valid, boolean isOptional, Player relatedPlayer) {
+    public Card chooseSingleCard(Player ai, SpellAbility sa, Collection<Card> valid, boolean isOptional, Player relatedPlayer) {
         Card chosen = ComputerUtilCard.getBestAI(valid);
         if (sa.getActivatingPlayer().isOpponentOf(ai) && relatedPlayer.isOpponentOf(ai)) {
             return ComputerUtilCard.getWorstAI(valid);

@@ -25,15 +25,15 @@ import javax.swing.JLabel;
 
 import forge.UiCommand;
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.gui.CardPicturePanel;
 import forge.gui.framework.ICDoc;
 import forge.item.IPaperCard;
 import forge.item.InventoryItem;
-import forge.match.MatchUtil;
 import forge.screens.match.views.VPicture;
 import forge.toolbox.FMouseAdapter;
 import forge.toolbox.special.CardZoomer;
+import forge.view.CardView;
+import forge.view.ViewUtil;
 
 /**
  * Singleton controller for VPicture.
@@ -56,25 +56,22 @@ public enum CPicture implements ICDoc {
     private final CardZoomer zoomer = CardZoomer.SINGLETON_INSTANCE;
 
     private CardView currentView = null;
-    private boolean isDisplayAlt = false, alwaysDisplayAlt = false;
+    private boolean isDisplayAlt = false;
 
     /**
      * Shows card details and/or picture in sidebar cardview tabber.
      * 
      */
     public void showCard(final CardView c, boolean showAlt) {
-        if (c == null) {
+        if (null == c) {
             return;
         }
 
-        boolean canFlip = MatchUtil.canCardBeFlipped(c);
-
         currentView = c;
         isDisplayAlt = showAlt;
-        alwaysDisplayAlt = canFlip && c.isFaceDown();
-        flipIndicator.setVisible(canFlip);
-        picturePanel.setCard(c.getState(isDisplayAlt || alwaysDisplayAlt));
-        if (showAlt && canFlip) {
+        flipIndicator.setVisible(c.hasAltState());
+        picturePanel.setCard(c.getState(showAlt));
+        if (showAlt && c.hasAltState()) {
             flipCard();
         }
     }
@@ -86,22 +83,20 @@ public enum CPicture implements ICDoc {
     public void showImage(final InventoryItem item) {
         if (item instanceof IPaperCard) {
             final IPaperCard paperCard = ((IPaperCard)item);
-            final CardView c = CardView.getCardForUi(paperCard);
-            if (paperCard.isFoil() && c.getCurrentState().getFoilIndex() == 0) {
+            final CardView c = ViewUtil.getCardForUi(paperCard);
+            if (paperCard.isFoil() && c.getOriginal().getFoilIndex() == 0) {
                 // FIXME should assign a random foil here in all cases
                 // (currently assigns 1 for the deck editors where foils "flicker" otherwise)
                 if (item instanceof Card) {
-                    c.getCurrentState().setFoilIndexOverride(-1); //-1 to choose random
-                }
-                else if (item instanceof IPaperCard) {
-                    c.getCurrentState().setFoilIndexOverride(1);
+                    c.getOriginal().setRandomFoil(); 
+                } else if (item instanceof IPaperCard) {
+                    c.getOriginal().setFoilIndex(1);
                 }
             }
             showCard(c, false);
         } else {
             currentView = null;
             isDisplayAlt = false;
-            alwaysDisplayAlt = false;
             flipIndicator.setVisible(false);
             picturePanel.setCard(item);
         }
@@ -176,10 +171,11 @@ public enum CPicture implements ICDoc {
     }
 
     public void flipCard() {
-        if (MatchUtil.canCardBeFlipped(currentView)) {
+        if (currentView.hasAltState()) {
             isDisplayAlt = !isDisplayAlt;
-            picturePanel.setCard(currentView.getState(isDisplayAlt || alwaysDisplayAlt));
+            picturePanel.setCard(currentView.getState(isDisplayAlt));
             CDetail.SINGLETON_INSTANCE.showCard(currentView, isDisplayAlt);
         }
     }
+
 }

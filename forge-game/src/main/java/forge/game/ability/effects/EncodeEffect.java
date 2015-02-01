@@ -3,13 +3,14 @@ package forge.game.ability.effects;
 import forge.game.Game;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerHandler;
 import forge.game.zone.ZoneType;
+
+import java.util.List;
 
 public class EncodeEffect extends SpellAbilityEffect {
     @Override
@@ -31,7 +32,7 @@ public class EncodeEffect extends SpellAbilityEffect {
         final Game game = player.getGame();
 
         // make list of creatures that controller has on Battlefield
-        CardCollectionView choices = game.getCardsIn(ZoneType.Battlefield);
+        List<Card> choices = game.getCardsIn(ZoneType.Battlefield);
         choices = CardLists.getValidCards(choices, "Creature.YouCtrl", host.getController(), host);
 
         // if no creatures on battlefield, cannot encoded
@@ -58,10 +59,10 @@ public class EncodeEffect extends SpellAbilityEffect {
         }
 
         // store hostcard in encoded array
-        choice.addEncodedCard(movedCard);
+        choice.addEncoded(movedCard);
 
         // add trigger
-        final int numEncoded = choice.getEncodedCards().size();
+        final int numEncoded = choice.getEncoded().size();
         final StringBuilder cipherTrigger = new StringBuilder();
         cipherTrigger.append("Mode$ DamageDone | ValidSource$ Card.Self | ValidTarget$ Player | Execute$ PlayEncoded").append(numEncoded);
         cipherTrigger.append(" | CombatDamage$ True | OptionalDecider$ You | TriggerDescription$ ");

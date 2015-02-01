@@ -12,10 +12,12 @@ import forge.util.Aggregates;
 import forge.util.MyRandom;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
 public class CharmAi extends SpellAbilityAi {
+
     @Override
     protected boolean canPlayAI(Player ai, SpellAbility sa) {
         final Random r = MyRandom.getRandom();
@@ -24,8 +26,7 @@ public class CharmAi extends SpellAbilityAi {
         final int min = sa.hasParam("MinCharmNum") ? Integer.parseInt(sa.getParam("MinCharmNum")) : num;
         boolean timingRight = sa.isTrigger(); //is there a reason to play the charm now?
 
-        // reset the chosen list. Otherwise it will be locked in forever
-        sa.setChosenList(null);
+        
         List<AbilitySub> chosenList = chooseOptionsAi(sa, ai, timingRight, num, min, false);
 
         if (chosenList.isEmpty()) {
@@ -52,7 +53,7 @@ public class CharmAi extends SpellAbilityAi {
             return choices.subList(1, choices.size());
         }
         
-        AiController aic = ((PlayerControllerAi) ai.getController()).getAi();
+        AiController aic = ((PlayerControllerAi)ai.getController()).getAi();
         for (int i = 0; i < num; i++) {
             AbilitySub thisPick = null;
             for (SpellAbility sub : choices) {
@@ -91,9 +92,13 @@ public class CharmAi extends SpellAbilityAi {
         }
         return chosenList;
     }
-
+    
+    /* (non-Javadoc)
+     * @see forge.card.ability.SpellAbilityAi#chooseSinglePlayer(forge.game.player.Player, forge.card.spellability.SpellAbility, java.util.List)
+     */
     @Override
-    public Player chooseSinglePlayer(Player ai, SpellAbility sa, Iterable<Player> opponents) {
+    public Player chooseSinglePlayer(Player ai, SpellAbility sa, Collection<Player> opponents) {
         return Aggregates.random(opponents);
     }
+    
 }

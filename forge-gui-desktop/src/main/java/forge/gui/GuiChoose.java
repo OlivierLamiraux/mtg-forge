@@ -20,13 +20,17 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
 import forge.FThreads;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
+import forge.GuiBase;
 import forge.item.InventoryItem;
 import forge.screens.match.CMatchUI;
 import forge.toolbox.FOptionPane;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
 
-
+/** 
+ * TODO: Write javadoc for this type.
+ *
+ */
 public class GuiChoose {
 
     /**
@@ -204,11 +208,6 @@ public class GuiChoose {
                     @Override
                     public void valueChanged(final ListSelectionEvent ev) {
                         final T sel = list.getSelectedValue();
-                        if (sel instanceof InventoryItem) {
-                            CMatchUI.SINGLETON_INSTANCE.setCard((InventoryItem) list.getSelectedValue());
-                            return;
-                        }
-
                         final CardView card;
                         if (sel instanceof CardStateView) {
                             card = ((CardStateView) sel).getCard();
@@ -222,6 +221,9 @@ public class GuiChoose {
 
                             GuiUtils.clearPanelSelections();
                             GuiUtils.setPanelSelection(card);
+                        }
+                        if (list.getSelectedValue() instanceof InventoryItem) {
+                            CMatchUI.SINGLETON_INSTANCE.setCard((InventoryItem) list.getSelectedValue());
                         }
                     }
                 });
@@ -239,7 +241,7 @@ public class GuiChoose {
         };
 
         FutureTask<List<T>> future = new FutureTask<List<T>>(showChoice);
-        FThreads.invokeInEdtAndWait(future);
+        FThreads.invokeInEdtAndWait(GuiBase.getInterface(), future);
         try {
             return future.get();
         } catch (Exception e) { // should be no exception here
@@ -298,7 +300,7 @@ public class GuiChoose {
         };
 
         FutureTask<List<T>> ft = new FutureTask<List<T>>(callable);
-        FThreads.invokeInEdtAndWait(ft);
+        FThreads.invokeInEdtAndWait(GuiBase.getInterface(), ft);
         try {
             return ft.get();
         } catch (Exception e) { // we have waited enough

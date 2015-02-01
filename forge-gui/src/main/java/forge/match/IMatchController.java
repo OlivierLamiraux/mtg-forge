@@ -7,16 +7,17 @@ import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
 import forge.LobbyPlayer;
-import forge.game.GameEntityView;
 import forge.game.Match;
-import forge.game.card.CardView;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
-import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
 import forge.interfaces.IButton;
 import forge.util.ITriggerEvent;
+import forge.view.CardView;
+import forge.view.CombatView;
+import forge.view.GameEntityView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
 
 public interface IMatchController {
     void startNewMatch(Match match);
@@ -24,7 +25,7 @@ public interface IMatchController {
     boolean hotSeatMode();
     void openView(List<Player> sortedPlayers);
     void afterGameEnd();
-    void showCombat();
+    void showCombat(CombatView combat);
     void showPromptMessage(PlayerView playerView, String message);
     boolean stopAtPhase(PlayerView playerTurn, PhaseType phase);
     IButton getBtnOK(PlayerView playerView);
@@ -49,6 +50,6 @@ public interface IMatchController {
     void updateLives(Iterable<PlayerView> livesUpdate);
     void setPanelSelection(CardView hostCard);
     void hear(LobbyPlayer player, String message);
-    SpellAbility getAbilityToPlay(List<SpellAbility> abilities, ITriggerEvent triggerEvent);
+    int getAbilityToPlay(List<SpellAbilityView> abilities, ITriggerEvent triggerEvent);
     Map<CardView, Integer> assignDamage(CardView attacker, List<CardView> blockers, int damage, GameEntityView defender, boolean overrideOrder);
 }

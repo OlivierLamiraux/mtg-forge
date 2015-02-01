@@ -28,9 +28,6 @@ import javax.swing.ScrollPaneConstants;
 import com.google.common.collect.Lists;
 
 import net.miginfocom.swing.MigLayout;
-import forge.game.card.CardFactoryUtil;
-import forge.game.card.CardView;
-import forge.game.player.PlayerView;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.DragTab;
 import forge.gui.framework.EDocID;
@@ -42,6 +39,8 @@ import forge.screens.match.controllers.CPlayers;
 import forge.toolbox.FScrollPanel;
 import forge.toolbox.FSkin;
 import forge.toolbox.FSkin.SkinnedLabel;
+import forge.view.CardView;
+import forge.view.PlayerView;
 
 /** 
  * Assembles Swing components of players report.
@@ -166,21 +165,19 @@ public enum VPlayers implements IVDoc<CPlayers> {
                 temp[5].setText("");
             }
             if (FModel.getPreferences().getPrefBoolean(FPref.UI_ANTE)) {
-                final Iterable<CardView> list = p0.getAnte();
+                final List<CardView> list = p0.getAnteCards();
                 final StringBuilder sb = new StringBuilder();
                 sb.append("Ante'd: ");
-                boolean needDelim = false;
-                for (CardView cv : list) {
-                    if (needDelim) {
+                for (int i = 0; i < list.size(); i++) {
+                    sb.append(list.get(i));
+                    if (i < (list.size() - 1)) {
                         sb.append(", ");
                     }
-                    else { needDelim = true; }
-                    sb.append(cv);
                 }
                 temp[6].setText(sb.toString());
             }
             if (isCommander) {
-                temp[7].setText(CardFactoryUtil.getCommanderInfo(p0));
+                temp[7].setText(p0.getCommanderInfo());
             }
         }
     }

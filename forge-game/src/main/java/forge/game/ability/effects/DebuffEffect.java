@@ -67,14 +67,14 @@ public class DebuffEffect extends SpellAbilityEffect {
             if (tgtC.isInPlay() && tgtC.canBeTargetedBy(sa)) {
                 if (sa.hasParam("AllSuffixKeywords")) {
                     String suffix = sa.getParam("AllSuffixKeywords");
-                    for (final String keyword : tgtC.getKeywords()) {
+                    for (final String keyword : tgtC.getKeyword()) {
                         if (keyword.endsWith(suffix)) {
                             kws.add(keyword);
                         }
                     }
                 }
                 for (final String kw : kws) {
-                    if (tgtC.getCurrentState().hasIntrinsicKeyword(kw)) {
+                    if (tgtC.getIntrinsicKeyword().contains(kw)) {
                         hadIntrinsic.add(kw);
                     }
                     tgtC.removeIntrinsicKeyword(kw);

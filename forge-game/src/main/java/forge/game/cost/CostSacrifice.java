@@ -18,12 +18,13 @@
 package forge.game.cost;
 
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
-import forge.game.card.CardPredicates;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The Class CostSacrifice.
@@ -86,14 +87,13 @@ public class CostSacrifice extends CostPartWithList {
             // If the sacrificed type is dependant on an annoucement, can't necesarily rule out the CanPlay call
             boolean needsAnnoucement = ability.hasParam("Announce") && this.getType().contains(ability.getParam("Announce"));
 
-            CardCollectionView typeList = activator.getCardsIn(ZoneType.Battlefield);
+            List<Card> typeList = new ArrayList<Card>(activator.getCardsIn(ZoneType.Battlefield));
             typeList = CardLists.getValidCards(typeList, this.getType().split(";"), activator, source);
             final Integer amount = this.convertAmount();
 
             if (activator.hasKeyword("You can't sacrifice creatures to cast spells or activate abilities.")) {
                 typeList = CardLists.getNotType(typeList, "Creature");
             }
-            typeList = CardLists.filter(typeList, CardPredicates.canBeSacrificedBy(ability));
 
             if (!needsAnnoucement && (amount != null) && (typeList.size() < amount)) {
                 return false;
@@ -104,7 +104,7 @@ public class CostSacrifice extends CostPartWithList {
             // choice, it can be Paid even if it's 0
         }
         else {
-            if (!source.canBeSacrificed()) {
+            if (!source.isInPlay()) {
                 return false;
             }
             else if (source.isCreature() && activator.hasKeyword("You can't sacrifice creatures to cast spells or activate abilities.")) {

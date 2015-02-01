@@ -1,12 +1,10 @@
 package forge.screens.match;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
-import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -16,28 +14,23 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
 
+import forge.GuiBase;
 import forge.LobbyPlayer;
 import forge.UiCommand;
-import forge.assets.FSkinProp;
 import forge.game.GameLogEntry;
 import forge.game.GameLogEntryType;
-import forge.game.GameView;
 import forge.gui.SOverlayUtils;
 import forge.interfaces.IWinLoseView;
-import forge.item.PaperCard;
 import forge.model.FModel;
-import forge.properties.ForgePreferences.FPref;
 import forge.toolbox.FButton;
 import forge.toolbox.FLabel;
 import forge.toolbox.FOverlay;
 import forge.toolbox.FScrollPane;
 import forge.toolbox.FSkin;
-import forge.toolbox.FSkin.Colors;
-import forge.toolbox.FSkin.SkinColor;
-import forge.toolbox.FSkin.SkinIcon;
 import forge.toolbox.FSkin.SkinnedLabel;
 import forge.toolbox.FSkin.SkinnedPanel;
 import forge.toolbox.FTextArea;
+import forge.view.IGameView;
 
 public class ViewWinLose implements IWinLoseView<FButton> {
     private final FButton btnContinue, btnRestart, btnQuit;
@@ -47,17 +40,11 @@ public class ViewWinLose implements IWinLoseView<FButton> {
     private final SkinnedLabel lblStats = new SkinnedLabel("WinLoseFrame > lblStats needs updating.");
     private final JPanel pnlOutcomes = new JPanel(new MigLayout("wrap, align center"));
 
-    /** String constraint parameters for title blocks and cardviewer blocks. */
-    private static final SkinColor FORE_COLOR = FSkin.getColor(Colors.CLR_TEXT);
-    private static final String CONSTRAINTS_TITLE = "w 95%!, gap 0 0 20px 10px";
-    private static final String CONSTRAINTS_TEXT = "w 95%!, h 220px!, gap 0 0 0 20px";
-    private static final String CONSTRAINTS_CARDS = "w 95%!, h 330px!, gap 0 0 0 20px";
-    private static final String CONSTRAINTS_CARDS_LARGE = "w 95%!, h 600px!, gap 0 0 0 20px";
-
-    private final GameView game;
+    private final IGameView game;
     
     @SuppressWarnings("serial")
-    public ViewWinLose(final GameView game0) {
+    public ViewWinLose(final IGameView game0) {
+
         this.game = game0;
 
         final JPanel overlay = FOverlay.SINGLETON_INSTANCE.getPanel();
@@ -89,7 +76,7 @@ public class ViewWinLose implements IWinLoseView<FButton> {
             control = new LimitedWinLose(this, game0);
             break;
         case Gauntlet:
-            control = new GauntletWinLose(this, game0);
+            control = new GauntletWinLose(this, game0, GuiBase.getInterface());
             break;
         default: // will catch it after switch
             break;
@@ -121,7 +108,7 @@ public class ViewWinLose implements IWinLoseView<FButton> {
 
         // Assemble game log scroller.
         final FTextArea txtLog = new FTextArea();
-        txtLog.setText(StringUtils.join(game.getGameLog().getLogEntries(null), "\r\n").replace("[COMPUTER]", "[AI]"));
+        txtLog.setText(StringUtils.join(game.getLogEntries(null), "\r\n").replace("[COMPUTER]", "[AI]"));
         txtLog.setFont(FSkin.getFont(14));
         txtLog.setFocusable(true); // allow highlighting and copying of log
 
@@ -201,7 +188,7 @@ public class ViewWinLose implements IWinLoseView<FButton> {
 
     }
 
-    private String composeTitle(final GameView game) {
+    private String composeTitle(final IGameView game) {
         final LobbyPlayer winner = game.getWinningPlayer();
         final int winningTeam = game.getWinningTeam();
         if (winner == null) {
@@ -234,12 +221,12 @@ public class ViewWinLose implements IWinLoseView<FButton> {
     }
 
     private void showGameOutcomeSummary() {
-        for (final GameLogEntry o : game.getGameLog().getLogEntriesExact(GameLogEntryType.GAME_OUTCOME))
+        for (final GameLogEntry o : game.getLogEntriesExact(GameLogEntryType.GAME_OUTCOME))
             pnlOutcomes.add(new FLabel.Builder().text(o.message).fontSize(14).build(), "h 20!");
     }
 
     private void showPlayerScores() {
-        for (final GameLogEntry o : game.getGameLog().getLogEntriesExact(GameLogEntryType.MATCH_RESULTS)) {
+        for (final GameLogEntry o : game.getLogEntriesExact(GameLogEntryType.MATCH_RESULTS)) {
             lblStats.setText(removePlayerTypeFromLogMessage(o.message));
         }
     }
@@ -251,56 +238,5 @@ public class ViewWinLose implements IWinLoseView<FButton> {
     @Override
     public void hide() {
         SOverlayUtils.hideOverlay();
-    }
-
-    @Override
-    public void showRewards(Runnable runnable) {
-        runnable.run(); //just run on GUI thread
-    }
-
-    @Override
-    public void showCards(String title, List<PaperCard> cards) {
-        final QuestWinLoseCardViewer cv = new QuestWinLoseCardViewer(cards);
-        getPnlCustom().add(new TitleLabel(title), CONSTRAINTS_TITLE);
-        if (FModel.getPreferences().getPrefBoolean(FPref.UI_LARGE_CARD_VIEWERS)) {
-            getPnlCustom().add(cv, CONSTRAINTS_CARDS_LARGE);
-        }
-        else {
-            getPnlCustom().add(cv, CONSTRAINTS_CARDS);
-        }
-    }
-
-    @Override
-    public void showMessage(String message, String title, FSkinProp icon) {
-        SkinIcon icoTemp = FSkin.getIcon(icon).scale(0.5);
-
-        if (message.contains("\n")) { //ensure new line characters are encoded
-            message = "<html>" + message.replace("\n", "<br>") + "</html>";
-        }
-        SkinnedLabel lblMessage = new SkinnedLabel(message);
-        lblMessage.setFont(FSkin.getFont(14));
-        lblMessage.setForeground(FORE_COLOR);
-        lblMessage.setHorizontalAlignment(SwingConstants.CENTER);
-        lblMessage.setIconTextGap(50);
-        lblMessage.setIcon(icoTemp);
-
-        getPnlCustom().add(new TitleLabel(title), CONSTRAINTS_TITLE);
-        getPnlCustom().add(lblMessage, CONSTRAINTS_TEXT);
-    }
-
-    /**
-     * JLabel header between reward sections.
-     * 
-     */
-    @SuppressWarnings("serial")
-    private class TitleLabel extends SkinnedLabel {
-        TitleLabel(final String msg) {
-            super(msg);
-            setFont(FSkin.getFont(16));
-            setPreferredSize(new Dimension(200, 40));
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setForeground(FORE_COLOR);
-            setBorder(new FSkin.MatteSkinBorder(1, 0, 1, 0, FORE_COLOR));
-        }
     }
 }

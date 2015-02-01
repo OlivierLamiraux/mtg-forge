@@ -16,7 +16,7 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 
 /** 
- * A custom instance of JTextField using Forge skin properties.
+ * A custom instance of JTextArea using Forge skin properties.
  *
  */
 @SuppressWarnings("serial")
@@ -106,7 +106,7 @@ public class FTextField extends SkinnedTextField implements ITextField {
         });
         this.showGhostTextWithFocus = builder.showGhostTextWithFocus;
         this.ghostText = builder.ghostText;
-        if ("".equals(this.ghostText)) { this.ghostText = null; } //don't allow empty string to make other logic easier
+        if (this.ghostText == "") { this.ghostText = null; } //don't allow empty string to make other logic easier
     }
 
     public boolean isEmpty() {
@@ -139,7 +139,7 @@ public class FTextField extends SkinnedTextField implements ITextField {
     }
 
     public void setGhostText(String ghostText0) {
-        if ("".equals(this.ghostText)) { ghostText0 = null; } //don't allow empty string to make other logic easier
+        if (ghostText0 == "") { ghostText0 = null; } //don't allow empty string to make other logic easier
         if (this.ghostText == ghostText0) { return; }
         this.ghostText = ghostText0;
         if (this.isEmpty()) {

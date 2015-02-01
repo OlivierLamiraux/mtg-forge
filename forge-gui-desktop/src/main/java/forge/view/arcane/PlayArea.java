@@ -28,15 +28,15 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import forge.FThreads;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
-import forge.game.player.PlayerView;
+import forge.GuiBase;
 import forge.game.zone.ZoneType;
-import forge.match.MatchUtil;
 import forge.screens.match.CMatchUI;
 import forge.screens.match.controllers.CPrompt;
 import forge.toolbox.FScrollPane;
 import forge.toolbox.MouseTriggerEvent;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
+import forge.view.PlayerView;
 import forge.view.arcane.util.Animation;
 import forge.view.arcane.util.CardPanelMouseListener;
 
@@ -49,14 +49,20 @@ import forge.view.arcane.util.CardPanelMouseListener;
  * @version $Id: PlayArea.java 24769 2014-02-09 13:56:04Z Hellfish $
  */
 public class PlayArea extends CardPanelContainer implements CardPanelMouseListener {
+    /** Constant <code>serialVersionUID=8333013579724492513L</code>. */
     private static final long serialVersionUID = 8333013579724492513L;
-
+    /** Constant <code>GUTTER_Y=5</code>. */
     private static final int GUTTER_Y = 5;
+    /** Constant <code>GUTTER_X=5</code>. */
     private static final int GUTTER_X = 5;
+    /** Constant <code>EXTRA_CARD_SPACING_X=0.04f</code>. */
     static final float EXTRA_CARD_SPACING_X = 0.04f;
+    /** Constant <code>CARD_SPACING_Y=0.06f</code>. */
     private static final float CARD_SPACING_Y = 0.06f;
-    private static final float STACK_SPACING_X = 0.12f;
-    private static final float STACK_SPACING_Y = 0.12f;
+    /** Constant <code>STACK_SPACING_X=0.07f</code>. */
+    private static final float STACK_SPACING_X = 0.07f;
+    /** Constant <code>STACK_SPACING_Y=0.07f</code>. */
+    private static final float STACK_SPACING_Y = 0.07f;
 
     //private final int creatureStackMax = 4;
     private final int landStackMax = 5;
@@ -75,6 +81,15 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
     private final PlayerView model;
     private final ZoneType zone;
 
+    /**
+     * <p>
+     * Constructor for PlayArea.
+     * </p>
+     * 
+     * @param scrollPane
+     * @param mirror
+     * @param player 
+     */
     public PlayArea(final FScrollPane scrollPane, final boolean mirror, final PlayerView player, final ZoneType zone) {
         super(scrollPane);
         this.setBackground(Color.white);
@@ -90,7 +105,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         //
         for (final CardPanel panel : this.getCardPanels()) {
             final CardView card = panel.getCard();
-            final CardStateView state = card.getCurrentState();
+            final CardStateView state = card.getOriginal();
 
             if (!state.isLand() || state.isCreature()) {
                 continue;
@@ -102,7 +117,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             for (int i = 0, n = allLands.size(); i < n; i++) {
                 final CardStack stack = allLands.get(i);
                 final CardPanel firstPanel = stack.get(0);
-                if (firstPanel.getCard().getCurrentState().getName().equals(state.getName())) {
+                if (firstPanel.getCard().getOriginal().getName().equals(state.getName())) {
                     if (!firstPanel.getAttachedPanels().isEmpty() || firstPanel.getCard().isEnchanted()) {
                         // Put this land to the left of lands with the same name
                         // and attachments.
@@ -110,7 +125,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                         break;
                     }
                     if (!panel.getAttachedPanels().isEmpty()
-                            || !panel.getCard().hasSameCounters(firstPanel.getCard())
+                            || !panel.getCard().getCounters().equals(firstPanel.getCard().getCounters())
                             || firstPanel.getCard().isEnchanted() || (stack.size() == this.landStackMax)) {
                         // If this land has attachments or the stack is full,
                         // put it to the right.
@@ -139,7 +154,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         //
         for (final CardPanel panel : this.getCardPanels()) {
             final CardView card = panel.getCard();
-            final CardStateView state = card.getCurrentState();
+            final CardStateView state = card.getOriginal();
 
             if (!card.isToken()) {
                 continue;
@@ -152,9 +167,9 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                 final CardStack stack = allTokens.get(i);
                 final CardPanel firstPanel = stack.get(0);
                 final CardView firstCard = firstPanel.getCard();
-                final CardStateView firstState = firstCard.getCurrentState();
+                final CardStateView firstState = firstCard.getOriginal();
 
-                if (firstPanel.getCard().getCurrentState().getName().equals(state.getName())) {
+                if (firstPanel.getCard().getOriginal().getName().equals(state.getName())) {
                     if (!firstPanel.getAttachedPanels().isEmpty()) {
                         // Put this token to the left of tokens with the same
                         // name and attachments.
@@ -162,12 +177,15 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                         break;
                     }
 
+                    final String text = state.getText();
+                    final String firstText = firstState.getText();
+
                     if (!panel.getAttachedPanels().isEmpty()
-                            || !card.hasSameCounters(firstPanel.getCard())
+                            || !card.getCounters().equals(firstPanel.getCard().getCounters())
                             || (card.isSick() != firstCard.isSick())
                             || (state.getPower() != firstState.getPower())
                             || (state.getToughness() != firstState.getToughness())
-                            || !(card.getText().equals(firstCard.getText()))
+                            || !(text.equals(firstText))
                             || (stack.size() == tokenStackMax)) {
                         // If this token has attachments or the stack is full,
                         // put it to the right.
@@ -218,8 +236,8 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                             || panel.getCard().isCopiedSpell()
                             || !panel.getCard().getCounters().equals(firstPanel.getCard().getCounters())
                             || (panel.getCard().isSick() != firstPanel.getCard().isSick())
-                            || (panel.getCard().getNetPower() != firstPanel.getCard().getNetPower())
-                            || (panel.getCard().getNetToughness() != firstPanel.getCard().getNetToughness())
+                            || (panel.getCard().getNetAttack() != firstPanel.getCard().getNetAttack())
+                            || (panel.getCard().getNetDefense() != firstPanel.getCard().getNetDefense())
                             || (stack.size() == creatureStackMax)) {
                         // If this creature has attachments or the stack is full,
                         // put it to the right.
@@ -298,7 +316,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             }
         }
         setCardWidth(lastGoodCardWidth);
-        if (null == lastTemplate) 
+        if ( null == lastTemplate ) 
             lastTemplate = tryArrangePilesOfWidth(lands, tokens, creatures, others);
 
         this.rows = lastTemplate;
@@ -321,19 +339,20 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         positionAllCards(lastTemplate);
     }
 
-    // Position all card panels
     private void positionAllCards(List<CardStackRow> template)  {
+
+        // Position all card panels.
         int x = 0;
         int y = PlayArea.GUTTER_Y;
 
-        //System.out.println("-------- " + (mirror ? "^" : "_") + " (Positioning) Card width = " + cardWidth + ". Playarea = " + playAreaWidth + " x " + playAreaHeight);
+        //System.out.println("-------- " + (mirror ? "^" : "_") + " (Positioning ) Card width = " + cardWidth + ". Playarea = " + playAreaWidth + " x " + playAreaHeight );
         for (final CardStackRow row : template) {
             int rowBottom = 0;
             x = PlayArea.GUTTER_X;
             for (int stackIndex = 0, stackCount = row.size(); stackIndex < stackCount; stackIndex++) {
                 final CardStack stack = row.get(stackIndex);
                 // Align others to the right.
-                if (RowType.Other.isGoodFor(stack.get(0).getCard().getCurrentState())) {
+                if (RowType.Other.isGoodFor(stack.get(0).getCard().getOriginal())) {
                     x = (this.playAreaWidth - PlayArea.GUTTER_X) + this.extraCardSpacingX;
                     for (int i = stackIndex, n = row.size(); i < n; i++) {
                         CardStack r = row.get(i);
@@ -346,7 +365,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
                     this.setComponentZOrder(panel, panelIndex);
                     final int panelX = x + (stackPosition * this.stackSpacingX);
                     final int panelY = y + (stackPosition * this.stackSpacingY);
-                    //System.out.println("... placinng " + panel.getCard() + " @ (" + panelX + ", " + panelY + ")");
+                    //System.out.println("... placinng " + panel.getCard() + " @ (" + panelX + ", " + panelY + ")" );
                     panel.setCardBounds(panelX, panelY, this.getCardWidth(), this.cardHeight);
                 }
                 rowBottom = Math.max(rowBottom, y + stack.getHeight());
@@ -361,7 +380,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         
         int afterFirstRow;
 
-        //System.out.println("======== "  + (mirror ? "^" : "_") + " (try arrange) Card width = " + cardWidth + ". PlayArea = " + playAreaWidth + " x " + playAreaHeight + " ========");
+        //System.out.println( "======== "  + ( mirror ? "^" : "_" ) + " (try arrange) Card width = " + cardWidth + ". PlayArea = " + playAreaWidth + " x " + playAreaHeight + " ========");
         boolean landsFit, tokensFit, creaturesFit;
         if (this.mirror) {
             // Wrap all creatures and lands.
@@ -377,9 +396,9 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             landsFit = this.planRow(lands, template, template.size());
         }
 
-        if (!landsFit || !creaturesFit || !tokensFit) { 
+        if ( !landsFit || !creaturesFit || !tokensFit ) 
             return null;
-        }
+        
         // Other cards may be stored at end of usual rows or on their own row.
         int cntOthers = others.size();
 
@@ -393,19 +412,32 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         int nextOther = 0;
         for (final CardStackRow row : template) {
             nextOther = this.planOthersRow(others, nextOther, template, row);
-            if (nextOther == cntOthers) {
+            if ( nextOther == cntOthers )
                 return template; // everything was successfully placed
-            }
         }
 
         template = templateCopy;
         // Try to put others on their own row(s)
-        if (this.planRow(others, template, afterFirstRow)) {
+        if ( this.planRow(others, template, afterFirstRow) ) 
             return template;
-        }
+        
+        
         return null; // Cannot fit everything with that width;
     }
 
+    /**
+     * <p>
+     * wrap.
+     * </p>
+     * 
+     * @param sourceRow
+     *            a {@link forge.view.arcane.PlayArea.CardStackRow} object.
+     * @param template
+     *            a {@link java.util.List} object.
+     * @param insertIndex
+     *            a int.
+     * @return a int.
+     */
     // Won't modify the first parameter
     private boolean planRow(final CardStackRow sourceRow, final List<CardStackRow> template, final int insertIndex) {
         // The cards are sure to fit (with vertical scrolling) at the minimum
@@ -416,13 +448,13 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         for (final CardStack stack : sourceRow) {
             final int rowWidth = currentRow.getWidth();
             final int stackWidth = stack.getWidth();
-            //System.out.printf("Adding %s (+%dpx), current row is %dpx and has %s \n", stack, stackWidth, rowWidth, currentRow); 
+            //System.out.printf("Adding %s (+%dpx), current row is %dpx and has %s \n", stack, stackWidth, rowWidth, currentRow ); 
             // If the row is not empty and this stack doesn't fit, add the row.
             if (rowWidth + stackWidth > this.playAreaWidth && !currentRow.isEmpty()) {
 
                 // Stop processing if the row is too wide or tall.
                 if (rowWidth > this.playAreaWidth || this.getRowsHeight(template) + sourceRow.getHeight() > this.playAreaHeight) {
-                    if (!isMinimalSize) 
+                    if ( !isMinimalSize ) 
                         return false;
                 }
 
@@ -440,7 +472,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         if (!currentRow.isEmpty()) {
             final int rowWidth = currentRow.getWidth();
             if (isMinimalSize || rowWidth <= this.playAreaWidth && this.getRowsHeight(template) + sourceRow.getHeight() <= this.playAreaHeight) {
-                if (insertIndex == -1)
+                if ( insertIndex == -1)
                     template.add(currentRow);
                 else 
                     template.add(insertIndex, currentRow);
@@ -450,11 +482,26 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         return true;
     }
 
+
+    /**
+     * <p>
+     * fillRow.
+     * </p>
+     * 
+     * @param sourceRow
+     *            a {@link forge.view.arcane.PlayArea.CardStackRow} object.
+     * @param template
+     *            a {@link java.util.List} object.
+     * @param template
+     *            a {@link java.util.List} object.
+     * @param rowToFill
+     *            a {@link forge.view.arcane.PlayArea.CardStackRow} object.
+     */
     private int planOthersRow(final List<CardStack> sourceRow, final int firstPile, final List<CardStackRow> template, final CardStackRow rowToFill) {
         int rowWidth = rowToFill.getWidth();
 
-        //System.out.println("This row has:" + rowToFill + "; want to add:" + sourceRow);
-        for (int i = firstPile; i < sourceRow.size(); i++) {
+        //System.out.println("This row has:" + rowToFill + "; want to add:" + sourceRow );
+        for (int i = firstPile; i < sourceRow.size(); i++ ) {
             CardStack stack = sourceRow.get(i);
 
             rowWidth += stack.getWidth();
@@ -462,15 +509,23 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             
             if (stack.getHeight() > rowToFill.getHeight()) { // if row becomes taller
                 int newAllRowsHeight = this.getRowsHeight(template) - rowToFill.getHeight() + stack.getHeight();
-                if (newAllRowsHeight > this.playAreaHeight) {
+                if ( newAllRowsHeight > this.playAreaHeight) 
                     return i; // refuse to add here because it won't fit in height
-                }
             }
             rowToFill.add(stack);
         }
         return sourceRow.size();
     }
 
+    /**
+     * <p>
+     * getRowsHeight.
+     * </p>
+     * 
+     * @param rows
+     *            a {@link java.util.List} object.
+     * @return a int.
+     */
     private int getRowsHeight(final List<CardStackRow> rows) {
         int height = 0;
         for (final CardStackRow row : rows) {
@@ -479,6 +534,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         return (height - this.cardSpacingY) + (PlayArea.GUTTER_Y * 2);
     }
 
+    /** {@inheritDoc} */
     @Override
     public final CardPanel getCardPanel(final int x, final int y) {
         for (final CardStackRow row : this.rows) {
@@ -509,81 +565,44 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void mouseOver(final CardPanel panel, final MouseEvent evt) {
         CMatchUI.SINGLETON_INSTANCE.setCard(panel.getCard(), evt.isShiftDown());
         super.mouseOver(panel, evt);
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void mouseLeftClicked(final CardPanel panel, final MouseEvent evt) {
-        selectCard(panel, new MouseTriggerEvent(evt), evt.isShiftDown()); //select entire stack if shift key down
+        CPrompt.SINGLETON_INSTANCE.selectCard(panel.getCard(), new MouseTriggerEvent(evt));
         if ((panel.getTappedAngle() != 0) && (panel.getTappedAngle() != CardPanel.TAPPED_ANGLE)) {
             return;
         }
         super.mouseLeftClicked(panel, evt);
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void mouseRightClicked(final CardPanel panel, final MouseEvent evt) {
-        selectCard(panel, new MouseTriggerEvent(evt), evt.isShiftDown()); //select entire stack if shift key down
+        CPrompt.SINGLETON_INSTANCE.selectCard(panel.getCard(), new MouseTriggerEvent(evt));
         super.mouseRightClicked(panel, evt);
     }
 
-    private boolean selectCard(final CardPanel panel, final MouseTriggerEvent triggerEvent, final boolean selectEntireStack) {
-        List<CardView> otherCardViewsToSelect = null;
-        List<CardPanel> stack = panel.getStack();
-        if (selectEntireStack) {
-            if (stack != null) {
-                for (CardPanel p : stack) {
-                    if (p != panel && p.getCard() != null && p.getStack() == stack) {
-                        if (otherCardViewsToSelect == null) {
-                            otherCardViewsToSelect = new ArrayList<CardView>();
-                        }
-                        otherCardViewsToSelect.add(p.getCard());
-                    }
-                }
-            }
-        }
-        if (CPrompt.SINGLETON_INSTANCE.selectCard(panel.getCard(), otherCardViewsToSelect, triggerEvent)) {
-            return true;
-        }
-        //if panel can't do anything with card selection, try selecting previous panel in stack
-        if (stack != null) {
-            for (int i = stack.indexOf(panel) + 1; i < stack.size(); i++) { //looping forward since panels stored in reverse order
-                CardPanel p = stack.get(i);
-                if (p.getStack() == stack && selectCard(stack.get(i), triggerEvent, selectEntireStack)) {
-                    return true;
-                }
-            }
-        }
-        //as a last resort try to select attached panels not in stack
-        for (CardPanel p : panel.getAttachedPanels()) {
-            if (p.getStack() != stack) { //ensure same panel not checked more than once
-                if (selectCard(p, triggerEvent, selectEntireStack)) {
-                    return true;
-                }
-            }
-        }
-        MatchUtil.getController().flashIncorrectAction();
-        return false;
-    }
-
+    /**
+     * <p>
+     * setupPlayZone.
+     * </p>
+     */
     public void setupPlayZone() {
-        FThreads.assertExecutedByEdt(true);
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         recalculateCardPanels(model, zone);
     }
 
     private void recalculateCardPanels(final PlayerView model, final ZoneType zone) {
         final List<CardView> modelCopy;
         synchronized (model) {
-            Iterable<CardView> cards = model.getCards(zone);
-            if (cards != null) {
-                modelCopy = Lists.newArrayList(cards);
-            }
-            else {
-                modelCopy = Lists.newArrayList();
-            }
+            modelCopy = Lists.newArrayList(model.getCards(zone));
         }
 
         final List<CardView> oldCards = Lists.newArrayList();
@@ -605,8 +624,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
 
         if (toDelete.size() == getCardPanels().size()) {
             clear();
-        }
-        else {
+        } else {
             for (final CardView card : toDelete) {
                 removeCardPanel(getCardPanel(card.getId()));
             }
@@ -624,111 +642,73 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             newPanels.add(placeholder);
         }
 
-        boolean needLayoutRefresh = !newPanels.isEmpty();
-        for (final CardView card : modelCopy) {
-            if (updateCard(card, true)) {
-                needLayoutRefresh = true;
-            }
-        }
-        if (needLayoutRefresh) {
-            doLayout();
-        }
-
         if (!newPanels.isEmpty()) {
+            doLayout();
+
             for (final CardPanel toPanel : newPanels) {
                 scrollRectToVisible(new Rectangle(toPanel.getCardX(), toPanel.getCardY(), toPanel.getCardWidth(), toPanel.getCardHeight()));
                 Animation.moveCard(toPanel);
             }
         }
-
+    
+        for (final CardView card : modelCopy) {
+            updateCard(card, true);
+        }
         invalidate();
         repaint();
     }
 
-    public boolean updateCard(final CardView card, boolean fromRefresh) {
+    public void updateCard(final CardView card, boolean fromRefresh) {
         final CardPanel toPanel = getCardPanel(card.getId());
-        if (toPanel == null) { return false; }
+        if (null == toPanel) { return; }
 
-        boolean needLayoutRefresh = false;
         if (card.isTapped()) {
             toPanel.setTapped(true);
             toPanel.setTappedAngle(forge.view.arcane.CardPanel.TAPPED_ANGLE);
-        }
-        else {
+        } else {
             toPanel.setTapped(false);
             toPanel.setTappedAngle(0);
         }
         toPanel.getAttachedPanels().clear();
 
-        if (card.isEnchanted()) {
-            final Iterable<CardView> enchants = card.getEnchantedBy();
-            for (final CardView e : enchants) {
-                final CardPanel cardE = getCardPanel(e.getId());
-                if (cardE != null) {
-                    if (cardE.getAttachedToPanel() != toPanel) {
-                        cardE.setAttachedToPanel(toPanel);
-                        needLayoutRefresh = true; //ensure layout refreshed if any attachments change
-                    }
-                    toPanel.getAttachedPanels().add(cardE);
-                }
+        final Iterable<CardView> enchants = card.getEnchantedBy();
+        for (final CardView e : enchants) {
+            final CardPanel cardE = getCardPanel(e.getId());
+            if (cardE != null) {
+                toPanel.getAttachedPanels().add(cardE);
             }
         }
 
-        if (card.isEquipped()) {
-            final Iterable<CardView> equips = card.getEquippedBy();
-            for (final CardView e : equips) {
-                final CardPanel cardE = getCardPanel(e.getId());
-                if (cardE != null) {
-                    if (cardE.getAttachedToPanel() != toPanel) {
-                        cardE.setAttachedToPanel(toPanel);
-                        needLayoutRefresh = true; //ensure layout refreshed if any attachments change
-                    }
-                    toPanel.getAttachedPanels().add(cardE);
-                }
+        final Iterable<CardView> equips = card.getEquippedBy();
+        for (final CardView e : equips) {
+            final CardPanel cardE = getCardPanel(e.getId());
+            if (cardE != null) {
+                toPanel.getAttachedPanels().add(cardE);
             }
         }
 
-        if (card.isFortified()) {
-            final Iterable<CardView> fortifications = card.getFortifiedBy();
-            for (final CardView f : fortifications) {
-                final CardPanel cardE = getCardPanel(f.getId());
-                if (cardE != null) {
-                    if (cardE.getAttachedToPanel() != toPanel) {
-                        cardE.setAttachedToPanel(toPanel);
-                        needLayoutRefresh = true; //ensure layout refreshed if any attachments change
-                    }
-                    toPanel.getAttachedPanels().add(cardE);
-                }
+        final Iterable<CardView> fortifications = card.getFortifiedBy();
+        for (final CardView f : fortifications) {
+            final CardPanel cardE = getCardPanel(f.getId());
+            if (cardE != null) {
+                toPanel.getAttachedPanels().add(cardE);
             }
         }
 
-        CardPanel attachedToPanel;
         if (card.getEnchantingCard() != null) {
-            attachedToPanel = getCardPanel(card.getEnchantingCard().getId());
+            toPanel.setAttachedToPanel(getCardPanel(card.getEnchantingCard().getId()));
+        } else if (card.getEquipping() != null) {
+            toPanel.setAttachedToPanel(getCardPanel(card.getEquipping().getId()));
+        } else if (card.getFortifying() != null) {
+            toPanel.setAttachedToPanel(getCardPanel(card.getFortifying().getId()));
+        } else {
+            toPanel.setAttachedToPanel(null);
         }
-        else if (card.getEquipping() != null) {
-            attachedToPanel = getCardPanel(card.getEquipping().getId());
-        }
-        else if (card.getFortifying() != null) {
-            attachedToPanel = getCardPanel(card.getFortifying().getId());
-        }
-        else {
-            attachedToPanel = null;
-        }
-        if (toPanel.getAttachedToPanel() != attachedToPanel) {
-            toPanel.setAttachedToPanel(attachedToPanel);
-            needLayoutRefresh = true; //ensure layout refreshed if any attachments change
-        }
-
+   
         toPanel.setCard(card);
         if (fromRefresh) {
             toPanel.updatePTOverlay(); //ensure PT Overlay updated on refresh
         }
-
-        if (needLayoutRefresh && !fromRefresh) {
-            doLayout(); //ensure layout refreshed here if not being called from a full refresh
-        }
-        return needLayoutRefresh;
     }
 
     private static enum RowType {
@@ -766,7 +746,7 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
 
         private void addAll(final List<CardPanel> cardPanels, final RowType type) {
             for (final CardPanel panel : cardPanels) {
-                if (!type.isGoodFor(panel.getCard().getCurrentState()) || (panel.getAttachedToPanel() != null)) {
+                if (!type.isGoodFor(panel.getCard().getOriginal()) || (panel.getAttachedToPanel() != null)) {
                     continue;
                 }
                 final CardStack stack = new CardStack();
@@ -783,18 +763,18 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
          */
         private void addAllOthers(final List<CardPanel> cardPanels, final RowType type) {
             for (final CardPanel panel : cardPanels) {
-                if (!type.isGoodFor(panel.getCard().getCurrentState()) || (panel.getAttachedToPanel() != null)) {
+                if (!type.isGoodFor(panel.getCard().getOriginal()) || (panel.getAttachedToPanel() != null)) {
                     continue;
                 }
                 boolean stackable = false;
                 for (final CardStack s : this) {
                     final CardView otherCard = s.get(0).getCard();
-                    final CardStateView otherState = otherCard.getCurrentState();
+                    final CardStateView otherState = otherCard.getOriginal();
                     final CardView thisCard = panel.getCard();
-                    final CardStateView thisState = thisCard.getCurrentState();
+                    final CardStateView thisState = thisCard.getOriginal();
                     if (otherState.getName().equals(thisState.getName()) && s.size() < othersStackMax) {
                         if (panel.getAttachedPanels().isEmpty()
-                            && thisCard.hasSameCounters(otherCard)
+                            && thisCard.getCounters().equals(otherCard.getCounters())
                             && (thisCard.isSick() == otherCard.isSick())
                             && (thisCard.isCloned() == otherCard.isCloned())) {
                             s.add(panel);
@@ -852,26 +832,11 @@ public class PlayArea extends CardPanelContainer implements CardPanelMouseListen
             if (panel.getCard() == null) {
                 return false;
             }
-            if (super.add(panel)) {
-                panel.setStack(this);
-                addAttachedPanels(panel);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public void add(final int index, final CardPanel panel) {
-            super.add(index, panel);
-            panel.setStack(this);
-        }
-
-        private void addAttachedPanels(final CardPanel panel) {
+            final boolean appended = super.add(panel);
             for (final CardPanel attachedPanel : panel.getAttachedPanels()) {
-                if (panel.getCard() != null && super.add(attachedPanel)) {
-                    addAttachedPanels(attachedPanel);
-                }
+                this.add(attachedPanel);
             }
+            return appended;
         }
 
         private int getWidth() {

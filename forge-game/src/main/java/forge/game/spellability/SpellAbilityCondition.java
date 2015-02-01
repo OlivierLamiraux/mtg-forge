@@ -22,7 +22,6 @@ import forge.game.Game;
 import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardFactoryUtil;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
@@ -276,15 +275,15 @@ public class SpellAbilityCondition extends SpellAbilityVariables {
         }
 
         if (this.getColorToCheck() != null) {
-            if (!sa.getHostCard().hasChosenColor(this.getColorToCheck())) {
+            if (!sa.getHostCard().getChosenColor().contains(this.getColorToCheck())) {
                 return false;
             }
         }
 
         if (this.getIsPresent() != null) {
-            CardCollectionView list;
+            List<Card> list = new ArrayList<Card>();
             if (this.getPresentDefined() != null) {
-                list = AbilityUtils.getDefinedCards(sa.getHostCard(), this.getPresentDefined(), sa);
+                list.addAll(AbilityUtils.getDefinedCards(sa.getHostCard(), this.getPresentDefined(), sa));
             } else {
                 list = game.getCardsIn(ZoneType.Battlefield);
             }

@@ -17,20 +17,20 @@
  */
 package forge.match.input;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.atomic.AtomicReference;
 
 import forge.FThreads;
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
-import forge.player.PlayerControllerHuman;
+import forge.interfaces.IGuiBase;
 import forge.util.ITriggerEvent;
+import forge.view.CardView;
+import forge.view.LocalGameView;
+import forge.view.PlayerView;
+import forge.view.SpellAbilityView;
 
 /**
  * <p>
@@ -44,17 +44,21 @@ public class InputProxy implements Observer {
 
     /** The input. */
     private AtomicReference<Input> input = new AtomicReference<Input>();
-    private final PlayerControllerHuman controller;
+    private final LocalGameView gameView;
 
 //    private static final boolean DEBUG_INPUT = true; // false;
 
-    public InputProxy(final PlayerControllerHuman controller0) {
-        controller = controller0;
+    public InputProxy(final LocalGameView gameView0) {
+        gameView = gameView0;
+    }
+
+    private IGuiBase getGui() {
+        return gameView.getGui();
     }
 
     @Override
     public final void update(final Observable observable, final Object obj) {
-        final Input nextInput = controller.getInputQueue().getActualInput(controller);
+        final Input nextInput = gameView.getInputQueue().getActualInput(gameView);
 /*        if(DEBUG_INPUT) 
             System.out.printf("%s ... \t%s on %s, \tstack = %s%n", 
                     FThreads.debugGetStackTraceItem(6, true), nextInput == null ? "null" : nextInput.getClass().getSimpleName(), 
@@ -65,13 +69,13 @@ public class InputProxy implements Observer {
             @Override
             public void run() {
                 Input current = getInput(); 
-                controller.getInputQueue().syncPoint();
+                gameView.getInputQueue().syncPoint();
                 //System.out.printf("\t%s > showMessage @ %s/%s during %s%n", FThreads.debugGetCurrThreadId(), nextInput.getClass().getSimpleName(), current.getClass().getSimpleName(), game.getPhaseHandler().debugPrintState());
                 current.showMessageInitial(); 
             }
         };
         
-        FThreads.invokeInEdtLater(showMessage);
+        FThreads.invokeInEdtLater(getGui(), showMessage);
     }
     /**
      * <p>
@@ -100,55 +104,28 @@ public class InputProxy implements Observer {
     public final void selectPlayer(final PlayerView playerView, final ITriggerEvent triggerEvent) {
         final Input inp = getInput();
         if (inp != null) {
-            final Player player = controller.getGame().getPlayer(playerView);
+            final Player player = gameView.getPlayer(playerView);
             if (player != null) {
                 inp.selectPlayer(player, triggerEvent);
             }
         }
     }
 
-    private Card getCard(final CardView cardView) {
-        return controller.getGame().getCard(cardView);
-    }
-
-    public final String getActivateAction(final CardView cardView) {
+    public final boolean selectCard(final CardView cardView, final ITriggerEvent triggerEvent) {
         final Input inp = getInput();
         if (inp != null) {
-            final Card card = getCard(cardView);
+            final Card card = gameView.getCard(cardView);
             if (card != null) {
-                return inp.getActivateAction(card);
-            }
-        }
-        return null;
-    }
-
-    public final boolean selectCard(final CardView cardView, final List<CardView> otherCardViewsToSelect, final ITriggerEvent triggerEvent) {
-        final Input inp = getInput();
-        //System.out.println("Selectcard " +cardView + " input: "  +inp);
-        if (inp != null) {
-            final Card card = getCard(cardView);
-            if (card != null) {
-                List<Card> otherCardsToSelect = null;
-                if (otherCardViewsToSelect != null) {
-                    for (CardView cv : otherCardViewsToSelect) {
-                        final Card c = getCard(cv);
-                        if (c != null) {
-                            if (otherCardsToSelect == null) {
-                                otherCardsToSelect = new ArrayList<Card>();
-                            }
-                            otherCardsToSelect.add(c);
-                        }
-                    }
-                }
-                return inp.selectCard(card, otherCardsToSelect, triggerEvent);
+                return inp.selectCard(card, triggerEvent);
             }
         }
         return false;
     }
 
-    public final void selectAbility(final SpellAbility sa) {
+    public final void selectAbility(final SpellAbilityView ab) {
     	final Input inp = getInput();
         if (inp != null) {
+            final SpellAbility sa = gameView.getSpellAbility(ab);
             if (sa != null) {
                 inp.selectAbility(sa);
             }

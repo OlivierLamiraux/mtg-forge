@@ -1,21 +1,22 @@
 package forge.match.input;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import forge.FThreads;
 import forge.game.Game;
 import forge.game.card.Card;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
 import forge.util.ITriggerEvent;
 import forge.util.ThreadUtil;
+import forge.view.PlayerView;
 
-public class InputLockUI implements Input {
+public class InputLockUI implements Input  {
     private final AtomicInteger iCall = new AtomicInteger();
 
+    private IGuiBase gui;
     private final InputQueue inputQueue;
     private final Game game;
     public InputLockUI(final Game game0, final InputQueue inputQueue0) {
@@ -26,6 +27,15 @@ public class InputLockUI implements Input {
     @Override
     public PlayerView getOwner() {
         return null;
+    }
+
+    @Override
+    public IGuiBase getGui() {
+        return gui;
+    }
+
+    public void setGui(final IGuiBase gui0) {
+        gui = gui0;
     }
 
     public void showMessageInitial() {
@@ -49,7 +59,7 @@ public class InputLockUI implements Input {
         public void run() {
             if ( ixCall != iCall.get() || !isActive()) // cancel the message if it's not from latest call or input is gone already 
                 return;
-            FThreads.invokeInEdtLater(showMessageFromEdt);
+            FThreads.invokeInEdtLater(getGui(), showMessageFromEdt);
         }
     };
     
@@ -70,12 +80,11 @@ public class InputLockUI implements Input {
     }
 
     @Override
-    public boolean selectCard(Card c, final List<Card> otherCardsToSelect, ITriggerEvent triggerEvent) {
+    public boolean selectCard(Card c, ITriggerEvent triggerEvent) {
         return false;
     }
     @Override
-    public boolean selectAbility(SpellAbility ab) {
-        return false;
+    public void selectAbility(SpellAbility ab) {
     }
     @Override
     public void selectPlayer(Player player, ITriggerEvent triggerEvent) {
@@ -89,10 +98,5 @@ public class InputLockUI implements Input {
         for (Player player : game.getPlayers()) {
             player.getController().autoPassCancel();
         }
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        return null;
     }
 }

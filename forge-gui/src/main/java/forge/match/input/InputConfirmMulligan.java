@@ -17,13 +17,11 @@
  */
 package forge.match.input;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import forge.game.Game;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
-import forge.game.card.CardView;
 import forge.game.player.Player;
 import forge.game.zone.ZoneType;
 import forge.match.MatchUtil;
@@ -32,6 +30,7 @@ import forge.util.ITriggerEvent;
 import forge.util.Lang;
 import forge.util.ThreadUtil;
 import forge.util.gui.SGuiDialog;
+import forge.view.CardView;
  
 /**
   * <p>
@@ -48,7 +47,7 @@ public class InputConfirmMulligan extends InputSyncronizedBase {
     boolean keepHand = false;
     final boolean isCommander;
 
-    private final CardCollection selected = new CardCollection();
+    private final List<Card> selected = new ArrayList<Card>();
     private final Player player;
     private final Player startingPlayer;
 
@@ -103,7 +102,7 @@ public class InputConfirmMulligan extends InputSyncronizedBase {
         if (isCommander) {
             // Clear the "selected" icon after clicking the done button
             for (final Card c : this.selected) {
-                MatchUtil.setUsedToPay(c.getView(), false);
+                MatchUtil.setUsedToPay(getController().getCardView(c), false);
             }
         }
         stop();
@@ -112,20 +111,21 @@ public class InputConfirmMulligan extends InputSyncronizedBase {
     volatile boolean cardSelectLocked = false;
 
     @Override
-    protected boolean onCardSelected(final Card c0, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) { // the only place that would cause troubles - input is supposed only to confirm, not to fire abilities
+    protected boolean onCardSelected(final Card c0, final ITriggerEvent triggerEvent) { // the only place that would cause troubles - input is supposed only to confirm, not to fire abilities
         boolean fromHand = player.getZone(ZoneType.Hand).contains(c0);
         boolean isSerumPowder = c0.getName().equals("Serum Powder");
         boolean isLegalChoice = fromHand && (isCommander || isSerumPowder);
         if (!isLegalChoice || cardSelectLocked) {
+            flashIncorrectAction();
             return false;
         }
 
-        final CardView cView = c0.getView();
-        if (isSerumPowder && SGuiDialog.confirm(cView, "Use " + cView + "'s ability?")) {
+        final CardView cView = getController().getCardView(c0);
+        if (isSerumPowder && SGuiDialog.confirm(getGui(), cView, "Use " + cView + "'s ability?")) {
             cardSelectLocked = true;
             ThreadUtil.invokeInGameThread(new Runnable() {
                 public void run() {
-                    CardCollection hand = new CardCollection(c0.getController().getCardsIn(ZoneType.Hand));
+                    List<Card> hand = new ArrayList<Card>(c0.getController().getCardsIn(ZoneType.Hand));
                     for (Card c : hand) {
                         player.getGame().getAction().exile(c);
                     }
@@ -138,11 +138,11 @@ public class InputConfirmMulligan extends InputSyncronizedBase {
 
         if (isCommander) { // allow to choose cards for partial paris
             if (selected.contains(c0)) {
-                MatchUtil.setUsedToPay(c0.getView(), false);
+                MatchUtil.setUsedToPay(getController().getCardView(c0), false);
                 selected.remove(c0);
             }
             else {
-                MatchUtil.setUsedToPay(c0.getView(), true);
+                MatchUtil.setUsedToPay(getController().getCardView(c0), true);
                 selected.add(c0);
             }
             ButtonUtil.update(getOwner(), "Keep", "Exile", true, !selected.isEmpty(), true);
@@ -154,12 +154,7 @@ public class InputConfirmMulligan extends InputSyncronizedBase {
         return keepHand;
     }
 
-    public CardCollectionView getSelectedCards() {
+    public List<Card> getSelectedCards() {
         return selected;
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        return null;
     }
 }

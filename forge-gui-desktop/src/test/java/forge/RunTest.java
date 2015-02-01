@@ -35,8 +35,8 @@ public class RunTest {
         this.check("2.2", c.isType("Elf"));
         this.check("2.3", c.isType("Warrior"));
         this.check("3", c.getText().equals(""));
-        this.check("4", c.getNetPower() == 2);
-        this.check("5", c.getNetToughness() == 3);
+        this.check("4", c.getNetAttack() == 2);
+        this.check("5", c.getNetDefense() == 3);
         this.check("6", c.getKeyword().isEmpty());
 
         c = cf.getCard("Shock", null);
@@ -234,15 +234,15 @@ public class RunTest {
          * false);
          */
 
-        c = new Card(1, null);
-        Card c2 = new Card(2, null);
+        c = new Card(1);
+        Card c2 = new Card(2);
         c.addIntrinsicKeyword("Flying");
         c2.addIntrinsicKeyword("Flying");
         // check("107", CombatUtil.canBlock(c, c2));
         // check("108", CombatUtil.canBlock(c2, c));
 
-        c = new Card(1, null);
-        c2 = new Card(2, null);
+        c = new Card(1);
+        c2 = new Card(2);
         c2.addIntrinsicKeyword("Flying");
         this.check("109", CombatUtil.canBlock(c, c2));
         this.check("110", !CombatUtil.canBlock(c2, c));

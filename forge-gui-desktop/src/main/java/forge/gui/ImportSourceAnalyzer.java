@@ -20,6 +20,7 @@ package forge.gui;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 
+import forge.assets.ImageUtil;
 import forge.card.CardEdition;
 import forge.card.CardRules;
 import forge.item.IPaperCard;
@@ -27,7 +28,6 @@ import forge.item.PaperCard;
 import forge.model.FModel;
 import forge.properties.ForgeConstants;
 import forge.util.FileUtil;
-import forge.util.ImageUtil;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;

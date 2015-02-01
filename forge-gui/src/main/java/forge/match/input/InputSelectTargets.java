@@ -10,7 +10,6 @@ import forge.game.GameEntity;
 import forge.game.GameObject;
 import forge.game.ability.ApiType;
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
@@ -34,7 +33,17 @@ public final class InputSelectTargets extends InputSyncronizedBase {
 
     public final boolean hasCancelled() { return bCancel; }
     public final boolean hasPressedOk() { return bOk; }
-
+    /**
+     * TODO: Write javadoc for Constructor.
+     * @param select
+     * @param choices
+     * @param req
+     * @param alreadyTargeted
+     * @param targeted
+     * @param tgt
+     * @param sa
+     * @param mandatory
+     */
     public InputSelectTargets(final PlayerControllerHuman controller, final List<Card> choices, final SpellAbility sa, final boolean mandatory) {
         super(controller);
         this.choices = choices;
@@ -100,12 +109,13 @@ public final class InputSelectTargets extends InputSyncronizedBase {
     }
 
     @Override
-    protected final boolean onCardSelected(final Card card, final List<Card> otherCardsToSelect, final ITriggerEvent triggerEvent) {
+    protected final boolean onCardSelected(final Card card, final ITriggerEvent triggerEvent) {
         if (!tgt.isUniqueTargets() && targetDepth.containsKey(card)) {
             return false;
         }
-
-        //If the card is not a valid target
+        
+        // leave this in temporarily, there some seriously wrong things going on here
+        // Can be targeted doesn't check if the target is a valid type, only if a card is generally "targetable"
         if (!card.canBeTargetedBy(sa)) {
             showMessage(sa.getHostCard() + " - Cannot target this card (Shroud? Protection? Restrictions).");
             return false;
@@ -146,7 +156,7 @@ public final class InputSelectTargets extends InputSyncronizedBase {
             }
             return false;
         }
-
+        
         if (tgt.isDividedAsYouChoose()) {
             final int stillToDivide = tgt.getStillToDivide();
             int allocatedPortion = 0;
@@ -160,23 +170,20 @@ public final class InputSelectTargets extends InputSyncronizedBase {
                 String apiBasedMessage = "Distribute how much to ";
                 if (sa.getApi() == ApiType.DealDamage) {
                     apiBasedMessage = "Select how much damage to deal to ";
-                }
-                else if (sa.getApi() == ApiType.PreventDamage) {
+                } else if (sa.getApi() == ApiType.PreventDamage) {
                     apiBasedMessage = "Select how much damage to prevent to ";
-                }
-                else if (sa.getApi() == ApiType.PutCounter) {
+                } else if (sa.getApi() == ApiType.PutCounter) {
                     apiBasedMessage = "Select how many counters to distribute to ";
                 }
                 final StringBuilder sb = new StringBuilder();
                 sb.append(apiBasedMessage);
                 sb.append(card.toString());
-                Integer chosen = SGuiChoose.oneOrNone(sb.toString(), choices);
+                Integer chosen = SGuiChoose.oneOrNone(getGui(), sb.toString(), choices);
                 if (chosen == null) {
                     return true; //still return true since there was a valid choice
                 }
                 allocatedPortion = chosen;
-            }
-            else { // otherwise assign the rest of the damage/protection
+            } else { // otherwise assign the rest of the damage/protection
                 allocatedPortion = stillToDivide;
             }
             tgt.setStillToDivide(stillToDivide - allocatedPortion);
@@ -184,18 +191,7 @@ public final class InputSelectTargets extends InputSyncronizedBase {
         }
         addTarget(card);
         return true;
-    }
-
-    @Override
-    public String getActivateAction(Card card) {
-        if (!tgt.isUniqueTargets() && targetDepth.containsKey(card)) {
-            return null;
-        }
-        if (choices.contains(card)) {
-            return "select card as target";
-        }
-        return null;
-    }
+    } // selectCard()
 
     @Override
     protected final void onPlayerSelected(Player player, final ITriggerEvent triggerEvent) {
@@ -226,7 +222,7 @@ public final class InputSelectTargets extends InputSyncronizedBase {
                 final StringBuilder sb = new StringBuilder();
                 sb.append(apiBasedMessage);
                 sb.append(player.getName());
-                Integer chosen = SGuiChoose.oneOrNone(sb.toString(), choices);
+                Integer chosen = SGuiChoose.oneOrNone(getGui(), sb.toString(), choices);
                 if (null == chosen) {
                     return;
                 }
@@ -243,7 +239,7 @@ public final class InputSelectTargets extends InputSyncronizedBase {
     private void addTarget(final GameEntity ge) {
         sa.getTargets().add(ge);
         if (ge instanceof Card) {
-            MatchUtil.setUsedToPay(CardView.get((Card) ge), true);
+            MatchUtil.setUsedToPay(getController().getCardView((Card) ge), true);
             lastTarget = (Card) ge;
         }
         final Integer val = targetDepth.get(ge);
@@ -260,7 +256,7 @@ public final class InputSelectTargets extends InputSyncronizedBase {
     private void done() {
         for (final GameEntity c : targetDepth.keySet()) {
             if (c instanceof Card) {
-                MatchUtil.setUsedToPay(CardView.get((Card) c), false);
+                MatchUtil.setUsedToPay(getController().getCardView((Card) c), false);
             }
         }
 

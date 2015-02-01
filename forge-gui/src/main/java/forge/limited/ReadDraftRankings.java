@@ -1,6 +1,7 @@
 package forge.limited;
 
 import com.esotericsoftware.minlog.Log;
+import forge.card.MagicColor;
 import forge.properties.ForgeConstants;
 import forge.util.FileUtil;
 
@@ -87,6 +88,10 @@ public class ReadDraftRankings {
      */
     public Double getRanking(String cardName, String edition) {
         Double rank = null;
+
+        // Basic lands should be excluded from the evaluation --BBU
+        if ( MagicColor.Constant.BASIC_LANDS.contains(cardName))
+            return null;
 
         if (draftRankings.containsKey(edition)) {
             String safeName = cardName.replaceAll("-", " ").replaceAll("[^A-Za-z ]", "");

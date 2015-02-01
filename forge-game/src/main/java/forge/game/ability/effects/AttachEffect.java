@@ -8,21 +8,21 @@ import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
-import forge.util.FCollection;
 import forge.util.Lang;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.collect.Iterables;
-
 public class AttachEffect extends SpellAbilityEffect {
+
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellEffect#resolve(java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     public void resolve(SpellAbility sa) {
         if (sa.getHostCard().isAura() && sa.isSpell()) {
@@ -41,22 +41,14 @@ public class AttachEffect extends SpellAbilityEffect {
 
         final List<GameObject> targets = getTargets(sa);
 
+        if (sa.hasParam("Object")) {
+            card = AbilityUtils.getDefinedCards(source, sa.getParam("Object"), sa).get(0);
+        }
+
         final Player p = sa.getActivatingPlayer();
         String message = "Do you want to attach " + card + " to " + targets + "?";
         if ( sa.hasParam("Optional") && !p.getController().confirmAction(sa, null, message) )
             return;
-
-        if (sa.hasParam("Object")) {
-            CardCollection lists = AbilityUtils.getDefinedCards(source, sa.getParam("Object"), sa);
-            if (sa.hasParam("ChooseAnObject")) {
-                card = p.getController().chooseSingleEntityForEffect(lists, sa, sa.getParam("ChooseAnObject"));
-            } else {
-                card = Iterables.getFirst(lists, null);
-            }
-            if (card == null) {
-                return;
-            }
-        }
 
         // If Cast Targets will be checked on the Stack
         for (final Object o : targets) {
@@ -136,6 +128,7 @@ public class AttachEffect extends SpellAbilityEffect {
             final GameEntity oldEnchanted = card.getEnchanting();
             oldEnchanted.removeEnchantedBy(card);
             card.removeEnchanting(oldEnchanted);
+            card.clearTriggers(); // not sure if cleartriggers is needed?
         }
 
         final GameCommand onLeavesPlay = new GameCommand() {
@@ -193,7 +186,7 @@ public class AttachEffect extends SpellAbilityEffect {
 
         Player p = source.getController();
         if (tgt.canTgtPlayer()) {
-            final FCollection<Player> players = new FCollection<Player>();
+            final ArrayList<Player> players = new ArrayList<Player>();
 
             for (Player player : game.getPlayers()) {
                 if (player.isValid(tgt.getValidTgts(), aura.getActivatingPlayer(), source)) {
@@ -205,9 +198,8 @@ public class AttachEffect extends SpellAbilityEffect {
                 handleAura(source, pa);
                 return true;
             }
-        }
-        else {
-            CardCollectionView list = game.getCardsIn(tgt.getZone());
+        } else {
+            List<Card> list = game.getCardsIn(tgt.getZone());
             list = CardLists.getValidCards(list, tgt.getValidTgts(), aura.getActivatingPlayer(), source);
             if (list.isEmpty()) {
                 return false;
@@ -215,7 +207,7 @@ public class AttachEffect extends SpellAbilityEffect {
 
             final Card o = p.getController().chooseSingleEntityForEffect(list, aura, source + " - Select a card to attach to.");
             if (o != null) {
-                handleAura(source, o);
+                handleAura(source, (Card) o);
                 //source.enchantEntity((Card) o);
                 return true;
             }

@@ -114,7 +114,7 @@ public class ProtectEffect extends SpellAbilityEffect {
             game.getAction().nofityOfValue(sa, choser, Lang.joinHomogenous(gains), choser);
         } else {
             if (sa.getParam("Gains").equals("ChosenColor")) {
-                for (final String color : host.getChosenColors()) {
+                for (final String color : host.getChosenColor()) {
                     gains.add(color.toLowerCase());
                 }
             } else {

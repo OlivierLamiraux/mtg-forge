@@ -4,12 +4,11 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
-
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PhasesEffect extends SpellAbilityEffect {
@@ -33,9 +32,16 @@ public class PhasesEffect extends SpellAbilityEffect {
         return sb.toString();
     }
 
+    /**
+     * <p>
+     * phasesResolve.
+     * </p>
+     * @param sa
+     *            a {@link forge.game.spellability.SpellAbility} object.
+     */
     @Override
     public void resolve(SpellAbility sa) {
-        CardCollectionView tgtCards;
+        List<Card> tgtCards = new ArrayList<Card>();
         final Game game = sa.getActivatingPlayer().getGame();
         final Card source = sa.getHostCard();
         final boolean phaseInOrOut = sa.hasParam("PhaseInOrOutAll");

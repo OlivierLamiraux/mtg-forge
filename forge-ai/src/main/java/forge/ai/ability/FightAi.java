@@ -6,7 +6,6 @@ import forge.ai.ComputerUtilCombat;
 import forge.ai.SpellAbilityAi;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
@@ -16,14 +15,18 @@ import java.util.List;
 import java.util.Random;
 
 public class FightAi extends SpellAbilityAi {
+
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellAiLogic#canPlayAI(forge.game.player.Player, java.util.Map, forge.card.spellability.SpellAbility)
+     */
     @Override
     protected boolean canPlayAI(Player ai, SpellAbility sa) {
         sa.resetTargets();
         final Card source = sa.getHostCard();
 
-        CardCollectionView aiCreatures = ai.getCreaturesInPlay();
+        List<Card> aiCreatures = ai.getCreaturesInPlay();
         aiCreatures = CardLists.getTargetableCards(aiCreatures, sa);
-        aiCreatures = ComputerUtil.getSafeTargets(ai, sa, aiCreatures);
+        aiCreatures =  ComputerUtil.getSafeTargets(ai, sa, aiCreatures);
 
         List<Card> humCreatures = ai.getOpponent().getCreaturesInPlay();
         humCreatures = CardLists.getTargetableCards(humCreatures, sa);
@@ -32,17 +35,13 @@ public class FightAi extends SpellAbilityAi {
         if (r.nextFloat() > Math.pow(.6667, sa.getActivationsThisTurn())) {
             return false;
         }
-        if (sa.hasParam("FightWithToughness")) {
-            // TODO: add ailogic
-            return false;
-        }
-
+        
         //assumes the triggered card belongs to the ai
         if (sa.hasParam("Defined")) {
             Card fighter1 = AbilityUtils.getDefinedCards(source, sa.getParam("Defined"), sa).get(0);
             for (Card humanCreature : humCreatures) {
-                if (ComputerUtilCombat.getDamageToKill(humanCreature) <= fighter1.getNetPower()
-                        && humanCreature.getNetPower() < ComputerUtilCombat.getDamageToKill(fighter1)) {
+                if (ComputerUtilCombat.getDamageToKill(humanCreature) <= fighter1.getNetAttack()
+                        && humanCreature.getNetAttack() < ComputerUtilCombat.getDamageToKill(fighter1)) {
                     // todo: check min/max targets; see if we picked the best matchup
                     sa.getTargets().add(humanCreature);
                     return true;
@@ -57,8 +56,8 @@ public class FightAi extends SpellAbilityAi {
             if (!(humCreatures.isEmpty() && aiCreatures.isEmpty())) {
                 for (Card humanCreature : humCreatures) {
                     for (Card aiCreature : aiCreatures) {
-                        if (ComputerUtilCombat.getDamageToKill(humanCreature) <= aiCreature.getNetPower()
-                                && humanCreature.getNetPower() < ComputerUtilCombat.getDamageToKill(aiCreature)) {
+                        if (ComputerUtilCombat.getDamageToKill(humanCreature) <= aiCreature.getNetAttack()
+                                && humanCreature.getNetAttack() < ComputerUtilCombat.getDamageToKill(aiCreature)) {
                             // todo: check min/max targets; see if we picked the best matchup
                             sa.getTargets().add(humanCreature);
                             sa.getTargets().add(aiCreature);
@@ -82,8 +81,8 @@ public class FightAi extends SpellAbilityAi {
                         && creature1.sharesCreatureTypeWith(creature2)) {
                     continue;
                 }
-                if (ComputerUtilCombat.getDamageToKill(creature1) <= creature2.getNetPower()
-                        && creature1.getNetPower() >= ComputerUtilCombat.getDamageToKill(creature2)) {
+                if (ComputerUtilCombat.getDamageToKill(creature1) <= creature2.getNetAttack()
+                        && creature1.getNetAttack() >= ComputerUtilCombat.getDamageToKill(creature2)) {
                     // todo: check min/max targets; see if we picked the best matchup
                     sa.getTargets().add(creature1);
                     sa.getTargets().add(creature2);
@@ -91,9 +90,13 @@ public class FightAi extends SpellAbilityAi {
                 }
             }
         }
+
         return false;
     }
 
+    /* (non-Javadoc)
+     * @see forge.card.abilityfactory.SpellAiLogic#doTriggerAINoCost(forge.game.player.Player, java.util.Map, forge.card.spellability.SpellAbility, boolean)
+     */
     @Override
     protected boolean doTriggerAINoCost(Player ai, SpellAbility sa, boolean mandatory) {
         if (canPlayAI(ai, sa)) {
@@ -114,14 +117,14 @@ public class FightAi extends SpellAbilityAi {
         if (sa.hasParam("Defined")) {
             Card aiCreature = AbilityUtils.getDefinedCards(source, sa.getParam("Defined"), sa).get(0);
             for (Card humanCreature : humCreatures) {
-                if (ComputerUtilCombat.getDamageToKill(humanCreature) <= aiCreature.getNetPower()
+                if (ComputerUtilCombat.getDamageToKill(humanCreature) <= aiCreature.getNetAttack()
                         && ComputerUtilCard.evaluateCreature(humanCreature) > ComputerUtilCard.evaluateCreature(aiCreature)) {
                     sa.getTargets().add(humanCreature);
                     return true;
                 }
             }
             for (Card humanCreature : humCreatures) {
-                if (ComputerUtilCombat.getDamageToKill(aiCreature) > humanCreature.getNetPower()) {
+                if (ComputerUtilCombat.getDamageToKill(aiCreature) > humanCreature.getNetAttack()) {
                     sa.getTargets().add(humanCreature);
                     return true;
                 }
@@ -129,6 +132,7 @@ public class FightAi extends SpellAbilityAi {
             sa.getTargets().add(humCreatures.get(0));
             return true;
         }
+        
         return true;
     }
     public static boolean shouldFight(Card fighter, Card opponent, int pumpAttack, int pumpDefense) {
@@ -149,10 +153,10 @@ public class FightAi extends SpellAbilityAi {
     		return true;
     	}
     	if (opponent.hasProtectionFrom(fighter) || !opponent.canBeDestroyed() 
-    	        || opponent.getShieldCount() > 0 || ComputerUtil.canRegenerate(opponent.getController(), opponent)) {
+    	        || !opponent.getShield().isEmpty() || ComputerUtil.canRegenerate(opponent.getController(), opponent)) {
     		return false;
     	}
-    	if (fighter.hasKeyword("Deathtouch") || ComputerUtilCombat.getDamageToKill(opponent) <= fighter.getNetPower() + pumpAttack) {
+    	if (fighter.hasKeyword("Deathtouch") || ComputerUtilCombat.getDamageToKill(opponent) <= fighter.getNetAttack() + pumpAttack) {
     		return true;
     	}
     	return false;

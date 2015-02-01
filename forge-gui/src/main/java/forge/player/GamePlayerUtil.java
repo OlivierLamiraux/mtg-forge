@@ -5,6 +5,7 @@ import forge.LobbyPlayer;
 import forge.ai.AiProfileUtil;
 import forge.ai.LobbyPlayerAi;
 import forge.game.player.Player;
+import forge.interfaces.IGuiBase;
 import forge.match.MatchUtil;
 import forge.model.FModel;
 import forge.properties.ForgePreferences.FPref;
@@ -17,7 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 public final class GamePlayerUtil {
     private GamePlayerUtil() { };
 
-    private static final LobbyPlayer guiPlayer = new LobbyPlayerHuman("Human");
+    private static final LobbyPlayer guiPlayer = new LobbyPlayerHuman("Human", GuiBase.getInterface());
     public static final LobbyPlayer getGuiPlayer() {
         return guiPlayer;
     }
@@ -31,7 +32,7 @@ public final class GamePlayerUtil {
             return guiPlayer;
         }
         //use separate LobbyPlayerHuman instance for human players beyond first
-        return new LobbyPlayerHuman(name);
+        return new LobbyPlayerHuman(name, GuiBase.getInterface());
     }
 
     public static final LobbyPlayer getQuestPlayer() {
@@ -71,15 +72,15 @@ public final class GamePlayerUtil {
         return null;
     }
 
-    public static void setPlayerName() {
+    public static void setPlayerName(final IGuiBase gui) {
         String oldPlayerName = FModel.getPreferences().getPref(FPref.PLAYER_NAME);
 
         String newPlayerName;
         if (StringUtils.isBlank(oldPlayerName)) {
-            newPlayerName = getVerifiedPlayerName(getPlayerNameUsingFirstTimePrompt(), oldPlayerName);
+            newPlayerName = getVerifiedPlayerName(getPlayerNameUsingFirstTimePrompt(gui), oldPlayerName);
         }
         else {
-            newPlayerName = getVerifiedPlayerName(getPlayerNameUsingStandardPrompt(oldPlayerName), oldPlayerName);
+            newPlayerName = getVerifiedPlayerName(getPlayerNameUsingStandardPrompt(gui, oldPlayerName), oldPlayerName);
         }
 
         //update name for player in active game if needed
@@ -97,27 +98,27 @@ public final class GamePlayerUtil {
         FModel.getPreferences().save();
 
         if (StringUtils.isBlank(oldPlayerName) && !newPlayerName.equals("Human")) {
-            showThankYouPrompt(newPlayerName);
+            showThankYouPrompt(gui, newPlayerName);
         }
     }
 
-    private static void showThankYouPrompt(final String playerName) {
-        SOptionPane.showMessageDialog("Thank you, " + playerName + ". "
+    private static void showThankYouPrompt(final IGuiBase gui, final String playerName) {
+        SOptionPane.showMessageDialog(gui, "Thank you, " + playerName + ". "
                 + "You will not be prompted again but you can change\n"
                 + "your name at any time using the \"Player Name\" setting in Preferences\n"
                 + "or via the constructed match setup screen\n");
     }
 
-    private static String getPlayerNameUsingFirstTimePrompt() {
-        return SOptionPane.showInputDialog(
+    private static String getPlayerNameUsingFirstTimePrompt(final IGuiBase gui) {
+        return SOptionPane.showInputDialog(gui,
                 "By default, Forge will refer to you as the \"Human\" during gameplay.\n" +
                         "If you would prefer a different name please enter it now.",
                         "Personalize Forge Gameplay",
                         SOptionPane.QUESTION_ICON);
     }
 
-    private static String getPlayerNameUsingStandardPrompt(final String playerName) {
-        return SOptionPane.showInputDialog(
+    private static String getPlayerNameUsingStandardPrompt(final IGuiBase gui, final String playerName) {
+        return SOptionPane.showInputDialog(gui,
                 "Please enter a new name. (alpha-numeric only)",
                 "Personalize Forge Gameplay",
                 null,

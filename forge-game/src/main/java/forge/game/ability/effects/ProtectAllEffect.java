@@ -7,7 +7,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
 import forge.game.player.Player;
@@ -57,7 +56,7 @@ public class ProtectAllEffect extends SpellAbilityEffect {
             game.getAction().nofityOfValue(sa, choser, Lang.joinHomogenous(gains), choser);
         } else {
             if (sa.getParam("Gains").equals("ChosenColor")) {
-                for (final String color : host.getChosenColors()) {
+                for (final String color : host.getChosenColor()) {
                     gains.add(color.toLowerCase());
                 }
             } else if (sa.getParam("Gains").equals("TargetedCardColor")) {
@@ -79,7 +78,7 @@ public class ProtectAllEffect extends SpellAbilityEffect {
             valid = sa.getParam("ValidCards");
         }
         if (!valid.equals("")) {
-            CardCollectionView list = game.getCardsIn(ZoneType.Battlefield);
+            List<Card> list = game.getCardsIn(ZoneType.Battlefield);
             list = CardLists.getValidCards(list, valid, sa.getActivatingPlayer(), host);
 
             for (final Card tgtC : list) {

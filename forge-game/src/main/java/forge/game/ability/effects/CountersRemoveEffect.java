@@ -12,7 +12,6 @@ import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 
 import java.util.Map;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class CountersRemoveEffect extends SpellAbilityEffect {
     @Override
@@ -100,7 +99,7 @@ public class CountersRemoveEffect extends SpellAbilityEffect {
                         tgtCard.subtractCounter(chosenType, chosenAmount);
                         if (rememberRemoved) {
                             for (int i = 0; i < chosenAmount; i++) {
-                                card.addRemembered(Pair.of(chosenType, i));
+                                card.addRemembered(chosenType);
                             }
                         }
                         cntToRemove -= chosenAmount;
@@ -115,7 +114,7 @@ public class CountersRemoveEffect extends SpellAbilityEffect {
                             cntToRemove = tgtCard.getCounters(counterType);
                         }
                         for (int i = 0; i < cntToRemove; i++) {
-                            card.addRemembered(Pair.of(counterType, i));
+                            card.addRemembered(counterType);
                         }
                     }
                     tgtCard.subtractCounter(counterType, cntToRemove);

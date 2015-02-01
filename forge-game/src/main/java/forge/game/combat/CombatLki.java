@@ -1,7 +1,7 @@
 package forge.game.combat;
 
-import forge.util.FCollection;
-import forge.util.FCollectionView;
+import java.util.Collections;
+import java.util.List;
 
 /** 
  * TODO: Write javadoc for this type.
@@ -9,14 +9,15 @@ import forge.util.FCollectionView;
  */
 public class CombatLki {
 
-    public final FCollectionView<AttackingBand> relatedBands;
+    public final List<AttackingBand> relatedBands;
     public final boolean isAttacker;
-
-    public CombatLki(boolean isAttacker, FCollectionView<AttackingBand> relatedBands) {
+    
+    
+    public CombatLki(boolean isAttacker, List<AttackingBand> relatedBands) {
         this.isAttacker = isAttacker;
-        this.relatedBands = new FCollection<AttackingBand>(relatedBands);;
+        this.relatedBands = Collections.unmodifiableList(relatedBands);
     }
-
+    
     public AttackingBand getFirstBand() {
         return relatedBands.isEmpty() ? null : relatedBands.get(0);
     }

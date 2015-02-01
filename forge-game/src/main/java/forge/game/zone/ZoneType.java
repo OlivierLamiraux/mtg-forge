@@ -13,7 +13,6 @@ public enum ZoneType {
     Graveyard(false),
     Battlefield(false),
     Exile(false),
-    Flashback(false),
     Command(false),
     Stack(false),
     Sideboard(true),

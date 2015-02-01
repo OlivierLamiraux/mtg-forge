@@ -9,7 +9,6 @@ import forge.game.card.CardLists;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
-import forge.util.FCollectionView;
 
 import java.util.List;
 
@@ -61,7 +60,7 @@ public class DamageEachEffect extends SpellAbilityEffect {
     public void resolve(SpellAbility sa) {
         final Card card = sa.getHostCard();
 
-        FCollectionView<Card> sources = card.getGame().getCardsIn(ZoneType.Battlefield);
+        List<Card> sources = card.getGame().getCardsIn(ZoneType.Battlefield);
         if (sa.hasParam("ValidCards")) {
             sources = CardLists.getValidCards(sources, sa.getParam("ValidCards"), card.getController(), card);
         }

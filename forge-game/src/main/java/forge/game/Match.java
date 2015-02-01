@@ -7,7 +7,6 @@ import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.event.GameEventAnteCardsSelected;
 import forge.game.event.GameEventGameFinished;
 import forge.game.player.Player;
@@ -16,7 +15,6 @@ import forge.game.trigger.Trigger;
 import forge.game.zone.PlayerZone;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
-import forge.util.FCollectionView;
 import forge.util.MyRandom;
 
 import java.util.*;
@@ -29,19 +27,25 @@ public class Match {
     private final List<GameOutcome> gamesPlayed = new ArrayList<GameOutcome>();
     private final List<GameOutcome> gamesPlayedRo;
 
-    public Match(GameRules rules0, List<RegisteredPlayer> players0) {
+    public Match(GameRules rules, List<RegisteredPlayer> players0) {
         gamesPlayedRo = Collections.unmodifiableList(gamesPlayed);
         players = Collections.unmodifiableList(Lists.newArrayList(players0));
-        rules = rules0;
+        this.rules = rules;
     }
 
     public GameRules getRules() {
         return rules;
     }
 
+    /**
+     * Gets the games played.
+     * 
+     * @return the games played
+     */
     public final List<GameOutcome> getPlayedGames() {
-        return gamesPlayedRo;
+        return this.gamesPlayedRo;
     }
+
 
     public void addGamePlayed(Game finished) {
         if (!finished.isGameOver()) {
@@ -50,11 +54,17 @@ public class Match {
         gamesPlayed.add(finished.getOutcome());
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     */
     public Game createGame() {
         Game game = new Game(players, rules, this);
         return game;
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     */
     public void startGame(final Game game) {
         prepareAllZones(game);
         if (rules.useAnte()) {  // Deciding which cards go to ante
@@ -93,6 +103,11 @@ public class Match {
         return gamesPlayedRo;
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     * 
+     * @return
+     */
     public boolean isMatchOver() {
         int[] victories = new int[players.size()];
         for (GameOutcome go : gamesPlayed) {
@@ -115,6 +130,12 @@ public class Match {
         return gamesPlayed.size() >= rules.getGamesPerMatch();
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     * 
+     * @param questPlayer
+     * @return
+     */
     public int getGamesWonBy(LobbyPlayer questPlayer) {
         int sum = 0;
         for (GameOutcome go : gamesPlayed) {
@@ -125,6 +146,12 @@ public class Match {
         return sum;
     }
 
+    /**
+     * TODO: Write javadoc for this method.
+     * 
+     * @param questPlayer
+     * @return
+     */
     public boolean isWonBy(LobbyPlayer questPlayer) {
         return getGamesWonBy(questPlayer) >= rules.getGamesToWinMatch();
     }
@@ -143,6 +170,7 @@ public class Match {
                 }
             }
         }
+
         return myRemovedAnteCards;
     }
 
@@ -177,7 +205,7 @@ public class Match {
         boolean isFirstGame = game.getMatch().getPlayedGames().isEmpty();
         boolean canSideBoard = !isFirstGame && rules.getGameType().isSideboardingAllowed();
 
-        final FCollectionView<Player> players = game.getPlayers();
+        final List<Player> players = game.getPlayers();
         final List<RegisteredPlayer> playersConditions = game.getMatch().getPlayers();
         for (int i = 0; i < playersConditions.size(); i++) {
             final Player player = players.get(i);
@@ -246,6 +274,7 @@ public class Match {
     private void executeAnte(Game lastGame) {
         GameOutcome outcome = lastGame.getOutcome();
 
+
         // remove all the lost cards from owners' decks
         List<PaperCard> losses = new ArrayList<PaperCard>();
         int cntPlayers = players.size();
@@ -253,8 +282,8 @@ public class Match {
         for (int i = 0; i < cntPlayers; i++) {
             Player fromGame = lastGame.getRegisteredPlayers().get(i);
             // Add/Remove Cards lost via ChangeOwnership cards like Darkpact
-            CardCollectionView lostOwnership = fromGame.getLostOwnership();
-            CardCollectionView gainedOwnership = fromGame.getGainedOwnership();
+            List<Card> lostOwnership = fromGame.getLostOwnership();
+            List<Card> gainedOwnership = fromGame.getGainedOwnership();
 
             if (!lostOwnership.isEmpty()) {
                 List<PaperCard> lostPaperOwnership = new ArrayList<>();
@@ -329,6 +358,7 @@ public class Match {
                     }
                 }
             }
+
             // Other game types (like Quest) need to do something in their own calls to actually update data
         }
     }

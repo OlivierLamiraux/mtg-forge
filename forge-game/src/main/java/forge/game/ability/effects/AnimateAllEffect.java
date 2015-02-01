@@ -1,12 +1,10 @@
 package forge.game.ability.effects;
 
 import forge.GameCommand;
-import forge.card.CardType;
 import forge.game.Game;
 import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
 import forge.game.event.GameEventCardStatsChanged;
@@ -18,7 +16,6 @@ import forge.game.staticability.StaticAbility;
 import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerHandler;
 import forge.game.zone.ZoneType;
-import forge.util.FCollectionView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,18 +50,18 @@ public class AnimateAllEffect extends AnimateEffectBase {
 
         final boolean permanent = sa.hasParam("Permanent");
 
-        final CardType types = new CardType();
+        final ArrayList<String> types = new ArrayList<String>();
         if (sa.hasParam("Types")) {
             types.addAll(Arrays.asList(sa.getParam("Types").split(",")));
         }
 
-        final CardType removeTypes = new CardType();
+        final ArrayList<String> removeTypes = new ArrayList<String>();
         if (sa.hasParam("RemoveTypes")) {
             removeTypes.addAll(Arrays.asList(sa.getParam("RemoveTypes").split(",")));
         }
 
         // allow ChosenType - overrides anything else specified
-        if (types.hasSubtype("ChosenType")) {
+        if (types.contains("ChosenType")) {
             types.clear();
             types.add(host.getChosenType());
         }
@@ -72,11 +69,6 @@ public class AnimateAllEffect extends AnimateEffectBase {
         final ArrayList<String> keywords = new ArrayList<String>();
         if (sa.hasParam("Keywords")) {
             keywords.addAll(Arrays.asList(sa.getParam("Keywords").split(" & ")));
-        }
-
-        final ArrayList<String> removeKeywords = new ArrayList<String>();
-        if (sa.hasParam("RemoveKeywords")) {
-            removeKeywords.addAll(Arrays.asList(sa.getParam("RemoveKeywords").split(" & ")));
         }
 
         final ArrayList<String> hiddenKeywords = new ArrayList<String>();
@@ -97,7 +89,7 @@ public class AnimateAllEffect extends AnimateEffectBase {
         if (sa.hasParam("Colors")) {
             final String colors = sa.getParam("Colors");
             if (colors.equals("ChosenColor")) {
-                tmpDesc = CardUtil.getShortColorsString(host.getChosenColors());
+                tmpDesc = CardUtil.getShortColorsString(host.getChosenColor());
             } else {
                 tmpDesc = CardUtil.getShortColorsString(new ArrayList<String>(Arrays.asList(colors.split(","))));
             }
@@ -132,21 +124,21 @@ public class AnimateAllEffect extends AnimateEffectBase {
             valid = sa.getParam("ValidCards");
         }
 
-        CardCollectionView list;
+        List<Card> list;
         List<Player> tgtPlayers = getTargetPlayers(sa);
         
         if (!sa.usesTargeting() && !sa.hasParam("Defined")) {
             list = game.getCardsIn(ZoneType.Battlefield);
-        }
-        else {
-            list = tgtPlayers.get(0).getCardsIn(ZoneType.Battlefield);
+        } else {
+            list = new ArrayList<Card>(tgtPlayers.get(0).getCardsIn(ZoneType.Battlefield));
         }
 
         list = CardLists.getValidCards(list, valid.split(","), host.getController(), host);
 
         for (final Card c : list) {
-            doAnimate(c, sa, power, toughness, types, removeTypes, finalDesc,
-                    keywords, removeKeywords, hiddenKeywords, timestamp);
+
+            final long colorTimestamp = doAnimate(c, sa, power, toughness, types, removeTypes,
+                    finalDesc, keywords, null, hiddenKeywords, timestamp);
 
             // give abilities
             final ArrayList<SpellAbility> addedAbilities = new ArrayList<SpellAbility>();
@@ -191,7 +183,7 @@ public class AnimateAllEffect extends AnimateEffectBase {
             // suppress triggers from the animated card
             final ArrayList<Trigger> removedTriggers = new ArrayList<Trigger>();
             if (sa.hasParam("OverwriteTriggers") || sa.hasParam("RemoveAllAbilities")) {
-                final FCollectionView<Trigger> triggersToRemove = c.getTriggers();
+                final List<Trigger> triggersToRemove = c.getTriggers();
                 for (final Trigger trigger : triggersToRemove) {
                     trigger.setSuppressed(true);
                     removedTriggers.add(trigger);
@@ -201,7 +193,7 @@ public class AnimateAllEffect extends AnimateEffectBase {
             // suppress static abilities from the animated card
             final ArrayList<StaticAbility> removedStatics = new ArrayList<StaticAbility>();
             if (sa.hasParam("OverwriteStatics") || sa.hasParam("RemoveAllAbilities")) {
-                final FCollectionView<StaticAbility> staticsToRemove = c.getStaticAbilities();
+                final ArrayList<StaticAbility> staticsToRemove = c.getStaticAbilities();
                 for (final StaticAbility stAb : staticsToRemove) {
                     stAb.setTemporarilySuppressed(true);
                     removedStatics.add(stAb);
@@ -211,7 +203,7 @@ public class AnimateAllEffect extends AnimateEffectBase {
             // suppress static abilities from the animated card
             final List<ReplacementEffect> removedReplacements = new ArrayList<ReplacementEffect>();
             if (sa.hasParam("OverwriteReplacements") || sa.hasParam("RemoveAllAbilities")) {
-                final FCollectionView<ReplacementEffect> replacementsToRemove = c.getReplacementEffects();
+                final List<ReplacementEffect> replacementsToRemove = c.getReplacementEffects();
                 for (final ReplacementEffect re : replacementsToRemove) {
                     re.setTemporarilySuppressed(true);
                     removedReplacements.add(re);
@@ -232,9 +224,8 @@ public class AnimateAllEffect extends AnimateEffectBase {
 
                 @Override
                 public void run() {
-                    doUnanimate(c, sa, finalDesc, hiddenKeywords,
-                            addedAbilities, addedTriggers, addedReplacements,
-                            false, removedAbilities, timestamp);
+                    doUnanimate(c, sa, finalDesc, hiddenKeywords, addedAbilities, addedTriggers, addedReplacements,
+                            colorTimestamp, false, removedAbilities, timestamp);
 
                     // give back suppressed triggers
                     for (final Trigger t : removedTriggers) {

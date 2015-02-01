@@ -4,11 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import forge.FThreads;
-import forge.game.card.CardView;
-import forge.game.card.CardView.CardStateView;
-import forge.game.player.PlayerView;
+import forge.GuiBase;
 import forge.screens.match.views.VCardDisplayArea.CardAreaPanel;
 import forge.toolbox.FContainer;
+import forge.view.CardView;
+import forge.view.CardView.CardStateView;
+import forge.view.PlayerView;
 
 public class VField extends FContainer {
     private final PlayerView player;
@@ -41,7 +42,7 @@ public class VField extends FContainer {
     }
 
     public void update() {
-        FThreads.invokeInEdtNowOrLater(updateRoutine);
+        FThreads.invokeInEdtNowOrLater(GuiBase.getInterface(), updateRoutine);
     }
 
     private final Runnable updateRoutine = new Runnable() {
@@ -49,15 +50,9 @@ public class VField extends FContainer {
         public void run() {
             clear();
 
-            Iterable<CardView> model = player.getBattlefield();
-            if (model == null) { return; }
-
+            List<CardView> model = player.getBfCards();
             for (CardView card : model) {
-                CardAreaPanel cardPanel = CardAreaPanel.get(card);
-                cardPanel.updateCard(card);
-                // Clear all stacks since they will be rebuilt in the loop below.
-                cardPanel.setNextPanelInStack(null);
-                cardPanel.setPrevPanelInStack(null);
+                updateCard(card);
             }
 
             List<CardView> creatures = new ArrayList<CardView>();
@@ -66,7 +61,7 @@ public class VField extends FContainer {
 
             for (CardView card : model) {
                 CardAreaPanel cardPanel = CardAreaPanel.get(card);
-                CardStateView details = card.getCurrentState();
+                CardStateView details = card.getOriginal();
                 if (cardPanel.getAttachedToPanel() == null) { //skip attached panels
                     if (details.isCreature()) {
                         if (!tryStackCard(card, creatures)) {
@@ -102,14 +97,14 @@ public class VField extends FContainer {
         if (card.isEnchanted() || card.isEquipped()) {
             return false; //can stack with enchanted or equipped card
         }
-        if (card.getCurrentState().isCreature() && !card.isToken()) {
+        if (card.getOriginal().isCreature() && !card.isToken()) {
             return false; //don't stack non-token creatures
         }
-        final String cardName = card.getCurrentState().getName();
+        final String cardName = card.getOriginal().getName();
         for (CardView c : cardsOfType) {
             if (!c.isEnchanted() && !c.isEquipped() &&
-                    cardName.equals(c.getCurrentState().getName()) &&
-                    card.hasSameCounters(c) &&
+                    cardName.equals(c.getOriginal().getName()) &&
+                    card.getCounters().equals(c.getCounters()) &&
                     card.isToken() == c.isToken()) { //don't stack tokens on top of non-tokens
                 CardAreaPanel cPanel = CardAreaPanel.get(c);
                 while (cPanel.getNextPanelInStack() != null) {
@@ -122,6 +117,59 @@ public class VField extends FContainer {
             }
         }
         return false;
+    }
+
+    public void updateCard(final CardView card) {
+        final CardAreaPanel toPanel = CardAreaPanel.get(card);
+        if (toPanel == null) { return; }
+
+        toPanel.setTapped(card.isTapped());
+
+        toPanel.getAttachedPanels().clear();
+        if (card.isEnchanted()) {
+            final Iterable<CardView> enchants = card.getEnchantedBy();
+            for (final CardView e : enchants) {
+                final CardAreaPanel cardE = CardAreaPanel.get(e);
+                if (cardE != null) {
+                    toPanel.getAttachedPanels().add(cardE);
+                }
+            }
+        }
+   
+        if (card.isEquipped()) {
+            final Iterable<CardView> enchants = card.getEquippedBy();
+            for (final CardView e : enchants) {
+                final CardAreaPanel cardE = CardAreaPanel.get(e);
+                if (cardE != null) {
+                    toPanel.getAttachedPanels().add(cardE);
+                }
+            }
+        }
+
+        if (card.isFortified()) {
+            final Iterable<CardView> fortifications = card.getFortifiedBy();
+            for (final CardView e : fortifications) {
+                final CardAreaPanel cardE = CardAreaPanel.get(e);
+                if (cardE != null) {
+                    toPanel.getAttachedPanels().add(cardE);
+                }
+            }
+        }
+
+        if (card.getEnchantingCard() != null) {
+            toPanel.setAttachedToPanel(CardAreaPanel.get(card.getEnchantingCard()));
+        }
+        else if (card.getEquipping() != null) {
+            toPanel.setAttachedToPanel(CardAreaPanel.get(card.getEquipping()));
+        }
+        else if (card.getFortifying() != null) {
+            toPanel.setAttachedToPanel(CardAreaPanel.get(card.getFortifying()));
+        }
+        else {
+            toPanel.setAttachedToPanel(null);
+        }
+
+        toPanel.setCard(toPanel.getCard());
     }
 
     public FieldRow getRow1() {

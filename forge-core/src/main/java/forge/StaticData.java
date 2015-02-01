@@ -52,12 +52,8 @@ public class StaticData {
             }
         }
 
-        commonCards = new CardDb(regularCards, editions);
-        variantCards = new CardDb(variantsCards, editions);
-
-        //muse initialize after establish field values for the sake of card image logic
-        commonCards.initialize(false, false);
-        variantCards.initialize(false, false);
+        commonCards = new CardDb(regularCards, editions, false, false);
+        variantCards = new CardDb(variantsCards, editions, false, false);
 
         this.boosters = new StorageBase<SealedProduct.Template>("Boosters", editions.getBoosterGenerator());
         this.specialBoosters = new StorageBase<SealedProduct.Template>("Special boosters", new SealedProduct.Template.Reader(new File(blockDataFolder, "boosters-special.txt")));

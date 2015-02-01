@@ -5,7 +5,6 @@ import forge.game.Game;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
 import forge.game.cost.Cost;
-import forge.game.phase.PhaseHandler;
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.spellability.AbilitySub;
@@ -22,7 +21,6 @@ public class LifeGainAi extends SpellAbilityAi {
         final Cost abCost = sa.getPayCosts();
         final Card source = sa.getHostCard();
         final Game game = source.getGame();
-        final PhaseHandler ph = game.getPhaseHandler();
         final int life = ai.getLife();
         final String amountStr = sa.getParam("LifeAmount");
         int lifeAmount = 0;
@@ -54,31 +52,23 @@ public class LifeGainAi extends SpellAbilityAi {
         }
 
         boolean lifeCritical = life <= 5;
-        lifeCritical |= ph.getPhase().isBefore(PhaseType.COMBAT_DAMAGE) && ComputerUtilCombat.lifeInDanger(ai, game.getCombat());
+        lifeCritical |= game.getPhaseHandler().getPhase().isBefore(PhaseType.COMBAT_DAMAGE) && ComputerUtilCombat.lifeInDanger(ai, game.getCombat());
 
-        if (abCost != null) {
-            if (!lifeCritical) {
-	            if (!ComputerUtilCost.checkSacrificeCost(ai, abCost, source, false)) {
-	                return false;
-	            }
-	            if (!ComputerUtilCost.checkLifeCost(ai, abCost, source, 4, null)) {
-	                return false;
-	            }
-	
-	            if (!ComputerUtilCost.checkDiscardCost(ai, abCost, source)) {
-	                return false;
-	            }
-	
-	            if (!ComputerUtilCost.checkRemoveCounterCost(abCost, source)) {
-	                return false;
-	            }
-            } else {
-            	// don't sac possible blockers
-            	if (!ph.getPhase().equals(PhaseType.COMBAT_DECLARE_BLOCKERS) || !game.getCombat().getDefenders().contains(ai)) {
-    	            if (!ComputerUtilCost.checkSacrificeCost(ai, abCost, source, false)) {
-    	                return false;
-    	            }
-            	}
+        if (abCost != null && !lifeCritical) {
+            if (!ComputerUtilCost.checkSacrificeCost(ai, abCost, source, false)) {
+                return false;
+            }
+
+            if (!ComputerUtilCost.checkLifeCost(ai, abCost, source, 4, null)) {
+                return false;
+            }
+
+            if (!ComputerUtilCost.checkDiscardCost(ai, abCost, source)) {
+                return false;
+            }
+
+            if (!ComputerUtilCost.checkRemoveCounterCost(abCost, source)) {
+                return false;
             }
         }
 
@@ -96,13 +86,13 @@ public class LifeGainAi extends SpellAbilityAi {
         }
         
         // Don't use lifegain before main 2 if possible
-        if (!lifeCritical && ph.getPhase().isBefore(PhaseType.MAIN2)
+        if (!lifeCritical && game.getPhaseHandler().getPhase().isBefore(PhaseType.MAIN2)
                 && !sa.hasParam("ActivationPhases") && !ComputerUtil.castSpellInMain1(ai, sa)) {
             return false;
         }
 
-        if (!lifeCritical && !activateForCost && (!ph.getNextTurn().equals(ai)
-                || ph.getPhase().isBefore(PhaseType.END_OF_TURN))
+        if (!lifeCritical && !activateForCost && (!game.getPhaseHandler().getNextTurn().equals(ai)
+                || game.getPhaseHandler().getPhase().isBefore(PhaseType.END_OF_TURN))
                 && !sa.hasParam("PlayerTurn") && !SpellAbilityAi.isSorcerySpeed(sa)) {
             return false;
         }

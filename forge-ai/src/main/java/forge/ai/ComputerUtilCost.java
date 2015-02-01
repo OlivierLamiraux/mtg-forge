@@ -3,7 +3,6 @@ package forge.ai;
 import forge.ai.AiAttackController;
 import forge.game.ability.AbilityUtils;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardLists;
 import forge.game.card.CounterType;
 import forge.game.combat.Combat;
@@ -12,13 +11,18 @@ import forge.game.player.Player;
 import forge.game.spellability.Spell;
 import forge.game.spellability.SpellAbility;
 import forge.game.zone.ZoneType;
-import forge.util.FCollectionView;
 import forge.util.MyRandom;
 import forge.util.TextUtil;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 
+/** 
+ * TODO: Write javadoc for this type.
+ *
+ */
 public class ComputerUtilCost {
 
     /**
@@ -102,7 +106,7 @@ public class ComputerUtilCost {
                 if (type.equals("CARDNAME") && source.getAbilityText().contains("Bloodrush")) {
                     continue;
                 }
-                final CardCollection typeList = CardLists.getValidCards(ai.getCardsIn(ZoneType.Hand), type.split(","), source.getController(), source);
+                final List<Card> typeList = CardLists.getValidCards(ai.getCardsIn(ZoneType.Hand), type.split(","), source.getController(), source);
                 if (typeList.size() > ai.getMaxHandSize()) {
                     continue;
                 }
@@ -211,7 +215,7 @@ public class ComputerUtilCost {
                     continue;
                 }
     
-                final CardCollection typeList = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), type.split(","), source.getController(), source);
+                final List<Card> typeList = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), type.split(","), source.getController(), source);
                 if (ComputerUtil.getCardPreference(ai, source, "SacCost", typeList) == null) {
                     return false;
                 }
@@ -240,18 +244,20 @@ public class ComputerUtilCost {
                 final CostSacrifice sac = (CostSacrifice) part;
     
                 final String type = sac.getType();
-
+    
                 if (type.equals("CARDNAME")) {
                     if (!important) {
                         return false;
                     }
-                    if (!CardLists.filterControlledBy(source.getEnchantedBy(false), source.getController()).isEmpty()) {
+                    List<Card> auras = new ArrayList<Card>(source.getEnchantedBy());
+                    if (!CardLists.filterControlledBy(auras, source.getController()).isEmpty()) {
                         return false;
                     }
                     continue;
                 }
     
-                final CardCollection typeList = CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), type.split(","), source.getController(), source);
+                final List<Card> typeList =
+                        CardLists.getValidCards(ai.getCardsIn(ZoneType.Battlefield), type.split(","), source.getController(), source);
                 if (ComputerUtil.getCardPreference(ai, source, "SacCost", typeList) == null) {
                     return false;
                 }
@@ -260,19 +266,6 @@ public class ComputerUtilCost {
         return true;
     }
     
-    public static boolean isSacrificeSelfCost(final Cost cost) {
-    	 if (cost == null) {
-             return false;
-         }
-         for (final CostPart part : cost.getCostParts()) {
-             if (part instanceof CostSacrifice) {
-                 if ("CARDNAME".equals(part.getType())) {
-                	 return true;
-                 }
-             }
-         }
-         return false;
-    }
 
     /**
      * Check creature sacrifice cost.
@@ -386,7 +379,7 @@ public class ComputerUtilCost {
             && CostPayment.canPayAdditionalCosts(sa.getPayCosts(), sa);
     } // canPayCost()
 
-    public static boolean willPayUnlessCost(SpellAbility sa, Player payer, Cost cost, boolean alreadyPaid, FCollectionView<Player> payers) {
+    public static boolean willPayUnlessCost(SpellAbility sa, Player payer, Cost cost, boolean alreadyPaid, List<Player> payers) {
         final Card source = sa.getHostCard();
         final String aiLogic = sa.getParam("UnlessAI");
         boolean payForOwnOnly = "OnlyOwn".equals(aiLogic);

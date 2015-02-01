@@ -20,7 +20,7 @@ public class ClashEffect extends SpellAbilityEffect {
      * @see forge.card.abilityfactory.SpellEffect#getStackDescription(java.util.Map, forge.card.spellability.SpellAbility)
      */
     @Override
-    protected String getStackDescription(final SpellAbility sa) {
+    protected String getStackDescription(SpellAbility sa) {
         return sa.getHostCard().getName() + " - Clash with an opponent.";
     }
 
@@ -28,7 +28,7 @@ public class ClashEffect extends SpellAbilityEffect {
      * @see forge.card.abilityfactory.SpellEffect#resolve(java.util.Map, forge.card.spellability.SpellAbility)
      */
     @Override
-    public void resolve(final SpellAbility sa) {
+    public void resolve(SpellAbility sa) {
         final boolean victory = clashWithOpponent(sa);
 
         // Run triggers
@@ -70,7 +70,7 @@ public class ClashEffect extends SpellAbilityEffect {
      *            a {@link forge.game.card.Card} object.
      * @return a boolean.
      */
-    private static boolean clashWithOpponent(final SpellAbility sa) {
+    private final boolean clashWithOpponent(final SpellAbility sa) {
         /*
          * Each clashing player reveals the top card of his or her library, then
          * puts that card on the top or bottom. A player wins if his or her card
@@ -129,12 +129,13 @@ public class ClashEffect extends SpellAbilityEffect {
         }
     }
 
-    private static void clashMoveToTopOrBottom(final Player p, final Card c) {
-        final GameAction action = p.getGame().getAction();
-        final boolean putOnTop = p.getController().willPutCardOnTop(c);
+    public final void clashMoveToTopOrBottom(final Player p, final Card c) {
+        GameAction action = p.getGame().getAction();
+        boolean putOnTop = p.getController().willPutCardOnTop(c);
         if (putOnTop) {
             action.moveToLibrary(c);
-        } else {
+        }
+        else {
             action.moveToBottomOfLibrary(c);
         }
         // computer just puts the card back until such time it can make a smarter decision

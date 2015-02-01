@@ -19,7 +19,6 @@ package forge.util;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-
 import forge.item.InventoryItem;
 
 import java.util.*;
@@ -69,7 +68,7 @@ public class ItemPool<T extends InventoryItem> implements Iterable<Entry<T, Inte
      *            a T
      */
     public ItemPool(final Class<T> cls) {
-        this(new LinkedHashMap<T, Integer>(), cls);
+        this(new Hashtable<T, Integer>(), cls);
     }
 
     @SuppressWarnings("unchecked")

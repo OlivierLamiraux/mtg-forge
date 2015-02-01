@@ -11,10 +11,10 @@ import forge.assets.FSkinFont;
 import forge.assets.FSkinImage;
 import forge.assets.FSkinColor.Colors;
 import forge.card.MagicColor;
-import forge.game.player.PlayerView;
 import forge.match.MatchUtil;
 import forge.player.GamePlayerUtil;
 import forge.toolbox.FDisplayObject;
+import forge.view.PlayerView;
 
 public class VManaPool extends VDisplayArea {
     private static final FSkinColor FORE_COLOR = FSkinColor.get(Colors.CLR_TEXT);
@@ -81,17 +81,8 @@ public class VManaPool extends VDisplayArea {
 
         @Override
         public boolean tap(float x, float y, int count) {
-            if (player.isLobbyPlayer(GamePlayerUtil.getGuiPlayer())) {
-                MatchUtil.getHumanController().useMana(colorCode);
-            }
-            return true;
-        }
-
-        @Override
-        public boolean flick(float x, float y) {
-            if (player.isLobbyPlayer(GamePlayerUtil.getGuiPlayer())) {
-                //on two finger tap, keep using mana until it runs out or no longer can be put towards the cost
-                while (MatchUtil.getHumanController().useMana(colorCode)) {}
+            if (player.getLobbyPlayer() == GamePlayerUtil.getGuiPlayer()) {
+                MatchUtil.getGameView().useMana(colorCode);
             }
             return true;
         }

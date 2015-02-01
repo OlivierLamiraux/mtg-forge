@@ -10,7 +10,6 @@ import forge.util.PredicateString.StringOp;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Filtering conditions specific for CardRules class, defined here along with
@@ -150,23 +149,6 @@ public final class CardRulesPredicates {
         return new LeafString(LeafString.CardField.JOINED_TYPE, op, what);
     }
 
-    public static Predicate<CardRules> hasCreatureType(final String... creatureTypes) {
-        return new Predicate<CardRules>() {
-            @Override
-            public boolean apply(final CardRules card) {
-                if (!card.getType().isCreature()) { return false; }
-
-                Set<String> set = card.getType().getCreatureTypes();
-                for (String creatureType : creatureTypes) {
-                    if (set.contains(creatureType)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
     /**
      * Has Keyword.
      * 
@@ -224,7 +206,7 @@ public final class CardRulesPredicates {
      */
     public static Predicate<CardRules> superType(final boolean isEqual, final String what) {
         try {
-            return CardRulesPredicates.superType(isEqual, Enum.valueOf(CardType.Supertype.class, what));
+            return CardRulesPredicates.superType(isEqual, Enum.valueOf(CardType.SuperType.class, what));
         } catch (final Exception e) {
             return com.google.common.base.Predicates.alwaysFalse();
         }
@@ -239,7 +221,7 @@ public final class CardRulesPredicates {
      *            the type
      * @return the predicate
      */
-    public static Predicate<CardRules> superType(final boolean isEqual, final CardType.Supertype type) {
+    public static Predicate<CardRules> superType(final boolean isEqual, final CardType.SuperType type) {
         return new PredicateSuperType(type, isEqual);
     }
 
@@ -310,15 +292,6 @@ public final class CardRulesPredicates {
         return new LeafColor(LeafColor.ColorOperator.CountColorsGreaterOrEqual, cntColors);
     }
 
-    public static Predicate<CardRules> hasColorIdentity(final int colormask) {
-        return new Predicate<CardRules>() {
-            @Override
-            public boolean apply(CardRules rules) {
-                return rules.getColorIdentity().hasNoColorsExcept(colormask);
-            }
-        };
-    }
-
     private static class LeafString extends PredicateString<CardRules> {
         public enum CardField {
             ORACLE_TEXT, NAME, SUBTYPE, JOINED_TYPE, COST
@@ -335,7 +308,7 @@ public final class CardRulesPredicates {
                 return op(card.getName(), this.operand);
             case SUBTYPE:
                 shouldContain = (this.getOperator() == StringOp.CONTAINS) || (this.getOperator() == StringOp.EQUALS);
-                return shouldContain == card.getType().hasSubtype(this.operand);
+                return shouldContain == card.getType().subTypeContains(this.operand);
             case ORACLE_TEXT:
                 return op(card.getOracleText(), operand);
             case JOINED_TYPE:
@@ -453,7 +426,7 @@ public final class CardRulesPredicates {
             if (null == card) {
                 return false;
             }
-            return this.shouldBeEqual == card.getType().hasType(this.operand);
+            return this.shouldBeEqual == card.getType().typeContains(this.operand);
         }
 
         public PredicateCoreType(final CardType.CoreType type, final boolean wantEqual) {
@@ -463,15 +436,15 @@ public final class CardRulesPredicates {
     }
 
     private static class PredicateSuperType implements Predicate<CardRules> {
-        private final CardType.Supertype operand;
+        private final CardType.SuperType operand;
         private final boolean shouldBeEqual;
 
         @Override
         public boolean apply(final CardRules card) {
-            return this.shouldBeEqual == card.getType().hasSupertype(this.operand);
+            return this.shouldBeEqual == card.getType().superTypeContains(this.operand);
         }
 
-        public PredicateSuperType(final CardType.Supertype type, final boolean wantEqual) {
+        public PredicateSuperType(final CardType.SuperType type, final boolean wantEqual) {
             this.operand = type;
             this.shouldBeEqual = wantEqual;
         }
@@ -500,7 +473,7 @@ public final class CardRulesPredicates {
                 .coreType(true, CardType.CoreType.Creature);
 
         public static final Predicate<CardRules> IS_LEGENDARY = CardRulesPredicates
-                .superType(true, CardType.Supertype.Legendary);
+                .superType(true, CardType.SuperType.Legendary);
 
         /** The Constant isArtifact. */
         public static final Predicate<CardRules> IS_ARTIFACT = CardRulesPredicates

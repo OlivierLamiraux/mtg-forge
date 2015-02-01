@@ -17,7 +17,6 @@
  */
 package forge.quest.bazaar;
 
-import forge.assets.ISkinImage;
 import forge.quest.QuestController;
 import forge.quest.data.QuestAssets;
 
@@ -53,7 +52,7 @@ public interface IQuestBazaarItem extends Comparable<Object> {
      * 
      * @return the image that is dispslayed in the bazaar
      */
-    ISkinImage getIcon(QuestAssets qA);
+    String getIcon(QuestAssets qA);
 
     /**
      * <p>

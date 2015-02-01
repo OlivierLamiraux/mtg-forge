@@ -18,7 +18,6 @@
 package forge.limited;
 
 import forge.card.ColorSet;
-import forge.card.MagicColor;
 import forge.deck.Deck;
 import forge.item.PaperCard;
 import forge.properties.ForgePreferences;
@@ -55,9 +54,6 @@ public class BoosterDraftAI {
     // roughly equivalent to 25 ranks in a core set, or 15 ranks in a small set
     private static final double TAKE_BEST_THRESHOLD = 0.1;
 
-    // rank worse than any other card available to draft
-    private static final double RANK_UNPICKABLE = 999.0;
-
     /**
      * <p>
      * Choose a CardPrinted from the list given.
@@ -81,43 +77,43 @@ public class BoosterDraftAI {
         List<Pair<PaperCard, Double>> rankedCards = rankCards(chooseFrom);
         
         for(Pair<PaperCard, Double> p : rankedCards) {
-            double valueBoost = 0;
-
             // If a card is not ai playable, somewhat decrease its rating
             if( p.getKey().getRules().getAiHints().getRemAIDecks() )
-                valueBoost = TAKE_BEST_THRESHOLD;
+                p.setValue(p.getValue() + TAKE_BEST_THRESHOLD);
 
             // if I cannot choose more colors, and the card cannot be played with chosen colors, decrease its rating.
             if( !canAddMoreColors && !p.getKey().getRules().getManaCost().canBePaidWithAvaliable(currentChoice.getColor()))
-                valueBoost = TAKE_BEST_THRESHOLD * 3;
-
-            if (valueBoost > 0) {
-                p.setValue(p.getValue() + valueBoost);
-                //System.out.println(p.getKey() + " is now " + p.getValue());
-            }
+                p.setValue(p.getValue() + 10);
         }
 
+        int cntBestCards = 0;
         double bestRanking = Double.MAX_VALUE;
         PaperCard bestPick = null;
-        final List<PaperCard> possiblePick = new ArrayList<PaperCard>();
         for(Pair<PaperCard, Double> p : rankedCards) { 
             double rating = p.getValue();
-            if(rating <= bestRanking + .01) {
-                if (rating < bestRanking) {
-                	// found a better card start a new list
-                    possiblePick.clear();
-                    bestRanking = rating;
-                }
-                possiblePick.add(p.getKey());
+            if( rating < bestRanking )
+            {
+                bestRanking = rating;
+                bestPick = p.getKey();
+                cntBestCards = 1;
+            } else if ( rating == bestRanking ) {
+                cntBestCards++;
             }
         }
 
-        bestPick = Aggregates.random(possiblePick);
+        if (cntBestCards > 1) {
+            final List<PaperCard> possiblePick = new ArrayList<PaperCard>();
+            for(Pair<PaperCard, Double> p : rankedCards) {
+                if ( p.getValue() == bestRanking )
+                    possiblePick.add(p.getKey());
+            }
+            bestPick = Aggregates.random(possiblePick);
+        }
 
         if (canAddMoreColors)
             deckCols.addColorsOf(bestPick);
         
-        System.out.println("Player[" + player + "] picked: " + bestPick + " ranking of " + bestRanking);
+        System.out.println("Player[" + player + "] picked: " + bestPick);
         this.deck.get(player).add(bestPick);
         
         return bestPick;
@@ -125,8 +121,8 @@ public class BoosterDraftAI {
 
     /**
      * Sort cards by rank. Note that if pack has cards from different editions,
-     * they could have the same rank. Basic lands and unrecognised cards are
-     * rated worse than all other possible picks.
+     * they could have the same rank. In that (hopefully rare) case, only one
+     * will end up in the Map.
      * 
      * @param chooseFrom
      *            List of cards
@@ -135,18 +131,13 @@ public class BoosterDraftAI {
     private List<Pair<PaperCard, Double>> rankCards(final Iterable<PaperCard> chooseFrom) {
         List<Pair<PaperCard, Double>> rankedCards = new ArrayList<Pair<PaperCard,Double>>();
         for (PaperCard card : chooseFrom) {
-            Double rank;
-            if (MagicColor.Constant.BASIC_LANDS.contains(card.getName())) {
-                rank = RANK_UNPICKABLE;
+            Double rkg = DraftRankCache.getRanking(card.getName(), card.getEdition());
+            if (rkg != null) {
+                rankedCards.add(MutablePair.of(card, rkg));
             } else {
-                rank = DraftRankCache.getRanking(card.getName(), card.getEdition());
-                if (rank == null) {
-                    System.out.println("Draft Rankings - Card Not Found: " + card.getName());
-                    rank = RANK_UNPICKABLE;
-                }
+                System.out.println("Draft Rankings - Card Not Found: " + card.getName());
+                rankedCards.add(MutablePair.of(card, 999.0));
             }
-
-            rankedCards.add(MutablePair.of(card, rank));
         }
         return rankedCards;
     }

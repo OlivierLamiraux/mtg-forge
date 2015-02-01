@@ -4,18 +4,16 @@ import forge.game.GameObject;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
-import forge.game.card.CardCollection;
 import forge.game.card.CardUtil;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 import forge.util.Lang;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.google.common.collect.Iterables;
 
 public class DamageDealEffect extends SpellAbilityEffect {
 
@@ -29,12 +27,13 @@ public class DamageDealEffect extends SpellAbilityEffect {
         final String damage = sa.getParam("NumDmg");
         final int dmg = AbilityUtils.calculateAmount(sa.getHostCard(), damage, sa);
 
+
         List<GameObject> tgts = getTargets(sa);
         if (tgts.isEmpty()) 
             return "";
 
         final List<Card> definedSources = AbilityUtils.getDefinedCards(sa.getHostCard(), sa.getParam("DamageSource"), sa);
-        Card source = definedSources.isEmpty() ? new Card(-1, sa.getHostCard().getGame()) : definedSources.get(0);
+        Card source = definedSources.isEmpty() ? new Card(0) : definedSources.get(0);
 
         if (source != sa.getHostCard()) {
             sb.append(source.toString()).append(" deals");
@@ -76,12 +75,6 @@ public class DamageDealEffect extends SpellAbilityEffect {
         final boolean divideOnResolution = sa.hasParam("DividerOnResolution");
 
         List<GameObject> tgts = getTargets(sa);
-        if (sa.hasParam("OptionalDecider")) {
-            Player decider = Iterables.getFirst(AbilityUtils.getDefinedPlayers(sa.getHostCard(), sa.getParam("OptionalDecider"), sa), null);
-            if (decider != null && !decider.getController().confirmAction(sa, null, "Do you want to deal " + dmg + " damage to " + tgts + " ?")) {
-                return;
-            }
-        }
 
         // Right now for Fireball, maybe later for other stuff
         if (sa.hasParam("DivideEvenly")) {
@@ -125,15 +118,15 @@ public class DamageDealEffect extends SpellAbilityEffect {
             if (players.isEmpty()) {
                 return;
             }
-
-            CardCollection assigneeCards = new CardCollection();
+            
+            List<Card> assigneeCards = new ArrayList<Card>();
             // Do we have a way of doing this in a better fashion?
-            for (GameObject obj : tgts) {
+            for(GameObject obj : tgts) {
                 if (obj instanceof Card) {
                     assigneeCards.add((Card)obj);
                 }
             }
-
+            
             Player assigningPlayer = players.get(0);
             Map<Card, Integer> map = assigningPlayer.getController().assignCombatDamage(source, assigneeCards, dmg, null, true);
             for (Entry<Card, Integer> dt : map.entrySet()) {
@@ -150,7 +143,6 @@ public class DamageDealEffect extends SpellAbilityEffect {
                 if (c.isInPlay() && (!targeted || c.canBeTargetedBy(sa))) {
                     if (removeDamage) {
                         c.setDamage(0);
-                        c.setHasBeenDealtDeathtouchDamage(false);
                         c.clearAssignedDamage();
                     }
                     else if (noPrevention) {

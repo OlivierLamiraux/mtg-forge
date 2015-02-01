@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import forge.Graphics;
 import forge.properties.ForgeConstants;
-import forge.util.ImageUtil;
 
 /** Properties of various components that make up the skin.
  * This interface allows all enums to be under the same roof.
@@ -116,15 +115,6 @@ public enum FSkinImage implements FImage {
     TROPHY_CASE_TOP  (FSkinProp.IMG_TROPHY_CASE_TOP, SourceFile.TROPHIES),
     TROPHY_SHELF     (FSkinProp.IMG_TROPHY_SHELF, SourceFile.TROPHIES),
 
-    //Planar Conquest Tiles
-    HEXAGON_TILE    (FSkinProp.IMG_HEXAGON_TILE, SourceFile.PLANAR_CONQUEST),
-    COLORLESS_TILE  (FSkinProp.IMG_COLORLESS_TILE, SourceFile.PLANAR_CONQUEST),
-    WHITE_TILE      (FSkinProp.IMG_WHITE_TILE, SourceFile.PLANAR_CONQUEST),
-    BLUE_TILE       (FSkinProp.IMG_BLUE_TILE, SourceFile.PLANAR_CONQUEST),
-    BLACK_TILE      (FSkinProp.IMG_BLACK_TILE, SourceFile.PLANAR_CONQUEST),
-    RED_TILE        (FSkinProp.IMG_RED_TILE, SourceFile.PLANAR_CONQUEST),
-    GREEN_TILE      (FSkinProp.IMG_GREEN_TILE, SourceFile.PLANAR_CONQUEST),
-
     //Quest Icons
     QUEST_ZEP         (FSkinProp.ICO_QUEST_ZEP, SourceFile.ICONS),
     QUEST_GEAR        (FSkinProp.ICO_QUEST_GEAR, SourceFile.ICONS),
@@ -172,7 +162,6 @@ public enum FSkinImage implements FImage {
     LOGO            (FSkinProp.ICO_LOGO, SourceFile.ICONS),
     FLIPCARD        (FSkinProp.ICO_FLIPCARD, SourceFile.ICONS),
     FAVICON         (FSkinProp.ICO_FAVICON, SourceFile.ICONS),
-    LOCK            (FSkinProp.ICO_LOCK, SourceFile.ICONS),
 
     //Layout images
     HANDLE  (FSkinProp.IMG_HANDLE, SourceFile.ICONS),
@@ -246,8 +235,7 @@ public enum FSkinImage implements FImage {
         ICONS(ForgeConstants.SPRITE_ICONS_FILE),
         FOILS(ForgeConstants.SPRITE_FOILS_FILE),
         OLD_FOILS(ForgeConstants.SPRITE_OLD_FOILS_FILE),
-        TROPHIES(ForgeConstants.SPRITE_TROPHIES_FILE),
-        PLANAR_CONQUEST(ForgeConstants.SPRITE_PLANAR_CONQUEST_FILE);
+        TROPHIES(ForgeConstants.SPRITE_TROPHIES_FILE);
 
         private final String filename;
 

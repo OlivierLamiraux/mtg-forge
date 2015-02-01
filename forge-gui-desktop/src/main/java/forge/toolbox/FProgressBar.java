@@ -1,5 +1,7 @@
 package forge.toolbox;
 
+import forge.FThreads;
+import forge.GuiBase;
 import forge.interfaces.IProgressBar;
 
 import javax.swing.*;
@@ -8,6 +10,9 @@ import java.util.Date;
 
 /** 
  * A simple progress bar component using the Forge skin.
+ * 
+ * Can show
+ *
  */
 @SuppressWarnings("serial")
 public class FProgressBar extends JProgressBar implements IProgressBar {
@@ -19,13 +24,20 @@ public class FProgressBar extends JProgressBar implements IProgressBar {
     
     private boolean percentMode = false;
 
+    /** */
     public FProgressBar() {
         super();
         reset();
         setStringPainted(true);
     }
 
+    /**
+     * Sets description on bar. Must be called from EDT.
+     * 
+     * @param s0 &emsp; A description to prepend before statistics.
+     */
     public void setDescription(final String s0) {
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         desc = s0;
         setString(s0);
     }
@@ -68,8 +80,9 @@ public class FProgressBar extends JProgressBar implements IProgressBar {
         setString(sb.toString());
     }
 
-    /** Resets the various values required for this class. */
+    /** Resets the various values required for this class. Must be called from EDT. */
     public void reset() {
+        FThreads.assertExecutedByEdt(GuiBase.getInterface(), true);
         setIndeterminate(true);
         setValue(0);
         tempVal = 0;
@@ -79,14 +92,17 @@ public class FProgressBar extends JProgressBar implements IProgressBar {
         setShowCount(true);
     }
 
+    /** @param b0 &emsp; Boolean, show the ETA statistic or not */
     public void setShowETA(boolean b0) {
         showETA = b0;
     }
 
+    /** @param b0 &emsp; Boolean, show the ETA statistic or not */
     public void setShowCount(boolean b0) {
         showCount = b0;
     }
 
+    /** */
     private void calculateETA(int v0) {
         float tempMillis = new Date().getTime();
         float timePerUnit = (tempMillis - startMillis) / v0;
@@ -96,7 +112,9 @@ public class FProgressBar extends JProgressBar implements IProgressBar {
     public boolean isPercentMode() {
         return percentMode;
     }
+
     public void setPercentMode(boolean value) {
         percentMode = value;
     }
+
 }

@@ -1,4 +1,4 @@
-Name:Kolaghan Forerunner
+Name:Kolaghan Forerunners
 ManaCost:2 R
 Types:Creature Human Berserker
 PT:*/3

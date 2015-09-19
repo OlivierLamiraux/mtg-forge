@@ -1,4 +1,4 @@
-Name:Ulamog, the Cealess Hunger
+Name:Ulamog, the Ceaseless Hunger
 ManaCost:10
 Types:Legendary Creature Eldrazi
 PT:10/10

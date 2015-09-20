@@ -8,4 +8,4 @@ SVar:TrigPumpAll:AB$ PumpAll | Cost$ 0 | ValidCards$ Creature.YouCtrl | NumAtt$ 
 SVar:PlayMain1:TRUE
 SVar:BuffedBy:Ally
 SVar:Picture:http://www.wizards.com/global/images/magic/general/tajuru_warcaller.jpg
-Oracle:Rally — Whenever Tajuru Warcaller or another Ally enters the battlefield under your control, creatures you control get +2/+2 until end of turn.
+Oracle:Rally - Whenever Tajuru Warcaller or another Ally enters the battlefield under your control, creatures you control get +2/+2 until end of turn.

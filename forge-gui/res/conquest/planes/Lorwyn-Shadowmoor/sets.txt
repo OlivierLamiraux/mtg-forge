@@ -1,4 +1,0 @@
-LRW
-MOR
-SHM
-EVE
